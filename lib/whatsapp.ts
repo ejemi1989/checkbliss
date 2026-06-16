@@ -79,7 +79,8 @@ export type OwnerCommand =
   | { kind: "UNBLOCK"; unit: string; from: string; to: string }
   | { kind: "AVAILABILITY"; unit: string; month: string }
   | { kind: "BOOKINGS" }
-  | { kind: "HELP" };
+  | { kind: "HELP" }
+  | { kind: "INCOMPLETE"; command: string; usage: string };
 
 export type OperatorCommand =
   | { kind: "CLEAN" }
@@ -132,12 +133,22 @@ export function parseOwnerCommand(body: string): OwnerCommand | null {
       if (dates && unit) return { kind, unit, from: dates.from, to: dates.to };
     }
 
-    return null;
+    return { kind: "INCOMPLETE", command: kind, usage: `${kind} <dates> <unit>\nExample: ${kind} 15-20 Sept Sunset Dove` };
+  }
+
+  /* BLOCK/UNBLOCK typed alone */
+  if (upper === "BLOCK" || upper === "UNBLOCK") {
+    return { kind: "INCOMPLETE", command: upper, usage: `${upper} <dates> <unit>\nExample: ${upper} 15-20 Sept Sunset Dove` };
   }
 
   const availMatch = text.match(/^AVAILABILITY\s+(.+)\s+(.+)$/i);
   if (availMatch) {
     return { kind: "AVAILABILITY", unit: availMatch[1].trim(), month: availMatch[2].trim() };
+  }
+
+  /* AVAILABILITY typed alone or with only a unit */
+  if (upper === "AVAILABILITY" || /^AVAILABILITY\s/i.test(text)) {
+    return { kind: "INCOMPLETE", command: "AVAILABILITY", usage: "AVAILABILITY <unit> <month>\nExample: AVAILABILITY Sunset Dove Sept" };
   }
 
   return null;

@@ -408,7 +408,7 @@ async function auditWhatsApp(
 
 /* ---------- GET — Meta verification challenge ---------- */
 
-export async function GET(request: NextRequest) {
+export async function GET(request: NextRequest): Promise<NextResponse> {
   const mode = request.nextUrl.searchParams.get("hub.mode");
   const token = request.nextUrl.searchParams.get("hub.verify_token");
   const challenge = request.nextUrl.searchParams.get("hub.challenge");
@@ -422,7 +422,7 @@ export async function GET(request: NextRequest) {
 
 /* ---------- POST — inbound messages ---------- */
 
-export async function POST(request: NextRequest) {
+export async function POST(request: NextRequest): Promise<NextResponse> {
   /* 1. Raw body — signature is computed over the exact bytes */
   const rawBody = await request.text();
   const sigHeader = request.headers.get("x-hub-signature-256");
@@ -468,6 +468,11 @@ export async function POST(request: NextRequest) {
     const cmd = parseOwnerCommand(msg.text);
     if (!cmd) {
       await sendAndAudit(db, msg.from, profile.id, "Sorry, I didn't understand. Send HELP for commands.");
+      markProcessed("whatsapp", msg.id);
+      return NextResponse.json({ replied: "help" });
+    }
+    if (cmd.kind === "INCOMPLETE") {
+      await sendAndAudit(db, msg.from, profile.id, cmd.usage);
       markProcessed("whatsapp", msg.id);
       return NextResponse.json({ replied: "help" });
     }
@@ -616,6 +621,10 @@ async function handleOwner(
       }
       return NextResponse.json({ ok: true });
     }
+
+    default:
+      /* INCOMPLETE handled before calling handleOwner; safety */
+      return NextResponse.json({ ok: true });
   }
 }
 
