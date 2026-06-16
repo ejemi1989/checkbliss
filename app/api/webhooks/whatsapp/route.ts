@@ -467,12 +467,12 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   if (profile.role === "owner") {
     const cmd = parseOwnerCommand(msg.text);
     if (!cmd) {
-      await sendAndAudit(db, msg.from, profile.id, "Sorry, I didn't understand. Send HELP for commands.");
+      await sendAndAudit(db, msg.from, profile.id, "I didn't quite catch that. Type HELP to see what I can do for you.");
       markProcessed("whatsapp", msg.id);
       return NextResponse.json({ replied: "help" });
     }
     if (cmd.kind === "INCOMPLETE") {
-      await sendAndAudit(db, msg.from, profile.id, cmd.usage);
+      await sendAndAudit(db, msg.from, profile.id, `Almost there — here's how to use that:\n\n${cmd.usage}`);
       markProcessed("whatsapp", msg.id);
       return NextResponse.json({ replied: "help" });
     }
@@ -498,7 +498,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
     const cmd = parseOperatorCommand(msg.text);
     if (!cmd) {
-      await sendAndAudit(db, msg.from, profile.id, "Reply CLEAN, DAMAGE, NOSHOW, or GUESTPRESENT.");
+      await sendAndAudit(db, msg.from, profile.id, "I'm here to help with your inspection. Reply with:\nCLEAN · DAMAGE · NOSHOW · GUESTPRESENT");
       markProcessed("whatsapp", msg.id);
       return NextResponse.json({ replied: "help" });
     }
@@ -540,7 +540,7 @@ async function handleOwner(
         db,
         from,
         profile.id,
-        "Commands:\n• BLOCK <dates> <unit> — block dates\n• UNBLOCK <dates> <unit> — unblock dates\n• AVAILABILITY <unit> <month> — check availability\n• BOOKINGS — list upcoming\n• HELP — this message",
+        "Here's what I can help with:\n\n• BLOCK <dates> <unit> — block dates\n  e.g. BLOCK 15-20 Sept Sunset Dove\n• UNBLOCK <dates> <unit> — unblock dates\n• AVAILABILITY <unit> <month> — check calendar\n  e.g. AVAILABILITY Sunset Dove Sept\n• BOOKINGS — your upcoming stays\n• HELP — see this again",
         cmd.kind,
         true,
       );
@@ -551,7 +551,7 @@ async function handleOwner(
     case "UNBLOCK": {
       const property = await findOwnedProperty(db, profile.id, cmd.unit);
       if (!property) {
-        await sendAndAudit(db, from, profile.id, `You don't manage a listing called "${cmd.unit}".`);
+        await sendAndAudit(db, from, profile.id, `I couldn't find a listing called "${cmd.unit}". Double-check the name and try again, or type HELP.`);
         return NextResponse.json({ ok: true });
       }
 
@@ -560,7 +560,7 @@ async function handleOwner(
         log("whatsapp-bot", "info", `BLOCK ${cmd.from}–${cmd.to} for ${property.name}`);
         await sendAndAudit(
           db, from, profile.id,
-          `✓ Blocked ${cmd.from}–${cmd.to} for ${property.name}.`,
+          `✓ Done — ${cmd.from} to ${cmd.to} is now blocked for ${property.name}.`,
           cmd.kind, true,
         );
       } else {
@@ -568,7 +568,7 @@ async function handleOwner(
         log("whatsapp-bot", "info", `UNBLOCK ${cmd.from}–${cmd.to} for ${property.name}`);
         await sendAndAudit(
           db, from, profile.id,
-          `✓ Unblocked ${cmd.from}–${cmd.to} for ${property.name}.`,
+          `✓ Done — ${cmd.from} to ${cmd.to} is now open for ${property.name}.`,
           cmd.kind, true,
         );
       }
@@ -578,21 +578,21 @@ async function handleOwner(
     case "AVAILABILITY": {
       const property = await findOwnedProperty(db, profile.id, cmd.unit);
       if (!property) {
-        await sendAndAudit(db, from, profile.id, `You don't manage a listing called "${cmd.unit}".`);
+        await sendAndAudit(db, from, profile.id, `I couldn't find a listing called "${cmd.unit}". Double-check the name and try again.`);
         return NextResponse.json({ ok: true });
       }
       const reservations = await getReservationsForProperty(db, property.id, cmd.month);
       if (reservations.length === 0) {
         await sendAndAudit(
           db, from, profile.id,
-          `✓ ${property.name} — fully available for ${cmd.month}.`,
+          `✓ ${property.name} is fully available for ${cmd.month}.`,
           cmd.kind, true,
         );
       } else {
         const dates = reservations.map((r) => `${r.check_in}–${r.check_out}`).join(", ");
         await sendAndAudit(
           db, from, profile.id,
-          `${property.name} — ${cmd.month}: booked ${dates}.`,
+          `${property.name} — ${cmd.month}\nBooked: ${dates}`,
           cmd.kind, true,
         );
       }
@@ -609,7 +609,7 @@ async function handleOwner(
 
       const reservations = await getOwnerReservations(db, profile.properties);
       if (reservations.length === 0) {
-        await sendAndAudit(db, from, profile.id, "No upcoming bookings for your properties.", cmd.kind, true);
+        await sendAndAudit(db, from, profile.id, "You don't have any upcoming bookings right now.", cmd.kind, true);
       } else {
         const lines = reservations
           .map((r) => {
@@ -617,7 +617,7 @@ async function handleOwner(
             return `• ${p?.name ?? "Unknown"}: ${r.check_in}–${r.check_out} (${r.status})`;
           })
           .join("\n");
-        await sendAndAudit(db, from, profile.id, `Your bookings:\n${lines}`, cmd.kind, true);
+        await sendAndAudit(db, from, profile.id, `Your upcoming bookings:\n${lines}`, cmd.kind, true);
       }
       return NextResponse.json({ ok: true });
     }
@@ -639,13 +639,13 @@ async function handleOperator(
   /* Authorize: operator must have an active inspection */
   const reservation = await currentInspectionFor(db, profile.id);
   if (!reservation) {
-    await sendAndAudit(db, from, profile.id, "No inspection is currently assigned to you.");
+    await sendAndAudit(db, from, profile.id, "You don't have an active inspection right now. One will be assigned when a guest checks out.");
     return NextResponse.json({ ok: true });
   }
 
   /* Authorize: operator must cover the reservation's city */
   if (!(await operatorCoversCity(db, profile.id, reservation.city))) {
-    await sendAndAudit(db, from, profile.id, "That property isn't in your assigned city.");
+    await sendAndAudit(db, from, profile.id, `That property is outside your assigned city. You can only inspect properties in your city.`);
     return NextResponse.json({ ok: true });
   }
 
@@ -653,7 +653,7 @@ async function handleOperator(
     case "YES": {
       await sendAndAudit(
         db, from, profile.id,
-        "✓ Confirmed. You're available for the scheduled inspection.",
+        `✓ Got it — you're confirmed for the ${reservation.propertyName} inspection.`,
         cmd.kind, true,
       );
       return NextResponse.json({ ok: true });
@@ -662,7 +662,7 @@ async function handleOperator(
     case "REASSIGN": {
       await sendAndAudit(
         db, from, profile.id,
-        `✓ Reassigned inspection to ${cmd.rep}.`,
+        `✓ Noted — I've reassigned the ${reservation.propertyName} inspection to ${cmd.rep}.`,
         cmd.kind, true,
       );
       return NextResponse.json({ ok: true });
@@ -673,7 +673,7 @@ async function handleOperator(
       log("whatsapp-bot", "info", "CLEAN — releasing deposit hold");
       await sendAndAudit(
         db, from, profile.id,
-        `✓ Confirmed clean — deposit released for ${reservation.propertyName}.`,
+        `✓ All clear — deposit released for ${reservation.propertyName}. The owner has been notified.`,
         cmd.kind, true,
       );
       return NextResponse.json({ ok: true });
@@ -691,7 +691,7 @@ async function handleOperator(
       log("whatsapp-bot", "info", `DAMAGE — claim ${claimId} opened, awaiting photos`);
       await sendAndAudit(
         db, from, profile.id,
-        "Damage noted. Please send up to 5 photos now. Reply DONE when finished.",
+        "Damage noted — I've opened a claim. Please send up to 5 photos now, then reply DONE when you're finished.",
         cmd.kind, true,
       );
       return NextResponse.json({ ok: true });
@@ -703,7 +703,7 @@ async function handleOperator(
       log("whatsapp-bot", "info", `${cmd.kind} — escalating to admin`);
       await sendAndAudit(
         db, from, profile.id,
-        "Logged and sent to admin. They'll follow up.",
+        "Logged and sent to the admin team — they'll take it from here.",
         cmd.kind, true,
       );
       return NextResponse.json({ ok: true });
@@ -720,13 +720,13 @@ async function handleOperatorImage(
 ) {
   const flow = damageFlowState[from];
   if (!flow || !flow.active) {
-    await sendAndAudit(db, from, profileId, "No active damage claim to attach photos to. Reply DAMAGE to start one.");
+    await sendAndAudit(db, from, profileId, "There's no open damage report to attach photos to. Send DAMAGE first to start one.");
     return NextResponse.json({ ok: true });
   }
 
   const currentCount = damagePhotoCount(flow.claimId);
   if (currentCount >= 5) {
-    await sendAndAudit(db, from, profileId, "Maximum 5 photos reached. Reply DONE to finalise the claim.");
+    await sendAndAudit(db, from, profileId, "You've sent all 5 photos — that's the maximum. Reply DONE to submit your report.");
     return NextResponse.json({ ok: true });
   }
 
@@ -737,7 +737,7 @@ async function handleOperatorImage(
 
   await sendAndAudit(
     db, from, profileId,
-    `✓ Photo ${flow.photoCount} of 5 received. ${5 - flow.photoCount} remaining. Reply DONE when finished or send another photo.`,
+    `✓ Photo ${flow.photoCount} of 5 saved. ${5 - flow.photoCount} more to go. Send another or reply DONE.`,
   );
   return NextResponse.json({ ok: true });
 }
@@ -749,7 +749,7 @@ async function finalizeDamageFlow(
 ) {
   const flow = damageFlowState[from];
   if (!flow || !flow.active) {
-    await sendAndAudit(db, from, profileId, "No active damage claim to finalise.");
+    await sendAndAudit(db, from, profileId, "Nothing to finalise — there's no open damage report right now.");
     return NextResponse.json({ ok: true });
   }
 
@@ -758,7 +758,7 @@ async function finalizeDamageFlow(
   log("whatsapp-bot", "info", `DAMAGE flow finalized for claim ${flow.claimId} with ${count} photos`);
   await sendAndAudit(
     db, from, profileId,
-    `✓ Claim ${flow.claimId} filed with ${count} photos. Admin will review within 24–48 hours.`,
+    `✓ Report filed with ${count} photos. The admin team will review it within 24–48 hours and get back to you.`,
   );
   return NextResponse.json({ ok: true });
 }
