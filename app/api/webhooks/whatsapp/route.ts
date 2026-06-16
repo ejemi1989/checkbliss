@@ -67,6 +67,12 @@ const MOCK_PROFILES: Record<
     role: "owner",
     properties: ["PR002", "PR005"],
   },
+  "+447535434252": {
+    id: "OW3",
+    name: "You",
+    role: "owner",
+    properties: ["PR001", "PR002", "PR003", "PR004", "PR005", "PR006"],
+  },
 };
 
 const damageFlowState: Record<
