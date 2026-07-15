@@ -182,8 +182,8 @@ export function getAdminAudit(): AuditEntry[] {
 
 export function getOwnerProperties() {
   return [
-    { name: "The Palms Maisonette", unit: "Unit 1", meta: "2 BR · 4 guests max · 2nd floor", monthly_minor: 180000, bookings: "3", occ: "92%", active: true },
-    { name: "Sunset Dove", unit: "Unit 2", meta: "1 BR · 2 guests max · 5th floor", monthly_minor: 120000, bookings: "2", occ: "78%", active: true },
+    { name: "The Palms Maisonette", unit: "Unit 1", meta: "2 BR · 4 guests max · 2nd floor", monthly_minor: 180000, bookings: "3", occ: "92%", active: true, beds: 2, baths: 2, sleeps: 4 },
+    { name: "Sunset Dove", unit: "Unit 2", meta: "1 BR · 2 guests max · 5th floor", monthly_minor: 120000, bookings: "2", occ: "78%", active: true, beds: 1, baths: 1, sleeps: 2 },
   ];
 }
 
