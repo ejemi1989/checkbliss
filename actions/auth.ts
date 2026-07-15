@@ -115,6 +115,9 @@ export async function signupAction(_prev: unknown, formData: FormData) {
 }
 
 export async function logoutAction() {
+  if (!supabaseServerConfigured) {
+    redirect("/login");
+  }
   const supabase = await createClient();
   await supabase.auth.signOut();
   redirect("/login");
