@@ -1,49 +1,84 @@
 @import "tailwindcss";
 
 @theme {
-  --color-ink: #0F0F12;
-  --color-ink-secondary: #4A4A4A;
-  --color-ink-tertiary: #8C8C8C;
-  --color-bone: #F7F5F0;
-  --color-bone-secondary: #EFEDE6;
-  --color-bone-tertiary: #E5E2DC;
-  --color-lagoon: #0E7C7B;
-  --color-lagoon-light: #E8F4F4;
-  --color-lagoon-dark: #0A5E5D;
-  --color-brass: #5a3ef1;
-  --color-brass-light: #EEF0FF;
-  --color-brass-dark: #4629D3;
-  --color-hairline: #E5E2DC;
-  --color-hairline-dark: #D0CCC4;
-  --color-success: #2E7D32;
+  /* ----- New Brand Palette (CheckinBliss v2 — oatmeal-sage) ----- */
+  --color-ink: #171915;
+  --color-ink-secondary: #44483D;
+  --color-ink-tertiary: #6A6E63;
+  --color-bone: #E9ECE2;
+  --color-bone-secondary: #F4F6F0;
+  --color-bone-tertiary: #D8DBCF;
+  --color-lagoon: #5C6B4F;
+  --color-lagoon-light: #F4F6F0;
+  --color-lagoon-dark: #232E22;
+  --color-brass: #2F3D2C;
+  --color-brass-light: #F4F6F0;
+  --color-brass-dark: #232E22;
+  --color-hairline: #D8DBCF;
+  --color-hairline-dark: #C0C4B8;
+  --color-success: #2F3D2C;
   --color-warning: #E57C00;
   --color-error: #C62828;
 
-  --color-canvas: #FCFCFF;
-  --color-primary: #6366F1;
-  --color-primary-bg: #EEF2FF;
-  --color-primary-dark: #4F46E5;
+  --color-canvas: #FCFDFB;
+  --color-primary: #5C6B4F;
+  --color-primary-bg: #F4F6F0;
+  --color-primary-dark: #232E22;
   --color-danger: #EF4444;
 
+  /* ----- Additional brand tokens ----- */
+  --color-green-soft: #5C6B4F;
+  --color-green-brand: #2F3D2C;
+  --color-green-dark: #232E22;
+  --color-card: #FCFDFB;
+  --color-soft: #F4F6F0;
+  --color-mute: #6A6E63;
+  --color-line: #D8DBCF;
+  --color-trustpilot: #00B67A;
+
+  /* ----- Typography ----- */
+  --font-display: var(--font-newsreader), "Gallient", Georgia, serif;
   --font-serif: var(--font-playfair), Georgia, "Times New Roman", serif;
+  --font-body: var(--font-hanken-grotesk), system-ui, -apple-system, sans-serif;
   --font-sans: var(--font-inter), system-ui, -apple-system, sans-serif;
 
-  --radius-sm: 8px;
-  --radius-md: 16px;
-  --radius-lg: 24px;
+  /* ----- Border Radius ----- */
+  --radius-sm: 3px;
+  --radius-md: 10px;
+  --radius-lg: 18px;
+  --radius-xl: 28px;
   --radius-full: 9999px;
 
+  /* ----- Shadows ----- */
+  --sh1: 0 1px 2px rgba(23,25,21,0.07);
+  --sh2: 0 8px 24px rgba(23,25,21,0.10);
+  --sh3: 0 14px 40px rgba(23,25,21,0.14);
+  --sh4: 0 24px 60px rgba(23,25,21,0.20);
+
+  /* ----- Motion ----- */
   --ease-out: cubic-bezier(0.33, 1, 0.68, 1);
 
-  --spacing-section: 6rem;
-  --spacing-section-sm: 4rem;
+  /* ----- Spacing ----- */
+  --spacing-section: 5rem;
+  --spacing-section-top: 10rem;
+  --spacing-section-sm: 3.5rem;
 
+  /* ----- Breakpoints ----- */
   --breakpoint-*: initial;
   --breakpoint-sm: 640px;
   --breakpoint-md: 768px;
   --breakpoint-lg: 1024px;
   --breakpoint-xl: 1280px;
   --breakpoint-2xl: 1536px;
+}
+
+@utility py-section {
+  padding-top: var(--spacing-section-top);
+  padding-bottom: var(--spacing-section);
+}
+@utility py-section-sm {
+  padding-top: 7rem;
+  padding-bottom: 3.5rem;
 }
 
 @layer base {
@@ -73,6 +108,13 @@
   .animate-modalIn {
     animation: modalIn 0.2s ease;
   }
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
 }
 
 @keyframes slideIn {
@@ -96,4 +138,3 @@
     transform: scale(1) translateY(0);
   }
 }
-

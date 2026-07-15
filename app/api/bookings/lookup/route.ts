@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import { supabaseAdminConfigured, createAdmin } from "@/lib/supabase";
+import { createAdmin, supabaseAdminConfigured } from "@/lib/supabase/admin";
 import { getSeedReservations } from "@/lib/seed-data";
 import { log } from "@/lib/observability";
 
@@ -73,5 +73,3 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Something went wrong. Please try again." }, { status: 500 });
   }
 }
-
-export { parseToken };

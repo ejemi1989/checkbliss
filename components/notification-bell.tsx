@@ -4,12 +4,13 @@ import { useState, useEffect } from "react";
 import type { NotifRole } from "@/lib/notifications";
 import { getNotifications, getUnreadCount, markRead, markAllRead } from "@/lib/notifications";
 
-export function NotificationBell({ role, onViewAll }: { role: NotifRole; onViewAll?: () => void }) {
+export function NotificationBell({ role, userId, onViewAll }: { role: NotifRole; userId?: string; onViewAll?: () => void }) {
   const [open, setOpen] = useState(false);
   const [tick, setTick] = useState(0);
 
-  const notifs = getNotifications(role);
-  const unread = getUnreadCount(role);
+  const uid = role === "admin" ? undefined : userId;
+  const notifs = getNotifications(role, uid);
+  const unread = getUnreadCount(role, uid);
 
   function load() { setTick((t) => t + 1); }
 
@@ -28,7 +29,7 @@ export function NotificationBell({ role, onViewAll }: { role: NotifRole; onViewA
   }
 
   function handleMarkAll() {
-    markAllRead(role);
+    markAllRead(role, uid);
     load();
   }
 

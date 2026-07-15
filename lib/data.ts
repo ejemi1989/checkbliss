@@ -14,6 +14,7 @@ import type {
   FinanceRecord,
   UserRecord,
   AuditEntry,
+  AdminBookingView,
 } from "./types";
 
 const today = new Date();
@@ -36,6 +37,18 @@ export function getOwnerPayouts(): OwnerPayout[] {
     { id: "P002", period: "May 2026", amount_minor: 240000, paid_at: `${yyyy}-06-05`, status: "paid", units: "All 2 units" },
     { id: "P003", period: "April 2026", amount_minor: 288000, paid_at: `${yyyy}-05-05`, status: "paid", units: "All 2 units" },
     { id: "P004", period: "March 2026", amount_minor: 192000, paid_at: `${yyyy}-04-05`, status: "paid", units: "All 2 units" },
+  ];
+}
+
+export function getAdminBookings(): AdminBookingView[] {
+  return [
+    { id: "B001", property_name: "The Palms Maisonette", property_id: "P001", unit: "Unit 1", guest: "Chidi Okafor", guest_email: "chidi.o@email.com", check_in: `${yyyy}-${mm}-18`, check_out: `${yyyy}-${mm}-22`, status: "confirmed", amount_minor: 84000, nights: 4, guest_count: 3 },
+    { id: "B002", property_name: "Sunset Dove", property_id: "P002", unit: "Unit 2", guest: "Folake Adeyemi", guest_email: "folake.a@email.com", check_in: `${yyyy}-${mm}-20`, check_out: `${yyyy}-${mm}-24`, status: "confirmed", amount_minor: 64000, nights: 4, guest_count: 2 },
+    { id: "B003", property_name: "The Palms Maisonette", property_id: "P001", unit: "Unit 1", guest: "Emeka Nwosu", guest_email: "emeka.n@email.com", check_in: `${yyyy}-${mm}-25`, check_out: `${yyyy}-${mm}-30`, status: "confirmed", amount_minor: 108000, nights: 5, guest_count: 4 },
+    { id: "B004", property_name: "GRA Executive Suite", property_id: "P005", unit: "Executive", guest: "Zainab Bello", guest_email: "zainab.b@email.com", check_in: `${yyyy}-07-01`, check_out: `${yyyy}-07-04`, status: "confirmed", amount_minor: 165000, nights: 3, guest_count: 2 },
+    { id: "B005", property_name: "Transcorp Hilton Apartment", property_id: "P007", unit: "Presidential", guest: "Tunde Balogun", guest_email: "tunde.b@email.com", check_in: `${yyyy}-07-05`, check_out: `${yyyy}-07-08`, status: "pending", amount_minor: 142500, nights: 3, guest_count: 2 },
+    { id: "B006", property_name: "Sunset Dove", property_id: "P002", unit: "Unit 2", guest: "Ngozi Okonkwo", guest_email: "ngozi.o@email.com", check_in: `${yyyy}-${mm}-15`, check_out: `${yyyy}-${mm}-18`, status: "completed", amount_minor: 48000, nights: 3, guest_count: 2 },
+    { id: "B007", property_name: "PH Waterfront Cottage", property_id: "P008", unit: "Main House", guest: "Ibrahim Musa", guest_email: "ibrahim.m@email.com", check_in: `${yyyy}-07-10`, check_out: `${yyyy}-07-14`, status: "confirmed", amount_minor: 240000, nights: 4, guest_count: 6 },
   ];
 }
 
@@ -176,6 +189,7 @@ export function getOwnerProperties() {
 
 /* ---------- Search ---------- */
 import { getSeedProperties, getSeedReservations, getSeedBlocks, type SeedProperty } from "./seed-data";
+import { supabaseConfigured, createBrowser } from "./supabase";
 
 export interface SearchOpts {
   where?: string;
@@ -183,10 +197,144 @@ export interface SearchOpts {
   checkOut?: string;
 }
 
-export function searchProperties(opts: SearchOpts): SeedProperty[] {
-  const all = getSeedProperties().filter((p) => p.status === "approved");
+function mapRowToSeedProperty(row: Record<string, unknown>): SeedProperty {
+  const branded = (row.branded_name as string) || (row.name as string) || "";
+  return {
+    id: row.id as string,
+    slug: row.slug as string,
+    name: branded,
+    branded_name: branded,
+    building_name: (row.building_name as string) || branded,
+    city: row.city as string,
+    neighbourhood: row.neighbourhood as string,
+    neighbourhood_slug: (row.neighbourhood_slug as string) || "",
+    building_slug: (row.building_slug as string) || "",
+    country: (row.country as string) || "Nigeria",
+    description: row.description as string,
+    amenities: (row.amenities as string[]) || [],
+    route_note: (row.route_note as string) || "",
+    bedrooms: row.bedrooms as number,
+    sleeps: (row.sleeps as number) || (row.max_guests as number) || 2,
+    nightly_rate_minor: (row.nightly_rate_minor as number) || (row.nightly_price_minor as number) || 0,
+    deposit_minor: (row.deposit_minor as number) || 0,
+    currency: (row.currency as string) || "GBP",
+    extended_checkout_offered: (row.extended_checkout_offered as boolean) || false,
+    extended_checkout_price_minor: (row.extended_checkout_price_minor as number) || null,
+    is_featured: (row.is_featured as boolean) || false,
+    status: row.status as string,
+    images: (row.images as string[]) || [],
+    cover_photo_url: (row.cover_photo_url as string) || null,
+  };
+}
 
-  /* where filter — city OR neighbourhood, case-insensitive */
+export function searchProperties(opts: SearchOpts): SeedProperty[] {
+  /* --- mock path (always used when Supabase is not configured) --- */
+  if (!supabaseConfigured) {
+    const all = getSeedProperties().filter((p) => p.status === "approved");
+    let results = all;
+    if (opts.where) {
+      const q = opts.where.toLowerCase();
+      results = all.filter(
+        (p) => p.city.toLowerCase().includes(q) || p.neighbourhood.toLowerCase().includes(q),
+      );
+    }
+    if (opts.checkIn && opts.checkOut) {
+      const inDate = new Date(opts.checkIn);
+      const outDate = new Date(opts.checkOut);
+      const reservations = getSeedReservations();
+      const blocks = getSeedBlocks();
+      results = results.filter((p) => {
+        const hasOverlap =
+          reservations.some(
+            (r) =>
+              r.property_id === p.id &&
+              r.status !== "cancelled" &&
+              new Date(r.check_in) < outDate &&
+              new Date(r.check_out) > inDate,
+          ) ||
+          blocks.some(
+            (b) =>
+              b.property_id === p.id &&
+              new Date(b.starts) < outDate &&
+              new Date(b.ends) > inDate,
+          );
+        return !hasOverlap;
+      });
+    }
+    return results;
+  }
+
+  /* --- Supabase path --- */
+  // Synchronous wrapper for pages that call searchProperties() directly.
+  // Supabase queries are async, so this falls back to mock synchronously
+  // and provides an async variant for consumers that can await.
+  return getSeedProperties().filter((p) => p.status === "approved");
+}
+
+export async function searchPropertiesAsync(opts: SearchOpts): Promise<SeedProperty[]> {
+  if (!supabaseConfigured) return searchProperties(opts);
+
+  const db = createBrowser();
+
+  try {
+    const { data, error } = await db.rpc("search_properties", {
+      p_where: opts.where ? `%${opts.where}%` : null,
+      p_in: opts.checkIn || null,
+      p_out: opts.checkOut || null,
+    });
+
+    if (error || !data) {
+      // RPC not available — fall through to catch block
+      throw new Error("RPC not available");
+    }
+    const results = (data as Record<string, unknown>[]).map(mapRowToSeedProperty);
+    if (results.length > 0) return results;
+  } catch {
+    // RPC not available (migration not applied) — fall back to manual queries
+    let query = db
+      .from("properties")
+      .select("*")
+      .eq("status", "approved")
+      .order("is_featured", { ascending: false });
+
+    if (opts.where) {
+      query = query.or(
+        `city.ilike.%${opts.where}%,neighbourhood.ilike.%${opts.where}%`,
+      );
+    }
+
+    const { data } = await query;
+    if (data && data.length > 0) {
+      let results = (data as Record<string, unknown>[]).map(mapRowToSeedProperty);
+
+      if (opts.checkIn && opts.checkOut) {
+        const { data: reservations } = await db
+          .from("reservations")
+          .select("property_id, check_in, check_out, status")
+          .lt("check_in", opts.checkOut)
+          .gt("check_out", opts.checkIn)
+          .neq("status", "cancelled");
+
+        const { data: blocks } = await db
+          .from("availability_blocks")
+          .select("property_id, starts, ends")
+          .lt("starts", opts.checkOut)
+          .gt("ends", opts.checkIn);
+
+        const blockedIds = new Set([
+          ...(reservations ?? []).map((r: Record<string, unknown>) => r.property_id as string),
+          ...(blocks ?? []).map((b: Record<string, unknown>) => b.property_id as string),
+        ]);
+
+        results = results.filter((p) => !blockedIds.has(p.id));
+      }
+
+      if (results.length > 0) return results;
+    }
+  }
+
+  // Fall back to mock data when Supabase is configured but empty
+  const all = getSeedProperties().filter((p) => p.status === "approved");
   let results = all;
   if (opts.where) {
     const q = opts.where.toLowerCase();
@@ -194,33 +342,17 @@ export function searchProperties(opts: SearchOpts): SeedProperty[] {
       (p) => p.city.toLowerCase().includes(q) || p.neighbourhood.toLowerCase().includes(q),
     );
   }
-
-  /* availability filter — only if both dates given */
   if (opts.checkIn && opts.checkOut) {
     const inDate = new Date(opts.checkIn);
     const outDate = new Date(opts.checkOut);
     const reservations = getSeedReservations();
     const blocks = getSeedBlocks();
-
     results = results.filter((p) => {
-      const hasOverlap =
-        reservations.some(
-          (r) =>
-            r.property_id === p.id &&
-            r.status !== "cancelled" &&
-            new Date(r.check_in) < outDate &&
-            new Date(r.check_out) > inDate,
-        ) ||
-        blocks.some(
-          (b) =>
-            b.property_id === p.id &&
-            new Date(b.starts) < outDate &&
-            new Date(b.ends) > inDate,
-        );
+      const hasOverlap = reservations.some((r) => r.property_id === p.id && r.status !== "cancelled" && new Date(r.check_in) < outDate && new Date(r.check_out) > inDate) ||
+        blocks.some((b) => b.property_id === p.id && new Date(b.starts) < outDate && new Date(b.ends) > inDate);
       return !hasOverlap;
     });
   }
-
   return results;
 }
 
@@ -229,4 +361,80 @@ export function getLocations(): { cities: string[]; neighbourhoods: string[] } {
   const cities = [...new Set(props.map((p) => p.city))].sort();
   const neighbourhoods = [...new Set(props.map((p) => p.neighbourhood))].sort();
   return { cities, neighbourhoods };
+}
+
+export async function getLocationsAsync(): Promise<{ cities: string[]; neighbourhoods: string[] }> {
+  if (!supabaseConfigured) return getLocations();
+
+  const db = createBrowser();
+  const { data } = await db
+    .from("properties")
+    .select("city, neighbourhood")
+    .eq("status", "approved");
+
+  if (!data) return { cities: [], neighbourhoods: [] };
+
+  const rows = data as { city: string; neighbourhood: string }[];
+  const cities = [...new Set(rows.map((r) => r.city))].sort();
+  const neighbourhoods = [...new Set(rows.map((r) => r.neighbourhood))].sort();
+  return { cities, neighbourhoods };
+}
+
+export async function getPropertyBySlugPath(p: {
+  city: string;
+  neighbourhood: string;
+  building: string;
+  property: string;
+}): Promise<SeedProperty | null> {
+  if (!supabaseConfigured) {
+    const props = getSeedProperties().filter((x) => x.status === "approved");
+    const match = props.find(
+      (x) =>
+        x.city.toLowerCase().replace(/\s+/g, "-") === p.city &&
+        x.neighbourhood_slug === p.neighbourhood &&
+        x.building_slug === p.building &&
+        x.slug === p.property,
+    );
+    return match ?? null;
+  }
+
+  const db = createBrowser();
+  const { data } = await db
+    .from("properties")
+    .select("*")
+    .eq("status", "approved")
+    .eq("building_slug", p.building)
+    .eq("neighbourhood_slug", p.neighbourhood)
+    .eq("slug", p.property)
+    .maybeSingle();
+
+  if (data) return mapRowToSeedProperty(data as Record<string, unknown>);
+
+  // Fall back to mock data
+  const props = getSeedProperties().filter((x) => x.status === "approved");
+  const match = props.find(
+    (x) =>
+      x.city.toLowerCase().replace(/\s+/g, "-") === p.city &&
+      x.neighbourhood_slug === p.neighbourhood &&
+      x.building_slug === p.building &&
+      x.slug === p.property,
+  );
+  return match ?? null;
+}
+
+export function getAllApprovedProperties(): SeedProperty[] {
+  return getSeedProperties().filter((p) => p.status === "approved");
+}
+
+export async function getAllApprovedPropertiesAsync(): Promise<SeedProperty[]> {
+  if (!supabaseConfigured) return getAllApprovedProperties();
+
+  const db = createBrowser();
+  const { data } = await db
+    .from("properties")
+    .select("*")
+    .eq("status", "approved");
+
+  if (!data) return [];
+  return (data as Record<string, unknown>[]).map(mapRowToSeedProperty);
 }

@@ -1,24 +1,29 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import type { NotifRole } from "@/lib/notifications";
 import { getNotifications, getUnreadCount, markRead, markAllRead } from "@/lib/notifications";
 
-export function NotificationsView({ role }: { role: NotifRole }) {
+export function NotificationsView({ role, userId }: { role: NotifRole; userId?: string }) {
   const [tick, setTick] = useState(0);
+  const router = useRouter();
 
-  const notifs = getNotifications(role);
-  const unread = getUnreadCount(role);
+  const uid = role === "admin" ? undefined : userId;
+  const notifs = getNotifications(role, uid);
+  const unread = getUnreadCount(role, uid);
 
   function load() { setTick((t) => t + 1); }
 
-  function handleMarkRead(id: string) {
+  function handleClick(id: string, link?: string) {
     markRead(id);
     load();
+    if (link) router.push(link);
   }
 
-  function handleMarkAll() {
-    markAllRead(role);
+  function handleMarkAll(e: React.MouseEvent) {
+    e.stopPropagation();
+    markAllRead(role, uid);
     load();
   }
 
@@ -54,7 +59,10 @@ export function NotificationsView({ role }: { role: NotifRole }) {
           {notifs.map((n) => (
             <div
               key={n.id}
-              onClick={() => handleMarkRead(n.id)}
+              role="button"
+              tabIndex={0}
+              onClick={() => handleClick(n.id, n.link)}
+              onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); handleClick(n.id, n.link); } }}
               className={`p-4 rounded-xl border cursor-pointer transition-colors ${
                 n.read ? "bg-white border-hairline hover:bg-bone" : "bg-primary-bg/40 border-primary/20 hover:bg-primary-bg/60"
               }`}

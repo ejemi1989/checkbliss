@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import { supabaseAdminConfigured, createAdmin } from "@/lib/supabase";
-import { captureFromHold, releaseHold } from "@/lib/airwallex";
+import { createAdmin, supabaseAdminConfigured } from "@/lib/supabase/admin";
+import { captureFromHold, releaseHold } from "@/lib/stripe";
+import { checkAdminGate } from "@/lib/admin-gate";
 
 const DecisionBody = z.object({
   decision: z.enum(["approve", "adjust", "reject"]),
@@ -12,6 +13,10 @@ export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
+  const gate = await checkAdminGate();
+  if (!gate.ok) {
+    return NextResponse.json({ error: "Admin gate denied", reason: gate.reason }, { status: 401 });
+  }
   try {
     const { id } = await params;
     const body = DecisionBody.parse(await request.json());

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { supabaseAdminConfigured, createAdmin } from "@/lib/supabase";
+import { v4 as uuidv4 } from "uuid";
+import { createAdmin, supabaseAdminConfigured } from "@/lib/supabase/admin";
 import { checkAndProcess } from "@/lib/idempotency";
 import { heartbeat, heartbeatError, log } from "@/lib/observability";
 
@@ -16,12 +17,7 @@ export async function GET(request: NextRequest) {
 
   try {
     const now = new Date();
-
-    if (!supabaseAdminConfigured) {
-      log("cron.feedback", "info", "Tick (mock)", { time: now.toISOString() });
-      heartbeat("feedback");
-      return NextResponse.json({ ok: true });
-    }
+    const nowIso = now.toISOString();
 
     const db = createAdmin();
     const yesterday = new Date(now);
@@ -40,7 +36,32 @@ export async function GET(request: NextRequest) {
 
     if (!completedReservations) {
       heartbeat("feedback");
-      return NextResponse.json({ ok: true });
+      return NextResponse.json({ ok: true, processed: 0 });
+    }
+
+    for (const r of completedReservations) {
+      const feedbackToken = uuidv4();
+      const goodLink = `https://trustpilot.com/review/checkbliss.com?ref=${r.id}`;
+      const badLink = `/api/feedback/${feedbackToken}`;
+
+      if (!supabaseAdminConfigured) {
+        log("cron.feedback", "info", "Mock feedback processed", {
+          reservationId: r.id,
+          guestName: r.guest_name,
+          goodLink,
+          badLink,
+        });
+        continue;
+      }
+
+      await db.from("feedback_requests").insert({
+        reservation_id: r.id,
+        feedback_token: feedbackToken,
+        status: "pending",
+        trustpilot_url: goodLink,
+        internal_feedback_url: badLink,
+        created_at: nowIso,
+      });
     }
 
     heartbeat("feedback");

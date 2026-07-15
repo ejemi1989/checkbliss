@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Inter, Playfair_Display } from "next/font/google";
+import { Inter, Playfair_Display, Newsreader, Hanken_Grotesk } from "next/font/google";
 import "./globals.css";
 
 const inter = Inter({
@@ -14,10 +14,23 @@ const playfair = Playfair_Display({
   display: "swap",
 });
 
+const newsreader = Newsreader({
+  variable: "--font-newsreader",
+  subsets: ["latin"],
+  display: "swap",
+  style: ["normal", "italic"],
+});
+
+const hankenGrotesk = Hanken_Grotesk({
+  variable: "--font-hanken-grotesk",
+  subsets: ["latin"],
+  display: "swap",
+});
+
 export const metadata: Metadata = {
-  title: "CheckinBliss — Premium Apartment Stays in Nigeria | Verified, Instantly Bookable",
+  title: "CheckinBliss — The premium way to stay in Africa",
   description:
-    "Verified short-stay apartments in Lagos and Abuja, built for the diaspora. Book instantly with GBP, USD, or EUR. No host approval needed.",
+    "Hand-selected apartments in Lagos and Abuja. Instantly bookable from anywhere. Verified short-stay apartments built for the diaspora.",
 };
 
 export const viewport: Viewport = {
@@ -33,7 +46,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${inter.variable} ${playfair.variable}`}
+      className={`${inter.variable} ${playfair.variable} ${newsreader.variable} ${hankenGrotesk.variable}`}
       suppressHydrationWarning
     >
       <body className="min-h-screen bg-bone text-ink font-sans antialiased" suppressHydrationWarning>

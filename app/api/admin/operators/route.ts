@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import { supabaseAdminConfigured, createAdmin } from "@/lib/supabase";
+import { createAdmin, supabaseAdminConfigured } from "@/lib/supabase/admin";
+import { checkAdminGate } from "@/lib/admin-gate";
 
 const CreateOperatorBody = z.object({
   name: z.string().min(1),
@@ -9,6 +10,10 @@ const CreateOperatorBody = z.object({
 });
 
 export async function POST(request: NextRequest) {
+  const gate = await checkAdminGate();
+  if (!gate.ok) {
+    return NextResponse.json({ error: "Admin gate denied", reason: gate.reason }, { status: 401 });
+  }
   try {
     const body = CreateOperatorBody.parse(await request.json());
 

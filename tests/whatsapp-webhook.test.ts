@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { NextRequest } from "next/server";
+import { createHmac } from "crypto";
 import { GET, POST } from "@/app/api/webhooks/whatsapp/route";
 import { resetMockLedger } from "@/lib/idempotency";
 
@@ -117,8 +118,7 @@ const UNKNOWN = "+447700999999";
 
 /* Signature helper — only works when WHATSAPP_APP_SECRET is set */
 function computeSig(body: string, secret: string): string {
-  const crypto = require("crypto");
-  return crypto.createHmac("sha256", secret).update(body).digest("hex");
+  return createHmac("sha256", secret).update(body).digest("hex");
 }
 
 describe("WhatsApp webhook — GET", () => {

@@ -8,7 +8,7 @@ import {
 import type { OwnerCommand, OperatorCommand } from "@/lib/whatsapp";
 import { wasProcessed, markProcessed } from "@/lib/idempotency";
 import { log } from "@/lib/observability";
-import { supabaseAdminConfigured, createAdmin } from "@/lib/supabase";
+import { createAdmin, supabaseAdminConfigured } from "@/lib/supabase/admin";
 import { getSeedProperties, getSeedReservations } from "@/lib/seed-data";
 import { addDamagePhoto, damagePhotoCount } from "@/lib/media";
 

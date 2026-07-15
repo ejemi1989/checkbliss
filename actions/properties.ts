@@ -1,8 +1,11 @@
 "use server";
 
 import { z } from "zod";
-import { supabaseAdminConfigured, createAdmin } from "@/lib/supabase";
+import { createAdmin, supabaseAdminConfigured } from "@/lib/supabase/admin";
 import type { ActionResponse } from "@/lib/types";
+import { getSeedProperties } from "@/lib/seed-data";
+import { notifyBoth } from "@/lib/notifications";
+import { getSession } from "@/actions/auth";
 
 const UpdatePropertySchema = z.object({
   propertyId: z.string().min(1),
@@ -26,14 +29,29 @@ const BlockDatesSchema = z.object({
   ends: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
 });
 
+function findOwner(propertyId: string): string | undefined {
+  return getSeedProperties().find((p) => p.id === propertyId)?.owner_id;
+}
+
 export async function updateProperty(
   input: z.infer<typeof UpdatePropertySchema>,
 ): Promise<ActionResponse> {
   try {
     const parsed = UpdatePropertySchema.parse(input);
+    const session = await getSession();
+    const actorRole = session?.role;
+    const actorId = session?.id;
 
     if (!supabaseAdminConfigured) {
       console.log(`[mock] Property ${parsed.propertyId} updated`, parsed);
+      const ownerId = findOwner(parsed.propertyId);
+      notifyBoth(
+        "owner", ownerId,
+        "Property updated",
+        `Property ${parsed.propertyId} details were updated.`,
+        "/dashboard/owner",
+        "/admin?view=properties",
+      );
       return { ok: true };
     }
 
@@ -52,6 +70,17 @@ export async function updateProperty(
       detail: Object.keys(updateData).join(", "),
     });
 
+    const ownerId = findOwner(parsed.propertyId);
+    notifyBoth(
+      "owner", ownerId,
+      "Property updated",
+      `Property ${parsed.propertyId} details were updated.`,
+      "/dashboard/owner",
+      "/admin?view=properties",
+      actorRole,
+      actorId,
+    );
+
     return { ok: true };
   } catch (err) {
     return {
@@ -67,9 +96,20 @@ export async function verifyProperty(
 ): Promise<ActionResponse> {
   try {
     const { propertyId, operatorId, photos, notes } = VerifyPropertySchema.parse(input);
+    const session = await getSession();
+    const actorRole = session?.role;
+    const actorId = session?.id;
 
     if (!supabaseAdminConfigured) {
       console.log(`[mock] Property ${propertyId} verified by operator ${operatorId}`);
+      const ownerId = findOwner(propertyId);
+      notifyBoth(
+        "owner", ownerId,
+        "Property verified",
+        `Property ${propertyId} was verified by operator ${operatorId}.`,
+        "/dashboard/owner",
+        "/admin?view=verification",
+      );
       return { ok: true };
     }
 
@@ -89,6 +129,17 @@ export async function verifyProperty(
       detail: `Verified by operator ${operatorId}${notes ? `: ${notes}` : ""}`,
     });
 
+    const ownerId = findOwner(propertyId);
+    notifyBoth(
+      "owner", ownerId,
+      "Property verified",
+      `Property ${propertyId} was verified by operator ${operatorId}.`,
+      "/dashboard/owner",
+      "/admin?view=verification",
+      actorRole,
+      actorId,
+    );
+
     return { ok: true };
   } catch (err) {
     return {
@@ -104,6 +155,9 @@ export async function blockDates(
 ): Promise<ActionResponse> {
   try {
     const { propertyId, starts, ends } = BlockDatesSchema.parse(input);
+    const session = await getSession();
+    const actorRole = session?.role;
+    const actorId = session?.id;
 
     if (new Date(ends) <= new Date(starts)) {
       return { ok: false, code: "INVALID_RANGE", message: "End date must be after start date." };
@@ -111,6 +165,14 @@ export async function blockDates(
 
     if (!supabaseAdminConfigured) {
       console.log(`[mock] Dates blocked for ${propertyId}: ${starts} to ${ends}`);
+      const ownerId = findOwner(propertyId);
+      notifyBoth(
+        "owner", ownerId,
+        "Dates blocked",
+        `Dates ${starts} to ${ends} blocked for property ${propertyId}.`,
+        "/dashboard/owner",
+        "/admin?view=properties",
+      );
       return { ok: true };
     }
 
@@ -128,6 +190,17 @@ export async function blockDates(
       detail: `${starts} to ${ends}`,
     });
 
+    const ownerId = findOwner(propertyId);
+    notifyBoth(
+      "owner", ownerId,
+      "Dates blocked",
+      `Dates ${starts} to ${ends} blocked for property ${propertyId}.`,
+      "/dashboard/owner",
+      "/admin?view=properties",
+      actorRole,
+      actorId,
+    );
+
     return { ok: true };
   } catch (err) {
     return {
@@ -143,9 +216,20 @@ export async function unblockDates(
 ): Promise<ActionResponse> {
   try {
     const { propertyId, starts, ends } = BlockDatesSchema.parse(input);
+    const session = await getSession();
+    const actorRole = session?.role;
+    const actorId = session?.id;
 
     if (!supabaseAdminConfigured) {
       console.log(`[mock] Dates unblocked for ${propertyId}: ${starts} to ${ends}`);
+      const ownerId = findOwner(propertyId);
+      notifyBoth(
+        "owner", ownerId,
+        "Dates unblocked",
+        `Dates ${starts} to ${ends} unblocked for property ${propertyId}.`,
+        "/dashboard/owner",
+        "/admin?view=properties",
+      );
       return { ok: true };
     }
 
@@ -162,6 +246,17 @@ export async function unblockDates(
       target_id: propertyId,
       detail: `${starts} to ${ends}`,
     });
+
+    const ownerId = findOwner(propertyId);
+    notifyBoth(
+      "owner", ownerId,
+      "Dates unblocked",
+      `Dates ${starts} to ${ends} unblocked for property ${propertyId}.`,
+      "/dashboard/owner",
+      "/admin?view=properties",
+      actorRole,
+      actorId,
+    );
 
     return { ok: true };
   } catch (err) {

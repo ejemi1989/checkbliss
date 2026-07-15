@@ -14,8 +14,8 @@ export async function GET(request: NextRequest) {
   if (idem === "skip") return NextResponse.json({ ok: true, idempotent: true });
 
   try {
-    if (!process.env.AIRWALLEX_CLIENT_ID) {
-      log("cron.reconcile", "info", "No Airwallex configured — skipping reconciliation");
+    if (!process.env.STRIPE_SECRET_KEY) {
+      log("cron.reconcile", "info", "No Stripe configured — skipping reconciliation");
       heartbeat("reconcile");
       return NextResponse.json({ ok: true, note: "mock — no reconciliation run" });
     }

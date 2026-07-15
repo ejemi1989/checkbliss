@@ -203,6 +203,21 @@ export interface CalendarBooking {
   guest: string;
 }
 
+export interface AdminBookingView {
+  id: string;
+  property_name: string;
+  unit: string;
+  guest: string;
+  guest_email: string;
+  property_id: string;
+  check_in: string;
+  check_out: string;
+  status: string;
+  amount_minor: number;
+  nights: number;
+  guest_count: number;
+}
+
 export interface AdminStat {
   label: string;
   value: string;

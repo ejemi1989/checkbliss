@@ -1,9 +1,13 @@
 "use server";
 
 import { z } from "zod";
-import { supabaseAdminConfigured, createAdmin } from "@/lib/supabase";
+import { createAdmin, supabaseAdminConfigured } from "@/lib/supabase/admin";
 import type { ActionResponse, Operator } from "@/lib/types";
 import { getAdminOperators } from "@/lib/data";
+import { getSeedProperties } from "@/lib/seed-data";
+import { checkAdminGate } from "@/lib/admin-gate";
+import { notifyBoth } from "@/lib/notifications";
+import { getSession } from "@/actions/auth";
 
 const CreateOperatorSchema = z.object({
   name: z.string().min(1),
@@ -23,6 +27,10 @@ const SuspendPropertySchema = z.object({
 export async function createOperator(
   input: z.infer<typeof CreateOperatorSchema>,
 ): Promise<ActionResponse<Operator>> {
+  const gate = await checkAdminGate();
+  if (!gate.ok) {
+    return { ok: false, code: "ADMIN_GATE", message: `Admin gate denied: ${gate.reason}` };
+  }
   try {
     const data = CreateOperatorSchema.parse(input);
 
@@ -41,6 +49,13 @@ export async function createOperator(
         created_at: new Date().toISOString().split("T")[0],
       };
       console.log(`[mock] Created operator: ${op.name} (${op.city})`);
+      notifyBoth(
+        "operator", op.id,
+        "New operator onboarded",
+        `${op.name} assigned to ${data.assignedCities.join(", ")} — onboarding in progress.`,
+        "/dashboard/operator",
+        "/admin?view=operators",
+      );
       return { ok: true, data: op };
     }
 
@@ -65,6 +80,14 @@ export async function createOperator(
       detail: `Operator ${inserted.name} created, assigned to ${data.assignedCities.join(", ")}`,
     });
 
+    notifyBoth(
+      "operator", inserted.id,
+      "New operator onboarded",
+      `${inserted.name} assigned to ${data.assignedCities.join(", ")} — onboarding in progress.`,
+      "/dashboard/operator",
+      "/admin?view=operators",
+    );
+
     return { ok: true, data: inserted as Operator };
   } catch (err) {
     return {
@@ -78,11 +101,26 @@ export async function createOperator(
 export async function suspendProperty(
   input: z.infer<typeof SuspendPropertySchema>,
 ): Promise<ActionResponse> {
+  const gate = await checkAdminGate();
+  if (!gate.ok) {
+    return { ok: false, code: "ADMIN_GATE", message: `Admin gate denied: ${gate.reason}` };
+  }
   try {
     const { propertyId, reason } = SuspendPropertySchema.parse(input);
+    const session = await getSession();
+    const actorRole = session?.role;
+    const actorId = session?.id;
 
     if (!supabaseAdminConfigured) {
       console.log(`[mock] Property ${propertyId} suspended${reason ? ` (reason: ${reason})` : ""}`);
+      const ownerId = getPropertyOwner(propertyId);
+      notifyBoth(
+        "owner", ownerId,
+        "Property suspended",
+        `Property ${propertyId} suspended${reason ? ` — ${reason}` : ""}.`,
+        "/dashboard/owner",
+        "/admin?view=properties",
+      );
       return { ok: true };
     }
 
@@ -93,6 +131,17 @@ export async function suspendProperty(
       target_id: propertyId,
       detail: reason || "Suspended by admin",
     });
+
+    const ownerId = getPropertyOwner(propertyId);
+    notifyBoth(
+      "owner", ownerId,
+      "Property suspended",
+      `Property ${propertyId} suspended${reason ? ` — ${reason}` : ""}.`,
+      "/dashboard/owner",
+      "/admin?view=properties",
+      actorRole,
+      actorId,
+    );
 
     return { ok: true };
   } catch (err) {
@@ -114,11 +163,22 @@ const UpdateOperatorSchema = z.object({
 export async function updateOperator(
   input: z.infer<typeof UpdateOperatorSchema>,
 ): Promise<ActionResponse<Operator>> {
+  const gate = await checkAdminGate();
+  if (!gate.ok) {
+    return { ok: false, code: "ADMIN_GATE", message: `Admin gate denied: ${gate.reason}` };
+  }
   try {
     const data = UpdateOperatorSchema.parse(input);
 
     if (!supabaseAdminConfigured) {
       console.log(`[mock] Operator ${data.operatorId} updated`, data);
+      notifyBoth(
+        "operator", data.operatorId,
+        "Operator updated",
+        `Your profile was updated by admin.`,
+        "/dashboard/operator",
+        "/admin?view=operators",
+      );
       return { ok: true };
     }
 
@@ -138,6 +198,14 @@ export async function updateOperator(
       detail: Object.keys(updateData).join(", "),
     });
 
+    notifyBoth(
+      "operator", data.operatorId,
+      "Operator updated",
+      `Your profile was updated by admin.`,
+      "/dashboard/operator",
+      "/admin?view=operators",
+    );
+
     return { ok: true };
   } catch (err) {
     return {
@@ -151,11 +219,22 @@ export async function updateOperator(
 export async function suspendOperator(
   input: z.infer<typeof SuspendOperatorSchema>,
 ): Promise<ActionResponse> {
+  const gate = await checkAdminGate();
+  if (!gate.ok) {
+    return { ok: false, code: "ADMIN_GATE", message: `Admin gate denied: ${gate.reason}` };
+  }
   try {
     const { operatorId } = SuspendOperatorSchema.parse(input);
 
     if (!supabaseAdminConfigured) {
       console.log(`[mock] Operator ${operatorId} suspended`);
+      notifyBoth(
+        "operator", operatorId,
+        "Account suspended",
+        "Your operator account has been suspended. Contact admin for details.",
+        "/dashboard/operator",
+        "/admin?view=operators",
+      );
       return { ok: true };
     }
 
@@ -165,6 +244,14 @@ export async function suspendOperator(
       action: "operator.suspended",
       target_id: operatorId,
     });
+
+    notifyBoth(
+      "operator", operatorId,
+      "Account suspended",
+      "Your operator account has been suspended. Contact admin for details.",
+      "/dashboard/operator",
+      "/admin?view=operators",
+    );
 
     return { ok: true };
   } catch (err) {
@@ -177,6 +264,10 @@ export async function suspendOperator(
 }
 
 export async function getOperators(): Promise<ActionResponse<Operator[]>> {
+  const gate = await checkAdminGate();
+  if (!gate.ok) {
+    return { ok: false, code: "ADMIN_GATE", message: `Admin gate denied: ${gate.reason}` };
+  }
   if (!supabaseAdminConfigured) {
     return { ok: true, data: getAdminOperators() };
   }
@@ -191,4 +282,8 @@ export async function getOperators(): Promise<ActionResponse<Operator[]>> {
       message: err instanceof Error ? err.message : "Failed to fetch operators",
     };
   }
+}
+
+function getPropertyOwner(propertyId: string): string | undefined {
+  return getSeedProperties().find((p) => p.id === propertyId)?.owner_id;
 }

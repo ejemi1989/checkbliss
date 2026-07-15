@@ -403,7 +403,8 @@ curl -s -X POST https://checkbliss.vercel.app/api/webhooks/whatsapp \
 | **Total** | **~46 hours** | Equivalent to ~6 developer days |
 
 **Market rate equivalent:** $3,500–$7,000 (at $75–$150/hr)  
-**Actual cost:** $0 (AI-assisted implementation)
+**CheckinBliss development fee:** $1,500 per version  
+**Actual build cost:** $0 (AI-assisted implementation)
 
 ### 16.2 Meta WhatsApp Cloud API Pricing
 

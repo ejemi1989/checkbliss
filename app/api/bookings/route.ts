@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import { supabaseAdminConfigured, createAdmin, supabaseConfigured } from "@/lib/supabase";
-import { createBookingCharge, createDepositHold } from "@/lib/airwallex";
+import { supabaseConfigured } from "@/lib/supabase";
+import { createAdmin, supabaseAdminConfigured } from "@/lib/supabase/admin";
+import { createBookingCharge, createDepositHold } from "@/lib/stripe";
 import { sendWhatsApp, getTemplate } from "@/lib/whatsapp";
 import { getSeedProperties, getSeedReservations, getSeedBlocks } from "@/lib/seed-data";
 
@@ -160,6 +161,14 @@ export async function POST(request: NextRequest) {
         payment_intent_id: charge.intentId,
       });
       if (resError) throw new Error(`Failed to create reservation: ${resError.message}`);
+
+      const { error: inspError } = await db.from("inspections").insert({
+        reservation_id: r.id,
+        created_at: new Date().toISOString(),
+      });
+      if (inspError) {
+        console.warn(`Failed to create inspection for reservation ${r.id}: ${inspError.message}`);
+      }
     }
 
     const expiresAt = new Date();
@@ -167,7 +176,7 @@ export async function POST(request: NextRequest) {
     for (const r of reservations) {
       await db.from("deposit_holds").insert({
         reservation_id: r.id,
-        airwallex_authorisation_id: hold.intentId,
+        payment_intent_id: hold.intentId,
         hold_amount_minor: r.deposit_hold_minor,
         currency,
         status: "held",

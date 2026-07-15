@@ -2,8 +2,8 @@ import { describe, it, expect } from "vitest";
 import { getSeedProperties, getSeedReservations, getSeedBlocks } from "@/lib/seed-data";
 
 describe("getSeedProperties", () => {
-  it("returns 6 demo properties", () => {
-    expect(getSeedProperties()).toHaveLength(6);
+  it("returns 30 demo properties", () => {
+    expect(getSeedProperties()).toHaveLength(30);
   });
 
   it("all properties have required fields", () => {
@@ -51,11 +51,18 @@ describe("getSeedReservations", () => {
 });
 
 describe("getSeedBlocks", () => {
-  it("returns owner blocks for availability testing", () => {
+  it("returns blocks for availability testing", () => {
     const blocks = getSeedBlocks();
     expect(blocks.length).toBeGreaterThan(0);
-    for (const b of blocks) {
-      expect(b.source).toBe("owner");
-    }
+    const sources = [...new Set(blocks.map((b) => b.source))];
+    expect(sources).toContain("owner");
+  });
+
+  it("includes both owner and maintenance blocks", () => {
+    const blocks = getSeedBlocks();
+    const ownerCount = blocks.filter((b) => b.source === "owner").length;
+    const maintCount = blocks.filter((b) => b.source === "maintenance").length;
+    expect(ownerCount).toBeGreaterThan(0);
+    expect(maintCount).toBeGreaterThan(0);
   });
 });

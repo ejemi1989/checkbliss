@@ -1,10 +1,15 @@
 import { NextResponse } from "next/server";
-import { supabaseAdminConfigured, createAdmin } from "@/lib/supabase";
+import { createAdmin, supabaseAdminConfigured } from "@/lib/supabase/admin";
 import { getAdminClaims } from "@/lib/data";
+import { checkAdminGate } from "@/lib/admin-gate";
 
 export const dynamic = "force-dynamic";
 
 export async function GET() {
+  const gate = await checkAdminGate();
+  if (!gate.ok) {
+    return NextResponse.json({ error: "Admin gate denied", reason: gate.reason }, { status: 401 });
+  }
   if (!supabaseAdminConfigured) {
     return NextResponse.json({ claims: getAdminClaims() });
   }

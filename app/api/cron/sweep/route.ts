@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { supabaseAdminConfigured, createAdmin } from "@/lib/supabase";
+import { createAdmin, supabaseAdminConfigured } from "@/lib/supabase/admin";
 import { checkAndProcess } from "@/lib/idempotency";
 import { heartbeat, heartbeatError, log } from "@/lib/observability";
 

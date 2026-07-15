@@ -1,7 +1,12 @@
 import { getSeedReservations, getSeedProperties } from "@/lib/seed-data";
-import { supabaseAdminConfigured, createAdmin } from "@/lib/supabase";
+import { createAdmin, supabaseAdminConfigured } from "@/lib/supabase/admin";
 import { formatMinor, type CurrencyCode } from "@/lib/currency";
 import Link from "next/link";
+import type { Metadata } from "next";
+
+export function generateMetadata(): Metadata {
+  return { robots: { index: false, follow: false } };
+}
 
 function parseToken(token: string): { email: string; expiresAt: number } | null {
   try {

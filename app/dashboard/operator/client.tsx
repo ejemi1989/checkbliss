@@ -15,6 +15,7 @@ import type { PropertyPhoto } from "@/lib/media";
 import { getSeedProperties } from "@/lib/seed-data";
 import { NotificationBell } from "@/components/notification-bell";
 import { NotificationsView } from "@/components/notifications-view";
+import { ConfirmDialog } from "@/components/dialog";
 
 /* ---------- icons ---------- */
 const I = {
@@ -25,6 +26,7 @@ const I = {
   clipboard: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="8" y="2" width="8" height="4" rx="1" /><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2" /><path d="M12 11h4" /><path d="M12 16h4" /><path d="M8 11h.01" /><path d="M8 16h.01" /></svg>,
   camera: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" /><circle cx="12" cy="13" r="4" /></svg>,
   calendar: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" /></svg>,
+  bell: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" /><path d="M13.73 21a2 2 0 0 1-3.46 0" /></svg>,
 };
 
 function fmt(n: number) { return formatMinor(n); }
@@ -46,11 +48,17 @@ export function OperatorDashboard({ user }: { user: AuthUser | null }) {
   const [curation, setCuration] = useState(() => getCurationQueue());
   const [inspections, setInspections] = useState(() => getInspections());
   const pipeline = getPipeline();
-  const verifications = getVerifications();
   const stats = getOperatorStats();
   const [curationFilter, setCurationFilter] = useState("all");
+  const [verifications, setVerifications] = useState(() => getVerifications());
+  const [verifModalOpen, setVerifModalOpen] = useState(false);
+  const [verifForm, setVerifForm] = useState({ propertyId: "", notes: "", photos: 0 });
   const [notification, setNotification] = useState<{ message: string; type: "success" | "error" } | null>(null);
   const [pendingAction, setPendingAction] = useState<string | null>(null);
+  const [dialog, setDialog] = useState<{
+    type: "approve" | "reject" | "changes" | "remove";
+    property: (typeof curation)[0];
+  } | null>(null);
 
   /* photos tab state */
   const [photosTab, setPhotosTab] = useState<"browse" | "manage">("browse");
@@ -127,49 +135,52 @@ export function OperatorDashboard({ user }: { user: AuthUser | null }) {
       )}
 
       {/* Header */}
-      <header className="border-b border-hairline bg-white px-8 py-3.5 flex items-center justify-between max-sm:px-5">
+      <header className="border-b border-hairline bg-white px-8 py-4 flex items-center justify-between max-sm:px-5">
         <div className="flex items-center gap-3">
-          <Link href="/" className="font-sans text-base font-bold tracking-tight text-ink no-underline">checkin<span className="text-brass">Bliss</span></Link>
+          <Link href="/" className="font-display text-xl font-medium tracking-tight text-ink no-underline">checkin<span className="text-brass">Bliss</span></Link>
           <span className="text-[10px] font-sans font-semibold uppercase tracking-[0.5px] rounded-full bg-lagoon/15 text-lagoon-dark px-2.5 py-0.5">Operator</span>
         </div>
-        <div className="flex items-center gap-x-2">
-          <NotificationBell role="operator" onViewAll={() => setTab("notifications")} />
+        <div className="flex items-center gap-x-3">
+          <NotificationBell role="operator" userId={user?.id} onViewAll={() => setTab("notifications")} />
           <form action={logoutAction}>
-            <button className="text-xs font-sans text-ink-secondary hover:text-ink transition-colors cursor-pointer bg-transparent border-none">Sign out</button>
+            <button className="text-xs font-sans font-medium text-ink-secondary hover:text-ink transition-colors cursor-pointer bg-transparent border-none">Sign out</button>
           </form>
         </div>
       </header>
 
       <div className="flex max-sm:flex-col">
         {/* Sidebar */}
-        <nav className="w-48 border-r border-hairline bg-white shrink-0 max-sm:w-full max-sm:border-r-0 max-sm:border-b">
-          <div className="p-4 max-sm:p-3 max-sm:flex max-sm:gap-2 max-sm:overflow-x-auto">
+        <nav className="w-56 border-r border-hairline bg-white shrink-0 max-sm:w-full max-sm:border-r-0 max-sm:border-b">
+          <div className="p-5 max-sm:p-3 max-sm:flex max-sm:gap-2 max-sm:overflow-x-auto">
             {[
-              { id: "today", label: "Today" },
-              { id: "curation", label: "Curation" },
-              { id: "inspections", label: "Inspections" },
-              { id: "photos", label: "Photos" },
-              { id: "notifications", label: "Notifications" },
-              { id: "verification", label: "Verification" },
+              { id: "today", icon: "calendar" as keyof typeof I, label: "Today" },
+              { id: "curation", icon: "gavel" as keyof typeof I, label: "Curation" },
+              { id: "inspections", icon: "clipboard" as keyof typeof I, label: "Inspections" },
+              { id: "photos", icon: "camera" as keyof typeof I, label: "Photos" },
+              { id: "notifications", icon: "bell" as keyof typeof I, label: "Notifications" },
+              { id: "verification", icon: "checkSquare" as keyof typeof I, label: "Verification" },
             ].map((item) => (
-              <button key={item.id} onClick={() => setTab(item.id)} className={`block w-full text-left px-4 py-2.5 rounded-lg text-xs font-sans font-medium transition-colors cursor-pointer max-sm:whitespace-nowrap max-sm:flex-shrink-0 ${tab === item.id ? "bg-primary-bg text-primary" : "text-ink-secondary hover:bg-bone"}`}>{item.label}</button>
+              <button key={item.id} onClick={() => setTab(item.id)} className={`w-full flex items-center gap-x-3 px-4 py-3 rounded-lg text-sm font-sans font-medium transition-colors cursor-pointer mb-1 last:mb-0 max-sm:whitespace-nowrap max-sm:flex-shrink-0 ${tab === item.id ? "bg-primary-bg text-primary" : "text-ink-secondary hover:bg-bone"}`}>
+                <span className="w-4 h-4 shrink-0 flex items-center justify-center">{I[item.icon]}</span>
+                <span>{item.label}</span>
+              </button>
             ))}
           </div>
         </nav>
 
         {/* Main */}
-        <main className="flex-1 p-6 max-sm:p-4">
-          <div className="mb-6">
-            <h1 className="text-2xl font-bold tracking-tight text-ink">Operator Dashboard</h1>
+        <main className="flex-1 p-8 max-sm:p-4">
+          <div className="mb-8">
+            <h1 className="font-display text-[clamp(1.8rem,3vw,2.4rem)] font-medium leading-tight text-ink">Operator Dashboard</h1>
             <p className="text-sm mt-1 text-ink-secondary">{displayName} — Lagos · {pipeline.filter((p) => p.status === "approved").length} properties verified</p>
           </div>
 
           {/* Stats */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
             {stats.map((s) => (
-              <div key={s.label} className={`p-4 rounded-xl border ${s.accent ? "bg-primary text-white border-transparent" : "bg-white border-hairline hover:-translate-y-0.5 hover:shadow-[0_8px_24px_rgba(0,0,0,0.06)]"} transition-all cursor-default`}>
-                <p className={`text-xs font-medium ${s.accent ? "text-blue-100" : "text-ink-secondary"}`}>{s.label}</p>
-                <p className={`text-2xl font-bold mt-1 tabular-nums ${s.accent ? "text-white" : "text-primary"}`}>{s.value}</p>
+              <div key={s.label} className={`p-5 rounded-xl border ${s.accent ? "bg-primary text-white border-transparent" : "bg-white border-hairline hover:-translate-y-0.5 hover:shadow-[0_8px_24px_rgba(0,0,0,0.06)]"} transition-all cursor-default`}>
+                <p className={`text-xs font-sans font-semibold uppercase tracking-[0.1em] ${s.accent ? "text-blue-100" : "text-ink-secondary"}`}>{s.label}</p>
+                <p className={`font-display text-[clamp(1.5rem,2.4vw,2rem)] font-medium mt-2 tabular-nums ${s.accent ? "text-white" : "text-primary"}`}>{s.value}</p>
                 <p className={`text-xs mt-1 ${s.accent ? "text-blue-200" : s.subColor} font-medium`}>{s.sub}</p>
               </div>
             ))}
@@ -178,14 +189,14 @@ export function OperatorDashboard({ user }: { user: AuthUser | null }) {
           {/* ---------- TODAY ---------- */}
           {tab === "today" && (
             <div className="space-y-6">
-              <div className="bg-white rounded-xl border border-hairline p-5">
-                <h2 className="text-base font-bold text-ink mb-4">Today&rsquo;s Schedule</h2>
+              <div className="bg-white rounded-xl border border-hairline p-6">
+                <h2 className="font-display text-lg font-medium text-ink mb-5">Today&rsquo;s Schedule</h2>
                 {todayInspections.length > 0 ? (
                   <div className="space-y-3">
                     {todayInspections.map((i) => (
                       <div key={i.id} className="flex items-start justify-between p-4 rounded-xl border border-hairline hover:bg-primary-bg transition-colors">
                         <div>
-                          <p className="text-sm font-semibold text-ink">{i.property_name}</p>
+                          <p className="font-display text-base font-medium text-ink">{i.property_name}</p>
                           <div className="flex items-center gap-x-4 mt-1.5 text-xs text-ink-secondary">
                             <span>Checkout: {i.checkout_date} at {i.checkout_time}</span>
                             <span>{i.guest_name}</span>
@@ -216,8 +227,8 @@ export function OperatorDashboard({ user }: { user: AuthUser | null }) {
               </div>
 
               {/* Quick status */}
-              <div className="bg-white rounded-xl border border-hairline p-5">
-                <h2 className="text-base font-bold text-ink mb-4">Pipeline Overview</h2>
+              <div className="bg-white rounded-xl border border-hairline p-6">
+                <h2 className="font-display text-lg font-medium text-ink mb-5">Pipeline Overview</h2>
                 <div className="grid grid-cols-4 gap-3">
                   {[
                     { label: "Draft", count: pipeline.filter((p) => p.status === "draft").length, color: "bg-ink-secondary" },
@@ -227,7 +238,7 @@ export function OperatorDashboard({ user }: { user: AuthUser | null }) {
                   ].map((s) => (
                     <div key={s.label} className="p-4 rounded-xl border border-hairline bg-primary-bg text-center">
                       <div className={`w-2.5 h-2.5 rounded-full inline-block ${s.color}`} />
-                      <p className="text-lg font-bold mt-2 text-ink tabular-nums">{s.count}</p>
+                      <p className="font-display text-2xl font-medium mt-2 text-ink tabular-nums">{s.count}</p>
                       <p className="text-xs text-ink-secondary">{s.label}</p>
                     </div>
                   ))}
@@ -240,7 +251,7 @@ export function OperatorDashboard({ user }: { user: AuthUser | null }) {
           {tab === "curation" && (
             <div className="space-y-4">
               <div className="flex items-center justify-between">
-                <p className="text-sm font-semibold text-ink">{curation.length} properties pending review</p>
+                <p className="font-display text-lg font-medium text-ink">{curation.length} properties pending review</p>
                 <select value={curationFilter} onChange={(e) => setCurationFilter(e.target.value)} className="text-xs border border-hairline rounded-lg px-3 py-1.5 outline-none text-ink">
                   <option value="all">All</option>
                   <option value="new">New submissions</option>
@@ -249,11 +260,11 @@ export function OperatorDashboard({ user }: { user: AuthUser | null }) {
               </div>
               <div className="space-y-3">
                 {filteredCuration.map((p) => (
-                  <div key={p.id} className="bg-white border border-hairline rounded-xl p-5">
+                  <div key={p.id} className="bg-white border border-hairline rounded-xl p-6">
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
                         <div className="flex items-center gap-x-2">
-                          <h3 className="text-base font-bold text-ink">{p.name}</h3>
+                          <h3 className="font-display text-lg font-medium text-ink">{p.name}</h3>
                           <span className="text-[11px] font-semibold text-primary">{p.type === "new" ? "New submission" : "Resubmitted"}</span>
                         </div>
                         <p className="text-xs mt-1 text-ink-secondary">{p.city} · Submitted {p.submitted_at}</p>
@@ -266,17 +277,17 @@ export function OperatorDashboard({ user }: { user: AuthUser | null }) {
                     <div className="flex gap-x-2 mt-4">
                       <button
                         disabled={pendingAction === `approve-${p.id}`}
-                        onClick={() => action(`approve-${p.id}`, async () => { const r = await decideCuration({ propertyId: p.id, action: "approve" }); if (r.ok) setCuration((prev) => prev.filter((x) => x.id !== p.id)); notify(r.ok ? "Property approved." : r.message, r.ok ? "success" : "error"); })}
+                        onClick={() => setDialog({ type: "approve", property: p })}
                         className="px-4 py-2 rounded-xl text-sm font-semibold border border-primary text-primary hover:bg-primary-bg transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-wait"
                       >{pendingAction === `approve-${p.id}` ? "Approving..." : "Approve"}</button>
                       <button
                         disabled={pendingAction === `reject-${p.id}`}
-                        onClick={() => { const reason = prompt("Reason for rejection:"); if (reason) action(`reject-${p.id}`, async () => { const r = await decideCuration({ propertyId: p.id, action: "reject", reason }); if (r.ok) setCuration((prev) => prev.filter((x) => x.id !== p.id)); notify(r.ok ? "Property rejected." : r.message, r.ok ? "success" : "error"); }); }}
+                        onClick={() => setDialog({ type: "reject", property: p })}
                         className="px-4 py-2 rounded-xl text-sm font-medium border border-hairline text-danger hover:bg-red-50 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-wait"
                       >{pendingAction === `reject-${p.id}` ? "Rejecting..." : "Reject"}</button>
                       <button
                         disabled={pendingAction === `changes-${p.id}`}
-                        onClick={() => { const reason = prompt("Describe changes needed:"); if (reason) action(`changes-${p.id}`, async () => { const r = await decideCuration({ propertyId: p.id, action: "request_changes", reason }); if (r.ok) setCuration((prev) => prev.filter((x) => x.id !== p.id)); notify(r.ok ? "Changes requested." : r.message, r.ok ? "success" : "error"); }); }}
+                        onClick={() => setDialog({ type: "changes", property: p })}
                         className="px-4 py-2 rounded-xl text-sm font-medium border border-hairline text-ink-secondary hover:bg-primary-bg transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-wait"
                       >{pendingAction === `changes-${p.id}` ? "Requesting..." : "Request Changes"}</button>
                       <button
@@ -288,7 +299,7 @@ export function OperatorDashboard({ user }: { user: AuthUser | null }) {
                       >Edit Details</button>
                       <button
                         disabled={pendingAction === `remove-${p.id}`}
-                        onClick={() => { if (confirm(`Remove "${p.name}" from the platform?`)) action(`remove-${p.id}`, async () => { const r = await suspendProperty({ propertyId: p.id }); if (r.ok) setCuration((prev) => prev.filter((x) => x.id !== p.id)); notify(r.ok ? "Property removed." : r.message, r.ok ? "success" : "error"); }); }}
+                        onClick={() => setDialog({ type: "remove", property: p })}
                         className="px-4 py-2 rounded-xl text-sm font-medium border border-hairline text-danger hover:bg-red-50 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-wait"
                       >{pendingAction === `remove-${p.id}` ? "Removing..." : "Remove"}</button>
                     </div>
@@ -303,15 +314,15 @@ export function OperatorDashboard({ user }: { user: AuthUser | null }) {
           {tab === "inspections" && (
             <div className="space-y-4">
               <div className="flex items-center justify-between">
-                <p className="text-sm font-semibold text-ink">All inspections</p>
+                <p className="font-display text-lg font-medium text-ink">All inspections</p>
                 <span className="text-xs px-2.5 py-1 rounded-full font-semibold bg-primary-bg text-primary">{pendingInspections.length} pending</span>
               </div>
               <div className="space-y-3">
                 {inspections.map((i) => (
-                  <div key={i.id} className="bg-white border border-hairline rounded-xl p-4">
+                  <div key={i.id} className="bg-white border border-hairline rounded-xl p-5">
                     <div className="flex items-start justify-between">
                       <div>
-                        <p className="text-sm font-semibold text-ink">{i.property_name}</p>
+                        <p className="font-display text-base font-medium text-ink">{i.property_name}</p>
                         <div className="flex items-center gap-x-4 mt-1.5 text-xs text-ink-secondary">
                           <span>Checkout: {i.checkout_date} at {i.checkout_time}</span>
                           <span>{i.guest_name}</span>
@@ -343,7 +354,7 @@ export function OperatorDashboard({ user }: { user: AuthUser | null }) {
           {tab === "photos" && (
             <div className="space-y-4">
               <div className="flex items-center justify-between">
-                <p className="text-sm font-semibold text-ink">Property photo management</p>
+                <p className="font-display text-lg font-medium text-ink">Property photo management</p>
                 <select
                   value={selectedProperty}
                   onChange={(e) => handleSelectProperty(e.target.value)}
@@ -549,25 +560,24 @@ export function OperatorDashboard({ user }: { user: AuthUser | null }) {
           )}
 
           {/* ---------- NOTIFICATIONS ---------- */}
-          {tab === "notifications" && <NotificationsView role="operator" />}
+          {tab === "notifications" && <NotificationsView role="operator" userId={user?.id} />}
 
           {/* ---------- VERIFICATION ---------- */}
           {tab === "verification" && (
             <div className="space-y-4">
               <div className="flex items-center justify-between">
-                <p className="text-sm font-semibold text-ink">Monthly verification log — June 2026</p>
+                <p className="font-display text-lg font-medium text-ink">Monthly verification log — June 2026</p>
                 <button
-                  disabled={pendingAction === "new-verification"}
-                  onClick={() => action("new-verification", async () => { const pid = prompt("Property ID:"); if (pid) { const p = prompt("Notes:"); const r = await logVerification({ propertyId: pid, photos: 0, notes: p ?? undefined }); notify(r.ok ? "Verification logged" : r.message, r.ok ? "success" : "error"); } })}
-                  className="text-sm font-medium px-4 py-2 rounded-xl border border-primary text-primary hover:bg-primary-bg transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-wait"
-                >{pendingAction === "new-verification" ? "Logging..." : "+ New Entry"}</button>
+                  onClick={() => { setVerifForm({ propertyId: "", notes: "", photos: 0 }); setVerifModalOpen(true); }}
+                  className="text-sm font-medium px-4 py-2 rounded-xl border border-primary text-primary hover:bg-primary-bg transition-colors cursor-pointer"
+                >+ New Entry</button>
               </div>
               <div className="space-y-2">
                 {verifications.map((v) => (
-                  <div key={v.id} className="flex items-center justify-between p-3 rounded-xl border border-hairline hover:bg-primary-bg transition-colors">
+                  <div key={v.id} className="flex items-center justify-between p-4 rounded-xl border border-hairline hover:bg-primary-bg transition-colors">
                     <div>
-                      <p className="text-sm font-semibold text-ink">{v.property_name}</p>
-                      <p className="text-xs text-ink-secondary">{v.date} · {v.photos} photos — {v.notes}</p>
+                      <p className="font-display text-base font-medium text-ink">{v.property_name}</p>
+                      <p className="text-xs text-ink-secondary mt-0.5">{v.date} · {v.photos} photos — {v.notes}</p>
                     </div>
                     <span className="text-[11px] font-semibold text-success">{v.status}</span>
                   </div>
@@ -577,6 +587,80 @@ export function OperatorDashboard({ user }: { user: AuthUser | null }) {
           )}
         </main>
       </div>
+
+      {/* Confirm / Prompt Dialogs */}
+      <ConfirmDialog
+        open={dialog?.type === "approve"}
+        title="Approve property"
+        message={`Approve "${dialog?.property?.name}" for the platform?`}
+        confirmLabel="Approve"
+        onConfirm={() => {
+          if (!dialog) return;
+          const p = dialog.property;
+          setDialog(null);
+          action(`approve-${p.id}`, async () => {
+            const r = await decideCuration({ propertyId: p.id, action: "approve" });
+            if (r.ok) setCuration((prev) => prev.filter((x) => x.id !== p.id));
+            notify(r.ok ? "Property approved." : r.message, r.ok ? "success" : "error");
+          });
+        }}
+        onCancel={() => setDialog(null)}
+      />
+      <ConfirmDialog
+        open={dialog?.type === "reject"}
+        title="Reject property"
+        message={`Provide a reason for rejecting "${dialog?.property?.name}". This will be shared with the owner.`}
+        confirmLabel="Reject"
+        variant="danger"
+        placeholder="Reason for rejection…"
+        onConfirm={(reason) => {
+          if (!dialog) return;
+          const p = dialog.property;
+          setDialog(null);
+          action(`reject-${p.id}`, async () => {
+            const r = await decideCuration({ propertyId: p.id, action: "reject", reason: reason ?? "" });
+            if (r.ok) setCuration((prev) => prev.filter((x) => x.id !== p.id));
+            notify(r.ok ? "Property rejected." : r.message, r.ok ? "success" : "error");
+          });
+        }}
+        onCancel={() => setDialog(null)}
+      />
+      <ConfirmDialog
+        open={dialog?.type === "changes"}
+        title="Request changes"
+        message={`Describe what needs to change for "${dialog?.property?.name}". The owner can resubmit once addressed.`}
+        confirmLabel="Request Changes"
+        placeholder="Describe changes needed…"
+        onConfirm={(reason) => {
+          if (!dialog) return;
+          const p = dialog.property;
+          setDialog(null);
+          action(`changes-${p.id}`, async () => {
+            const r = await decideCuration({ propertyId: p.id, action: "request_changes", reason: reason ?? "" });
+            if (r.ok) setCuration((prev) => prev.filter((x) => x.id !== p.id));
+            notify(r.ok ? "Changes requested." : r.message, r.ok ? "success" : "error");
+          });
+        }}
+        onCancel={() => setDialog(null)}
+      />
+      <ConfirmDialog
+        open={dialog?.type === "remove"}
+        title="Remove property"
+        message={`Remove "${dialog?.property?.name}" from the platform? This action can be reversed.`}
+        confirmLabel="Remove"
+        variant="danger"
+        onConfirm={() => {
+          if (!dialog) return;
+          const p = dialog.property;
+          setDialog(null);
+          action(`remove-${p.id}`, async () => {
+            const r = await suspendProperty({ propertyId: p.id });
+            if (r.ok) setCuration((prev) => prev.filter((x) => x.id !== p.id));
+            notify(r.ok ? "Property removed." : r.message, r.ok ? "success" : "error");
+          });
+        }}
+        onCancel={() => setDialog(null)}
+      />
 
       {/* Edit Property Modal */}
       {editModal && (
@@ -641,6 +725,63 @@ export function OperatorDashboard({ user }: { user: AuthUser | null }) {
                   })}
                   className="flex-1 py-2.5 rounded-xl text-sm font-semibold bg-primary text-white hover:bg-primary-dark transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-wait border-none"
                 >{pendingAction === `edit-prop-${editModal.id}` ? "Saving..." : "Save Changes"}</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Verification Modal */}
+      {verifModalOpen && (
+        <div className="fixed inset-0 z-50 bg-black/30 backdrop-blur-sm flex items-center justify-center p-4" onClick={() => { setVerifModalOpen(false); setVerifForm({ propertyId: "", notes: "", photos: 0 }); }}>
+          <div className="bg-white rounded-2xl w-full max-w-md p-6 shadow-xl animate-modalIn" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-5">
+              <h3 className="text-lg font-bold text-ink">New Verification Entry</h3>
+              <button onClick={() => { setVerifModalOpen(false); setVerifForm({ propertyId: "", notes: "", photos: 0 }); }} className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-primary-bg text-ink-secondary cursor-pointer">{I.x}</button>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <label className="text-xs font-medium text-ink-secondary">Property</label>
+                <select
+                  value={verifForm.propertyId}
+                  onChange={(e) => setVerifForm((f) => ({ ...f, propertyId: e.target.value }))}
+                  className="w-full border border-hairline rounded-xl px-4 py-2.5 text-sm mt-1 outline-none focus:border-primary text-ink"
+                >
+                  <option value="">Select a property...</option>
+                  {seedProperties.map((p) => (
+                    <option key={p.id} value={p.id}>{p.name}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="text-xs font-medium text-ink-secondary">Photos taken</label>
+                <input type="number" min={0} value={verifForm.photos} onChange={(e) => setVerifForm((f) => ({ ...f, photos: parseInt(e.target.value) || 0 }))} className="w-full border border-hairline rounded-xl px-4 py-2.5 text-sm mt-1 outline-none focus:border-primary text-ink" />
+              </div>
+              <div>
+                <label className="text-xs font-medium text-ink-secondary">Notes</label>
+                <textarea rows={3} value={verifForm.notes} onChange={(e) => setVerifForm((f) => ({ ...f, notes: e.target.value }))} placeholder="Describe the inspection findings..." className="w-full border border-hairline rounded-xl px-4 py-2.5 text-sm mt-1 outline-none focus:border-primary text-ink resize-none font-sans" />
+              </div>
+
+              <div className="flex gap-x-2 pt-2">
+                <button
+                  onClick={() => { setVerifModalOpen(false); setVerifForm({ propertyId: "", notes: "", photos: 0 }); }}
+                  className="flex-1 py-2.5 rounded-xl text-sm font-medium border border-hairline text-ink-secondary hover:bg-primary-bg transition-colors cursor-pointer"
+                >Cancel</button>
+                <button
+                  disabled={!verifForm.propertyId.trim() || pendingAction === "new-verification"}
+                  onClick={() => action("new-verification", async () => {
+                    const r = await logVerification({ propertyId: verifForm.propertyId, photos: verifForm.photos, notes: verifForm.notes || undefined });
+                    if (r.ok) {
+                      const prop = seedProperties.find((p) => p.id === verifForm.propertyId);
+                      setVerifications((prev) => [{ id: `V${Date.now()}`, property_name: prop?.name ?? verifForm.propertyId, date: new Date().toISOString().slice(0, 10), status: "complete", photos: verifForm.photos, notes: verifForm.notes }, ...prev]);
+                      setVerifModalOpen(false);
+                      setVerifForm({ propertyId: "", notes: "", photos: 0 });
+                    }
+                    notify(r.ok ? "Verification logged." : r.message, r.ok ? "success" : "error");
+                  })}
+                  className="flex-1 py-2.5 rounded-xl text-sm font-semibold bg-primary text-white hover:bg-primary-dark transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-wait border-none"
+                >{pendingAction === "new-verification" ? "Logging..." : "Log Verification"}</button>
               </div>
             </div>
           </div>

@@ -8,6 +8,7 @@ export type NotifRole = "admin" | "operator" | "owner";
 export interface Notification {
   id: string;
   role: NotifRole;
+  user_id?: string;
   title: string;
   body: string;
   link?: string;
@@ -30,12 +31,15 @@ const store: Notification[] = [
   { id: "n9", role: "owner", title: "Damage claim resolved", body: "Broken glass claim for The Palms Maisonette — £350 captured from deposit.", read: true, created_at: "2026-06-08T11:00:00Z" },
 ];
 
-export function getNotifications(role: NotifRole): Notification[] {
-  return store.filter((n) => n.role === role).sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+export function getNotifications(role: NotifRole, userId?: string): Notification[] {
+  const byRole = store.filter((n) => n.role === role);
+  const byUser = userId ? byRole.filter((n) => !n.user_id || n.user_id === userId) : byRole;
+  return byUser.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
 }
 
-export function getUnreadCount(role: NotifRole): number {
-  return store.filter((n) => n.role === role && !n.read).length;
+export function getUnreadCount(role: NotifRole, userId?: string): number {
+  const byRole = store.filter((n) => n.role === role && !n.read);
+  return userId ? byRole.filter((n) => !n.user_id || n.user_id === userId).length : byRole.length;
 }
 
 export function markRead(notificationId: string): void {
@@ -43,14 +47,23 @@ export function markRead(notificationId: string): void {
   if (n) n.read = true;
 }
 
-export function markAllRead(role: NotifRole): void {
-  store.filter((n) => n.role === role).forEach((n) => { n.read = true; });
+export function markAllRead(role: NotifRole, userId?: string): void {
+  const byRole = store.filter((n) => n.role === role);
+  const targets = userId ? byRole.filter((n) => !n.user_id || n.user_id === userId) : byRole;
+  targets.forEach((n) => { n.read = true; });
 }
 
-export function enqueueNotification(role: NotifRole, title: string, body: string, link?: string): Notification {
+export function enqueueNotification(
+  role: NotifRole,
+  title: string,
+  body: string,
+  link?: string,
+  userId?: string,
+): Notification {
   const n: Notification = {
     id: `n${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
     role,
+    user_id: userId,
     title,
     body,
     link,
@@ -59,4 +72,32 @@ export function enqueueNotification(role: NotifRole, title: string, body: string
   };
   store.unshift(n);
   return n;
+}
+
+/**
+ * Sends a notification to admin, the affected user, and optionally the actor.
+ * Admin gets a role-scoped notification (always visible to any admin).
+ * The affected user gets a user-scoped notification (visible only to them).
+ * The actor gets a user-scoped confirmation (visible only to them).
+ */
+export function notifyBoth(
+  userRole: NotifRole,
+  userId: string | undefined,
+  title: string,
+  body: string,
+  link?: string,
+  adminLink?: string,
+  actorRole?: NotifRole,
+  actorId?: string,
+): void {
+  // Notify admin
+  enqueueNotification("admin", title, body, adminLink ?? link);
+  // Notify the affected user
+  if (userId) {
+    enqueueNotification(userRole, title, body, link, userId);
+  }
+  // Notify the actor (operator/owner who performed the action)
+  if (actorRole && actorId && actorRole !== "admin") {
+    enqueueNotification(actorRole, `You ${title.toLowerCase()}`, body, link, actorId);
+  }
 }

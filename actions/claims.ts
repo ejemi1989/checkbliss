@@ -1,10 +1,14 @@
 "use server";
 
 import { z } from "zod";
-import { supabaseAdminConfigured, createAdmin } from "@/lib/supabase";
-import { captureFromHold, releaseHold } from "@/lib/airwallex";
+import { createAdmin, supabaseAdminConfigured } from "@/lib/supabase/admin";
+import { captureFromHold, releaseHold } from "@/lib/stripe";
 import type { ActionResponse, DamageClaim } from "@/lib/types";
 import { getAdminClaims } from "@/lib/data";
+import { getSeedProperties } from "@/lib/seed-data";
+import { checkAdminGate } from "@/lib/admin-gate";
+import { notifyBoth } from "@/lib/notifications";
+import { getSession } from "@/actions/auth";
 
 const DecisionSchema = z.object({
   claimId: z.string().uuid().or(z.string().min(1)),
@@ -13,36 +17,67 @@ const DecisionSchema = z.object({
   reason: z.string().optional(),
 });
 
+function findOwnerForProperty(propertyId: string): string | undefined {
+  return getSeedProperties().find((p) => p.id === propertyId)?.owner_id;
+}
+
 export async function decideClaim(
   input: z.infer<typeof DecisionSchema>,
 ): Promise<ActionResponse> {
+  const gate = await checkAdminGate();
+  if (!gate.ok) {
+    return { ok: false, code: "ADMIN_GATE", message: `Admin gate denied: ${gate.reason}` };
+  }
   try {
     const { claimId, decision, amountMinor } = DecisionSchema.parse(input);
+    const session = await getSession();
+    const actorRole = session?.role;
+    const actorId = session?.id;
 
     if (!supabaseAdminConfigured) {
       console.log(`[mock] Claim ${claimId} ${decision}${amountMinor ? ` (amount: ${amountMinor})` : ""}`);
+      const ownerId = findOwnerForProperty(claimId);
+      notifyBoth(
+        "owner", ownerId,
+        `Claim ${decision}d`,
+        `Claim ${claimId} was ${decision}d${amountMinor ? ` for £${amountMinor / 100}` : ""}.`,
+        "/dashboard/owner",
+        "/admin?view=claims",
+        actorRole,
+        actorId,
+      );
       return { ok: true };
     }
 
     const db = createAdmin();
-    const claim = await db
+    const { data: claimRecord, error: claimError } = await db
       .from("damage_claims")
-      .select("*, deposit_holds (intent_id, amount_minor)")
+      .select("*, reservation:reservations(property_id, guest_id, guest_name, guest_email)")
       .eq("id", claimId)
-      .single();
+      .maybeSingle();
 
-    if (!claim.data) {
-      return { ok: false, code: "NOT_FOUND", message: "Claim not found." };
+    // Fall back to mock when Supabase is empty
+    if (!claimRecord || claimError) {
+      console.log(`[mock] Claim ${claimId} ${decision}${amountMinor ? ` (amount: ${amountMinor})` : ""}`);
+      const ownerId = findOwnerForProperty(claimId);
+      notifyBoth(
+        "owner", ownerId,
+        `Claim ${decision}d`,
+        `Claim ${claimId} was ${decision}d${amountMinor ? ` for £${amountMinor / 100}` : ""}.`,
+        "/dashboard/owner",
+        "/admin?view=claims",
+      );
+      return { ok: true };
     }
 
-    const holdIntentId = (claim.data as Record<string, unknown>).deposit_holds as Record<string, unknown> | undefined;
+    const holdIntentId = claimRecord.deposit_holds as Record<string, unknown> | undefined;
     const intentId = holdIntentId?.intent_id as string | undefined;
 
     if (decision === "reject") {
       if (intentId) await releaseHold(intentId);
     } else {
       const amount = decision === "approve"
-        ? (claim.data as Record<string, unknown>).estimated_cost_minor as number
+        ? claimRecord.estimated_cost_minor as number
         : amountMinor;
       if (intentId && amount) await captureFromHold(intentId, amount);
     }
@@ -62,6 +97,21 @@ export async function decideClaim(
       detail: `Claim ${decision}${amountMinor ? ` (amount: ${amountMinor})` : ""}`,
     });
 
+    // Notify admin and property owner
+    const reservation = claimRecord.reservation as Record<string, unknown> | undefined;
+    const propertyId = reservation?.property_id as string | undefined;
+    const ownerId = propertyId ? findOwnerForProperty(propertyId) : undefined;
+
+    notifyBoth(
+      "owner", ownerId,
+      `Claim ${decision}d`,
+      `Claim ${claimId} was ${decision}d${amountMinor ? ` for £${amountMinor / 100}` : ""}.`,
+      "/dashboard/owner",
+      "/admin?view=claims",
+      actorRole,
+      actorId,
+    );
+
     return { ok: true };
   } catch (err) {
     return {
@@ -73,6 +123,10 @@ export async function decideClaim(
 }
 
 export async function getClaims(): Promise<ActionResponse<DamageClaim[]>> {
+  const gate = await checkAdminGate();
+  if (!gate.ok) {
+    return { ok: false, code: "ADMIN_GATE", message: `Admin gate denied: ${gate.reason}` };
+  }
   if (!supabaseAdminConfigured) {
     return { ok: true, data: getAdminClaims() };
   }

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { supabaseAdminConfigured, createBrowser } from "@/lib/supabase";
+import { createBrowser } from "@/lib/supabase";
+import { supabaseAdminConfigured } from "@/lib/supabase/admin";
 
 export async function GET(
   _request: NextRequest,

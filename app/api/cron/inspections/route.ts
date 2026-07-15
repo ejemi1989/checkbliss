@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { supabaseAdminConfigured, createAdmin } from "@/lib/supabase";
-import { releaseHold } from "@/lib/airwallex";
+import { createAdmin, supabaseAdminConfigured } from "@/lib/supabase/admin";
+import { releaseHold } from "@/lib/stripe";
 import { checkAndProcess } from "@/lib/idempotency";
 import { heartbeat, log } from "@/lib/observability";
 
@@ -19,9 +19,40 @@ export async function GET(request: NextRequest) {
   if (idem === "skip") return NextResponse.json({ ok: true, idempotent: true });
 
   if (!supabaseAdminConfigured) {
-    log("cron.inspections", "info", "Tick (mock)", { time: nowIso });
+    const { getAdminBookings } = await import("@/lib/data");
+    const bookings = getAdminBookings();
+    let acted = 0;
+
+    for (const b of bookings) {
+      const checkoutTime = "11:00";
+      const checkoutDate = new Date(`${b.check_out}T${checkoutTime}:00`);
+      const hoursDiff = (now.getTime() - checkoutDate.getTime()) / (1000 * 60 * 60);
+
+      if (hoursDiff >= -24 && hoursDiff < 0) {
+        log("cron.inspections.mock", "info", `-24h pre-notice for ${b.property_name} (guest: ${b.guest})`, {});
+        acted++;
+      }
+      if (hoursDiff >= 0 && hoursDiff < 0.5) {
+        log("cron.inspections.mock", "info", `T0 inspection prompt for ${b.property_name} (checkout: ${b.check_out})`, {});
+        acted++;
+      }
+      if (hoursDiff >= 4 && hoursDiff < 48) {
+        log("cron.inspections.mock", "info", `+4h reminder for ${b.property_name}`, {});
+        acted++;
+      }
+      if (hoursDiff >= 48 && hoursDiff < 168) {
+        log("cron.inspections.mock", "info", `+48h escalation for ${b.property_name}`, {});
+        acted++;
+      }
+      if (hoursDiff >= 168) {
+        log("cron.inspections.mock", "info", `+7d auto-release deposit for ${b.property_name}`, {});
+        acted++;
+      }
+    }
+
+    log("cron.inspections", "info", `Mock tick — ${acted} actions across ${bookings.length} reservations`, { time: nowIso });
     heartbeat("inspections");
-    return NextResponse.json({ ok: true, ticked: "mock" });
+    return NextResponse.json({ ok: true, ticked: "mock", acted, reservations: bookings.length });
   }
 
   const db = createAdmin();
@@ -78,12 +109,12 @@ export async function GET(request: NextRequest) {
     if (hoursDiff >= 168) {
       const { data: holds } = await db
         .from("deposit_holds")
-        .select("id, airwallex_authorisation_id, status")
+        .select("id, payment_intent_id, status")
         .eq("reservation_id", reservation.id)
         .eq("status", "held");
 
       for (const hold of holds ?? []) {
-        await releaseHold(hold.airwallex_authorisation_id as string);
+        await releaseHold(hold.payment_intent_id as string);
         await db.from("deposit_holds").update({ status: "expired", released_at: nowIso }).eq("id", hold.id);
         await db.from("audit_log").insert({
           action: "deposit.expired",

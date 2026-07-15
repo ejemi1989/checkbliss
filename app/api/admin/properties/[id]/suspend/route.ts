@@ -1,10 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
-import { supabaseAdminConfigured, createAdmin } from "@/lib/supabase";
+import { createAdmin, supabaseAdminConfigured } from "@/lib/supabase/admin";
+import { checkAdminGate } from "@/lib/admin-gate";
 
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> },
 ) {
+  const gate = await checkAdminGate();
+  if (!gate.ok) {
+    return NextResponse.json({ error: "Admin gate denied", reason: gate.reason }, { status: 401 });
+  }
   try {
     const { id } = await params;
     const body: { reason?: string } = await request.json().catch(() => ({}));

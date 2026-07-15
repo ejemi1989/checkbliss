@@ -18,6 +18,8 @@ const I = {
   building2: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="4" y="2" width="16" height="20" rx="2" /><path d="M9 22v-4h6v4" /><line x1="8" y1="10" x2="10" y2="10" /><line x1="14" y1="10" x2="16" y2="10" /><line x1="8" y1="14" x2="10" y2="14" /><line x1="14" y1="14" x2="16" y2="14" /></svg>,
   receipt: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1Z" /><path d="M8 7h8" /><path d="M8 11h8" /><path d="M8 15h5" /></svg>,
   calendar: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" /></svg>,
+  bell: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" /><path d="M13.73 21a2 2 0 0 1-3.46 0" /></svg>,
+  sync: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 2v6h-6" /><path d="M3 12a9 9 0 0 1 15.36-6.36L21 8" /><path d="M3 22v-6h6" /><path d="M21 12a9 9 0 0 1-15.36 6.36L3 16" /></svg>,
 };
 
 const bookings = getOwnerBookings();
@@ -99,7 +101,7 @@ export function OwnerDashboard({ user }: { user: AuthUser | null }) {
           <span className="text-[10px] font-sans font-semibold uppercase tracking-[0.5px] rounded-full bg-brass/15 text-brass-dark px-2.5 py-0.5">Owner</span>
         </div>
         <div className="flex items-center gap-x-2">
-          <NotificationBell role="owner" onViewAll={() => setTab("notifications")} />
+          <NotificationBell role="owner" userId={user?.id} onViewAll={() => setTab("notifications")} />
           <form action={logoutAction}>
             <button className="text-xs font-sans text-ink-secondary hover:text-ink transition-colors cursor-pointer bg-transparent border-none">Sign out</button>
           </form>
@@ -111,13 +113,16 @@ export function OwnerDashboard({ user }: { user: AuthUser | null }) {
         <nav className="w-48 border-r border-hairline bg-white shrink-0 max-sm:w-full max-sm:border-r-0 max-sm:border-b">
           <div className="p-4 max-sm:p-3 max-sm:flex max-sm:gap-2 max-sm:overflow-x-auto">
             {[
-              { id: "bookings", label: "Bookings" },
-              { id: "properties", label: "Properties" },
-              { id: "payouts", label: "Payouts" },
-              { id: "notifications", label: "Notifications" },
-              { id: "calendar", label: "Calendar Sync" },
+              { id: "bookings", icon: "calendar" as keyof typeof I, label: "Bookings" },
+              { id: "properties", icon: "building2" as keyof typeof I, label: "Properties" },
+              { id: "payouts", icon: "receipt" as keyof typeof I, label: "Payouts" },
+              { id: "notifications", icon: "bell" as keyof typeof I, label: "Notifications" },
+              { id: "calendar", icon: "sync" as keyof typeof I, label: "Calendar Sync" },
             ].map((item) => (
-              <button key={item.id} onClick={() => setTab(item.id)} className={`block w-full text-left px-4 py-2.5 rounded-lg text-xs font-sans font-medium transition-colors cursor-pointer max-sm:whitespace-nowrap max-sm:flex-shrink-0 ${tab === item.id ? "bg-primary-bg text-primary" : "text-ink-secondary hover:bg-bone"}`}>{item.label}</button>
+              <button key={item.id} onClick={() => setTab(item.id)} className={`w-full flex items-center gap-x-3 px-4 py-2.5 rounded-lg text-xs font-sans font-medium transition-colors cursor-pointer max-sm:whitespace-nowrap max-sm:flex-shrink-0 ${tab === item.id ? "bg-primary-bg text-primary" : "text-ink-secondary hover:bg-bone"}`}>
+                <span className="w-4 shrink-0 flex items-center justify-center">{I[item.icon]}</span>
+                <span>{item.label}</span>
+              </button>
             ))}
           </div>
         </nav>
@@ -362,7 +367,7 @@ export function OwnerDashboard({ user }: { user: AuthUser | null }) {
           )}
 
           {/* ---------- NOTIFICATIONS ---------- */}
-          {tab === "notifications" && <NotificationsView role="owner" />}
+          {tab === "notifications" && <NotificationsView role="owner" userId={user?.id} />}
         </main>
       </div>
 

@@ -1,8 +1,11 @@
 "use server";
 
 import { z } from "zod";
-import { supabaseAdminConfigured, createAdmin } from "@/lib/supabase";
+import { createAdmin, supabaseAdminConfigured } from "@/lib/supabase/admin";
 import type { ActionResponse } from "@/lib/types";
+import { getSeedProperties } from "@/lib/seed-data";
+import { notifyBoth } from "@/lib/notifications";
+import { getSession } from "@/actions/auth";
 
 const CurationActionSchema = z.object({
   propertyId: z.string().min(1),
@@ -10,14 +13,38 @@ const CurationActionSchema = z.object({
   reason: z.string().optional(),
 });
 
+function findOwnerForProperty(propertyId: string): string | undefined {
+  return getSeedProperties().find((p) => p.id === propertyId)?.owner_id;
+}
+
 export async function decideCuration(
   input: z.infer<typeof CurationActionSchema>,
 ): Promise<ActionResponse> {
   try {
     const { propertyId, action, reason } = CurationActionSchema.parse(input);
 
+    const actionLabels: Record<string, string> = {
+      approve: "approved",
+      reject: "rejected",
+      request_changes: "changes requested",
+    };
+    const label = actionLabels[action];
+    const session = await getSession();
+    const actorRole = session?.role;
+    const actorId = session?.id;
+
     if (!supabaseAdminConfigured) {
       console.log(`[mock] Property ${propertyId} ${action}${reason ? ` (reason: ${reason})` : ""}`);
+      const ownerId = findOwnerForProperty(propertyId);
+      notifyBoth(
+        "owner", ownerId,
+        `Property ${label}`,
+        `Property ${propertyId} — ${label}${reason ? ` (${reason})` : ""}.`,
+        "/dashboard/owner",
+        "/admin?view=curation",
+        actorRole,
+        actorId,
+      );
       return { ok: true };
     }
 
@@ -37,6 +64,18 @@ export async function decideCuration(
         detail: reason,
       });
     }
+
+    // Notify admin and property owner
+    const ownerId = findOwnerForProperty(propertyId);
+    notifyBoth(
+      "owner", ownerId,
+      `Property ${label}`,
+      `Property ${propertyId} — ${label}${reason ? ` (${reason})` : ""}.`,
+      "/dashboard/owner",
+      "/admin?view=curation",
+      actorRole,
+      actorId,
+    );
 
     return { ok: true };
   } catch (err) {

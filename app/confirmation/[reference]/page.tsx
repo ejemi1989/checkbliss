@@ -1,8 +1,14 @@
-import { supabaseAdminConfigured, createBrowser } from "@/lib/supabase";
+import { createBrowser } from "@/lib/supabase";
+import { supabaseAdminConfigured } from "@/lib/supabase/admin";
 import { formatMinor, type CurrencyCode } from "@/lib/currency";
 import { getSeedProperties } from "@/lib/seed-data";
 import Link from "next/link";
 import { Footer } from "@/components/footer";
+import type { Metadata } from "next";
+
+export function generateMetadata(): Metadata {
+  return { robots: { index: false, follow: false } };
+}
 
 export default async function ConfirmationPage({
   params,

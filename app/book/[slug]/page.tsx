@@ -1,6 +1,11 @@
+import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { getSeedProperties } from "@/lib/seed-data";
 import { BookingFlow } from "./client";
+
+export function generateMetadata(): Metadata {
+  return { robots: { index: false, follow: false } };
+}
 
 export default async function BookPage({
   params,
@@ -18,6 +23,8 @@ export default async function BookPage({
       propertyName={prop.name}
       city={prop.city}
       neighbourhood={prop.neighbourhood}
+      neighbourhoodSlug={prop.neighbourhood_slug}
+      buildingSlug={prop.building_slug}
       nightlyRateMinor={prop.nightly_rate_minor}
       depositMinor={prop.deposit_minor}
       currency={prop.currency}
