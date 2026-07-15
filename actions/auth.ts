@@ -19,6 +19,16 @@ export async function loginAction(_prev: unknown, formData: FormData) {
     return { error: "Email and password are required." };
   }
 
+  if (!supabaseServerConfigured) {
+    // Mock login — accept demo credentials
+    const validEmails = ["admin@checkbliss.com", "operator@checkbliss.com", "owner@checkbliss.com"];
+    if (!validEmails.includes(email) || password !== "checkbliss-demo-2026") {
+      return { error: "Invalid email or password." };
+    }
+    const mockRole = email.split("@")[0] as "admin" | "operator" | "owner";
+    redirect(roleRoutes[mockRole] ?? "/login");
+  }
+
   const supabase = await createClient();
   const { data, error } = await supabase.auth.signInWithPassword({
     email,
@@ -65,6 +75,10 @@ export async function signupAction(_prev: unknown, formData: FormData) {
 
   if (password.length < 8) {
     return { error: "Password must be at least 8 characters." };
+  }
+
+  if (!supabaseServerConfigured) {
+    return { success: true, message: "Account created (mock mode)." };
   }
 
   const supabase = await createClient();
