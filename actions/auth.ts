@@ -1,7 +1,7 @@
 "use server";
 
 import { redirect } from "next/navigation";
-import { createClient } from "@/lib/supabase/server";
+import { createClient, supabaseServerConfigured } from "@/lib/supabase/server";
 import { createAdmin } from "@/lib/supabase/admin";
 import type { AuthUser, Role } from "@/lib/auth";
 
@@ -107,6 +107,8 @@ export async function logoutAction() {
 }
 
 export async function getSession(): Promise<AuthUser | null> {
+  if (!supabaseServerConfigured) return null;
+
   const supabase = await createClient();
   const {
     data: { user },

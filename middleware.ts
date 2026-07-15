@@ -1,7 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { updateSession } from "@/lib/supabase/middleware";
-import { createClient } from "@/lib/supabase/server";
-import { createAdmin } from "@/lib/supabase/admin";
+import { createClient, supabaseServerConfigured } from "@/lib/supabase/server";
+import { createAdmin, supabaseAdminConfigured } from "@/lib/supabase/admin";
 import type { Role } from "@/lib/auth";
 
 const roleRouteMap: Record<string, Role> = {
@@ -16,6 +16,8 @@ export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const requiredRole = roleRouteMap[pathname];
   if (!requiredRole) return response;
+
+  if (!supabaseServerConfigured || !supabaseAdminConfigured) return response;
 
   const supabase = await createClient();
   const {
