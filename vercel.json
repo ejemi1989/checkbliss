@@ -1,5 +1,4 @@
 {
-  "installCommand": "npm install --force",
   "crons": [
     {
       "path": "/api/cron/inspections",
