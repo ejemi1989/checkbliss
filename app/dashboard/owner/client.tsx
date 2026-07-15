@@ -75,10 +75,10 @@ export function OwnerDashboard({ user }: { user: AuthUser | null }) {
   };
 
   const today = new Date();
-  const displayName = user?.name ?? "Adaora Mensah";
+  const displayName = user?.role === "owner" ? (user?.name ?? "Adaora Mensah") : "Adaora Mensah";
   const initials = displayName.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase();
   const firstName = displayName.split(" ")[0];
-  const displayEmail = user?.email ?? "owner@checkbliss.com";
+  const displayEmail = user?.role === "owner" ? (user?.email ?? "owner@checkbliss.com") : "owner@checkbliss.com";
 
   /* Escape key closes modals */
   useEffect(() => {
