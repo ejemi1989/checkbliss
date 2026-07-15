@@ -14,7 +14,7 @@ export default async function AdminPage() {
     return (
       <div className="min-h-screen flex items-center justify-center bg-canvas px-6">
         <div className="max-w-md w-full bg-card border border-line rounded-[var(--radius-lg)] p-8 text-center">
-          <h1 className="font-display text-2xl text-ink mb-2">Admin access required</h1>
+          <h1 className="font-sans text-2xl text-ink mb-2">Admin access required</h1>
           <p className="text-sm text-ink-secondary mb-4">
             {isAdminGateConfigured()
               ? "Provide the admin key in the x-admin-key request header (or via /admin?admin_key=...) to unlock the dashboard."

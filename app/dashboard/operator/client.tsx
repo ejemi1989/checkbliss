@@ -137,7 +137,7 @@ export function OperatorDashboard({ user }: { user: AuthUser | null }) {
       {/* Header */}
       <header className="border-b border-hairline bg-white px-8 py-4 flex items-center justify-between max-sm:px-5">
         <div className="flex items-center gap-3">
-          <Link href="/" className="font-display text-xl font-medium tracking-tight text-ink no-underline">checkin<span className="text-brass">Bliss</span></Link>
+          <Link href="/" className="font-sans text-xl font-medium tracking-tight text-ink no-underline">checkin<span className="text-brass">Bliss</span></Link>
           <span className="text-[10px] font-sans font-semibold uppercase tracking-[0.5px] rounded-full bg-lagoon/15 text-lagoon-dark px-2.5 py-0.5">Operator</span>
         </div>
         <div className="flex items-center gap-x-3">
@@ -171,7 +171,7 @@ export function OperatorDashboard({ user }: { user: AuthUser | null }) {
         {/* Main */}
         <main className="flex-1 p-8 max-sm:p-4">
           <div className="mb-8">
-            <h1 className="font-display text-[clamp(1.8rem,3vw,2.4rem)] font-medium leading-tight text-ink">Operator Dashboard</h1>
+            <h1 className="font-sans text-[clamp(1.8rem,3vw,2.4rem)] font-medium leading-tight text-ink">Operator Dashboard</h1>
             <p className="text-sm mt-1 text-ink-secondary">{displayName} — Lagos · {pipeline.filter((p) => p.status === "approved").length} properties verified</p>
           </div>
 
@@ -180,7 +180,7 @@ export function OperatorDashboard({ user }: { user: AuthUser | null }) {
             {stats.map((s) => (
               <div key={s.label} className={`p-5 rounded-xl border ${s.accent ? "bg-primary text-white border-transparent" : "bg-white border-hairline hover:-translate-y-0.5 hover:shadow-[0_8px_24px_rgba(0,0,0,0.06)]"} transition-all cursor-default`}>
                 <p className={`text-xs font-sans font-semibold uppercase tracking-[0.1em] ${s.accent ? "text-blue-100" : "text-ink-secondary"}`}>{s.label}</p>
-                <p className={`font-display text-[clamp(1.5rem,2.4vw,2rem)] font-medium mt-2 tabular-nums ${s.accent ? "text-white" : "text-primary"}`}>{s.value}</p>
+                <p className={`font-sans text-[clamp(1.5rem,2.4vw,2rem)] font-medium mt-2 tabular-nums ${s.accent ? "text-white" : "text-primary"}`}>{s.value}</p>
                 <p className={`text-xs mt-1 ${s.accent ? "text-blue-200" : s.subColor} font-medium`}>{s.sub}</p>
               </div>
             ))}
@@ -190,13 +190,13 @@ export function OperatorDashboard({ user }: { user: AuthUser | null }) {
           {tab === "today" && (
             <div className="space-y-6">
               <div className="bg-white rounded-xl border border-hairline p-6">
-                <h2 className="font-display text-lg font-medium text-ink mb-5">Today&rsquo;s Schedule</h2>
+                <h2 className="font-sans text-lg font-medium text-ink mb-5">Today&rsquo;s Schedule</h2>
                 {todayInspections.length > 0 ? (
                   <div className="space-y-3">
                     {todayInspections.map((i) => (
                       <div key={i.id} className="flex items-start justify-between p-4 rounded-xl border border-hairline hover:bg-primary-bg transition-colors">
                         <div>
-                          <p className="font-display text-base font-medium text-ink">{i.property_name}</p>
+                          <p className="font-sans text-base font-medium text-ink">{i.property_name}</p>
                           <div className="flex items-center gap-x-4 mt-1.5 text-xs text-ink-secondary">
                             <span>Checkout: {i.checkout_date} at {i.checkout_time}</span>
                             <span>{i.guest_name}</span>
@@ -228,7 +228,7 @@ export function OperatorDashboard({ user }: { user: AuthUser | null }) {
 
               {/* Quick status */}
               <div className="bg-white rounded-xl border border-hairline p-6">
-                <h2 className="font-display text-lg font-medium text-ink mb-5">Pipeline Overview</h2>
+                <h2 className="font-sans text-lg font-medium text-ink mb-5">Pipeline Overview</h2>
                 <div className="grid grid-cols-4 gap-3">
                   {[
                     { label: "Draft", count: pipeline.filter((p) => p.status === "draft").length, color: "bg-ink-secondary" },
@@ -238,7 +238,7 @@ export function OperatorDashboard({ user }: { user: AuthUser | null }) {
                   ].map((s) => (
                     <div key={s.label} className="p-4 rounded-xl border border-hairline bg-primary-bg text-center">
                       <div className={`w-2.5 h-2.5 rounded-full inline-block ${s.color}`} />
-                      <p className="font-display text-2xl font-medium mt-2 text-ink tabular-nums">{s.count}</p>
+                      <p className="font-sans text-2xl font-medium mt-2 text-ink tabular-nums">{s.count}</p>
                       <p className="text-xs text-ink-secondary">{s.label}</p>
                     </div>
                   ))}
@@ -251,7 +251,7 @@ export function OperatorDashboard({ user }: { user: AuthUser | null }) {
           {tab === "curation" && (
             <div className="space-y-4">
               <div className="flex items-center justify-between">
-                <p className="font-display text-lg font-medium text-ink">{curation.length} properties pending review</p>
+                <p className="font-sans text-lg font-medium text-ink">{curation.length} properties pending review</p>
                 <select value={curationFilter} onChange={(e) => setCurationFilter(e.target.value)} className="text-xs border border-hairline rounded-lg px-3 py-1.5 outline-none text-ink">
                   <option value="all">All</option>
                   <option value="new">New submissions</option>
@@ -264,7 +264,7 @@ export function OperatorDashboard({ user }: { user: AuthUser | null }) {
                     <div className="flex items-start justify-between">
                       <div className="flex-1">
                         <div className="flex items-center gap-x-2">
-                          <h3 className="font-display text-lg font-medium text-ink">{p.name}</h3>
+                          <h3 className="font-sans text-lg font-medium text-ink">{p.name}</h3>
                           <span className="text-[11px] font-semibold text-primary">{p.type === "new" ? "New submission" : "Resubmitted"}</span>
                         </div>
                         <p className="text-xs mt-1 text-ink-secondary">{p.city} · Submitted {p.submitted_at}</p>
@@ -314,7 +314,7 @@ export function OperatorDashboard({ user }: { user: AuthUser | null }) {
           {tab === "inspections" && (
             <div className="space-y-4">
               <div className="flex items-center justify-between">
-                <p className="font-display text-lg font-medium text-ink">All inspections</p>
+                <p className="font-sans text-lg font-medium text-ink">All inspections</p>
                 <span className="text-xs px-2.5 py-1 rounded-full font-semibold bg-primary-bg text-primary">{pendingInspections.length} pending</span>
               </div>
               <div className="space-y-3">
@@ -322,7 +322,7 @@ export function OperatorDashboard({ user }: { user: AuthUser | null }) {
                   <div key={i.id} className="bg-white border border-hairline rounded-xl p-5">
                     <div className="flex items-start justify-between">
                       <div>
-                        <p className="font-display text-base font-medium text-ink">{i.property_name}</p>
+                        <p className="font-sans text-base font-medium text-ink">{i.property_name}</p>
                         <div className="flex items-center gap-x-4 mt-1.5 text-xs text-ink-secondary">
                           <span>Checkout: {i.checkout_date} at {i.checkout_time}</span>
                           <span>{i.guest_name}</span>
@@ -354,7 +354,7 @@ export function OperatorDashboard({ user }: { user: AuthUser | null }) {
           {tab === "photos" && (
             <div className="space-y-4">
               <div className="flex items-center justify-between">
-                <p className="font-display text-lg font-medium text-ink">Property photo management</p>
+                <p className="font-sans text-lg font-medium text-ink">Property photo management</p>
                 <select
                   value={selectedProperty}
                   onChange={(e) => handleSelectProperty(e.target.value)}
@@ -566,7 +566,7 @@ export function OperatorDashboard({ user }: { user: AuthUser | null }) {
           {tab === "verification" && (
             <div className="space-y-4">
               <div className="flex items-center justify-between">
-                <p className="font-display text-lg font-medium text-ink">Monthly verification log — June 2026</p>
+                <p className="font-sans text-lg font-medium text-ink">Monthly verification log — June 2026</p>
                 <button
                   onClick={() => { setVerifForm({ propertyId: "", notes: "", photos: 0 }); setVerifModalOpen(true); }}
                   className="text-sm font-medium px-4 py-2 rounded-xl border border-primary text-primary hover:bg-primary-bg transition-colors cursor-pointer"
@@ -576,7 +576,7 @@ export function OperatorDashboard({ user }: { user: AuthUser | null }) {
                 {verifications.map((v) => (
                   <div key={v.id} className="flex items-center justify-between p-4 rounded-xl border border-hairline hover:bg-primary-bg transition-colors">
                     <div>
-                      <p className="font-display text-base font-medium text-ink">{v.property_name}</p>
+                      <p className="font-sans text-base font-medium text-ink">{v.property_name}</p>
                       <p className="text-xs text-ink-secondary mt-0.5">{v.date} · {v.photos} photos — {v.notes}</p>
                     </div>
                     <span className="text-[11px] font-semibold text-success">{v.status}</span>
