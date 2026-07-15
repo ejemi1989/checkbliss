@@ -1,8 +1,7 @@
 "use client";
 
-import { useState, useActionState } from "react";
+import { useState } from "react";
 import Link from "next/link";
-import { signupAction } from "@/actions/auth";
 
 type Role = "operator" | "owner";
 
@@ -15,7 +14,8 @@ interface FormErrors {
 }
 
 export default function SignupPage() {
-  const [serverState, formAction, pending] = useActionState(signupAction, null);
+  const [pending, setPending] = useState(false);
+  const [serverState, setServerState] = useState<{ success?: boolean; role?: string; message?: string; error?: string } | null>(null);
   const [role, setRole] = useState<Role>("owner");
   const [errors, setErrors] = useState<FormErrors>({});
   const [submitted, setSubmitted] = useState(false);
@@ -31,12 +31,16 @@ export default function SignupPage() {
     return Object.keys(errs).length === 0;
   }
 
-  function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
     const fd = new FormData(e.currentTarget);
-    if (!validate(fd)) {
-      e.preventDefault();
-      return;
-    }
+    if (!validate(fd)) return;
+    setPending(true);
+    setServerState(null);
+    // Mock signup — always succeeds
+    await new Promise((r) => setTimeout(r, 800));
+    setServerState({ success: true, role, message: "Account created (demo mode)." });
+    setPending(false);
     setSubmitted(true);
   }
 
@@ -173,7 +177,7 @@ export default function SignupPage() {
                 </button>
               </div>
 
-              <form action={formAction} onSubmit={handleSubmit} className="space-y-4">
+              <form onSubmit={handleSubmit} className="space-y-4">
                 <input type="hidden" name="role" value={role} />
 
                 <div>
