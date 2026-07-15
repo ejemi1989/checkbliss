@@ -199,7 +199,8 @@ export function OwnerDashboard({ user }: { user: AuthUser | null }) {
         </header>
 
         <div className="flex-1 overflow-auto p-4 lg:p-8 scroll-thin" onClick={() => sidebarOpen && setSidebarOpen(false)}>
-          {/* stats always visible */}
+          {/* stats — only on dashboard home */}
+          {tab === "home" && (
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
             <div className="p-4 rounded-xl border bg-white border-hairline hover:-translate-y-0.5 hover:shadow-[0_8px_24px_rgba(0,0,0,0.06)] transition-all cursor-default">
               <p className="text-xs font-medium text-ink-secondary">Revenue (MTD)</p>
@@ -222,6 +223,7 @@ export function OwnerDashboard({ user }: { user: AuthUser | null }) {
               <p className="text-xs mt-1 font-medium text-blue-200">Expected Jul 5</p>
             </div>
           </div>
+          )}
 
           {/* ---------- HOME / DASHBOARD ---------- */}
           {tab === "home" && (
