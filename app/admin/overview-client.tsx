@@ -1,16 +1,33 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { formatMinor } from "@/lib/currency";
 import { getAdminClaims, getAdminOperators, getAdminAudit, getAdminStats } from "@/lib/data";
 
 function fmt(n: number) { return formatMinor(n); }
 
 export function AdminOverview() {
+  const [mounted, setMounted] = useState(false);
   const [claims] = useState(() => getAdminClaims());
   const [operators] = useState(() => getAdminOperators());
   const audit = getAdminAudit();
   const stats = getAdminStats();
+
+  useEffect(() => { setMounted(true); }, []);
+
+  if (!mounted) {
+    return (
+      <div className="space-y-6 animate-pulse">
+        <div className="grid grid-cols-4 gap-4">
+          {[1,2,3,4].map(i => <div key={i} className="h-24 bg-hairline rounded-xl" />)}
+        </div>
+        <div className="grid grid-cols-2 gap-6">
+          <div className="h-80 bg-hairline rounded-xl" />
+          <div className="h-80 bg-hairline rounded-xl" />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
