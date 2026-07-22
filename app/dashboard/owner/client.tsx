@@ -46,8 +46,8 @@ type OwnerTab = "home" | "properties" | "bookings" | "claims" | "payouts" | "cal
 
 export function OwnerDashboard({ user, initialTab }: { user: AuthUser | null; initialTab?: OwnerTab }) {
   const [tab, setTab] = useState<OwnerTab>(initialTab ?? "home");
-  const [month, setMonth] = useState(new Date().getMonth());
-  const [year, setYear] = useState(new Date().getFullYear());
+  const [month, setMonth] = useState(() => new Date().getMonth());
+  const [year, setYear] = useState(() => new Date().getFullYear());
   const [bookingModal, setBookingModal] = useState<(typeof bookings)[0] | null>(null);
   const [claimModal, setClaimModal] = useState<(typeof damageClaims)[0] | null>(null);
   const [blockStart, setBlockStart] = useState("");
@@ -60,7 +60,7 @@ export function OwnerDashboard({ user, initialTab }: { user: AuthUser | null; in
     setTimeout(() => setNotification(null), 3000);
   };
 
-  const today = new Date();
+  const [today] = useState(() => new Date());
   const displayName = user?.role === "owner" ? (user?.name ?? "Adaora Mensah") : "Adaora Mensah";
   const firstName = displayName.split(" ")[0];
   const hour = today.getHours();
@@ -90,7 +90,8 @@ export function OwnerDashboard({ user, initialTab }: { user: AuthUser | null; in
     return cells;
   }, [month, year, today]);
 
-  function monthLabel() { return new Date(year, month).toLocaleString("default", { month: "long", year: "numeric" }); }
+  const MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+  function monthLabel() { return `${MONTHS[month]} ${year}`; }
 
   /* stats */
   const totalRevenue = bookings.reduce((s, b) => s + (b.status === "cancelled" ? 0 : b.amount_minor), 0);
@@ -231,7 +232,7 @@ export function OwnerDashboard({ user, initialTab }: { user: AuthUser | null; in
                   {/* Revenue breakdown per property */}
                   <div className="grid grid-cols-4 gap-3">
                     {[
-                      { label: "Monthly revenue", value: `£${(prop.monthly_minor / 100).toLocaleString()}` },
+                      { label: "Monthly revenue", value: `£${Math.round(prop.monthly_minor / 100).toLocaleString("en-GB")}` },
                       { label: "Bookings", value: `${prop.bookings} this month` },
                       { label: "Occupancy", value: prop.occ },
                       { label: "Avg nightly", value: `£${Math.round(prop.monthly_minor / (parseInt(prop.bookings) || 1) / 100)}` },

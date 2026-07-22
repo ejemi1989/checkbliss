@@ -41,12 +41,11 @@ function fmt(n: number) { return formatMinor(n); }
 function statusLabel(s: string) { return s.replace(/_/g, " "); }
 
 /* Bookings tab: date helpers for grouping in-progress / upcoming / recent stays */
-function isInProgress(checkIn: string, checkOut: string): boolean {
-  const today = new Date().toISOString().slice(0, 10);
-  return checkIn <= today && checkOut >= today;
+function isInProgress(checkIn: string, checkOut: string, todayStr: string): boolean {
+  return checkIn <= todayStr && checkOut >= todayStr;
 }
-function isFuture(checkIn: string): boolean {
-  return checkIn > new Date().toISOString().slice(0, 10);
+function isFuture(checkIn: string, todayStr: string): boolean {
+  return checkIn > todayStr;
 }
 
 function statusColor(s: string) {
@@ -185,16 +184,16 @@ export function OperatorDashboard({ user, initialTab }: { user: AuthUser | null;
     return true;
   });
 
-  const today = new Date();
+  const [today] = useState(() => new Date());
   const todayStr = today.toISOString().slice(0, 10);
   const todayInspections = inspections.filter((i) => i.checkout_date === todayStr);
   const pendingInspections = inspections.filter((i) => i.status === "pending");
 
   /* Bookings tab: pre-computed buckets (complex boolean expressions confused the JSX parser) */
-  const inProgressBookings = bookings.filter((b) => b.status === "confirmed" && isInProgress(b.check_in, b.check_out));
-  const upcomingBookings = bookings.filter((b) => b.status === "confirmed" && !isInProgress(b.check_in, b.check_out) && isFuture(b.check_in));
+  const inProgressBookings = bookings.filter((b) => b.status === "confirmed" && isInProgress(b.check_in, b.check_out, todayStr));
+  const upcomingBookings = bookings.filter((b) => b.status === "confirmed" && !isInProgress(b.check_in, b.check_out, todayStr) && isFuture(b.check_in, todayStr));
   const pendingBookings = bookings.filter((b) => b.status === "pending");
-  const recentBookings = bookings.filter((b) => b.status === "completed" || (b.status === "confirmed" && !isFuture(b.check_in) && !isInProgress(b.check_in, b.check_out)));
+  const recentBookings = bookings.filter((b) => b.status === "completed" || (b.status === "confirmed" && !isFuture(b.check_in, todayStr) && !isInProgress(b.check_in, b.check_out, todayStr)));
 
   return (
     <>

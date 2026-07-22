@@ -58,6 +58,7 @@ export function OperatorVerification({ user }: { user: AuthUser | null }) {
   const [notes, setNotes] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [notification, setNotification] = useState<{ message: string; type: "success" | "error" } | null>(null);
+  const [now] = useState(() => Date.now());
 
   const notify = useCallback((message: string, type: "success" | "error" = "success") => {
     setNotification({ message, type });
@@ -248,8 +249,8 @@ export function OperatorVerification({ user }: { user: AuthUser | null }) {
             </div>
           )}
           {verifications.map((v) => {
-            const lastDate = new Date(v.date);
-            const daysSince = Math.floor((Date.now() - lastDate.getTime()) / (1000 * 60 * 60 * 24));
+            const lastDate = new Date(v.date + "T00:00:00Z");
+            const daysSince = Math.floor((now - lastDate.getTime()) / (1000 * 60 * 60 * 24));
             const needsReVerification = daysSince > 25;
 
             return (
