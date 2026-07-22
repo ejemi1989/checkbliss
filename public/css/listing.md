@@ -1,0 +1,710 @@
+# CheckinBliss — `listings.css`
+
+Split-view city results page: scrolling results rail (left) + persistent Mapbox pane (right). Depends on tokens from `main.css` (`--bg --soft --card --ink --body-c --mute --line --green --green-d --green-soft --display --heading --body --s* --r-* --sh*`).
+
+## Local tokens
+
+```css
+:root{
+  --nav-h: 76px;
+  --band-h: 88px;
+  --rail-w: 62.5%;
+  --text-base: 20px;
+  --r-3: 3px;
+}
+```
+
+## Page shell
+
+Flex column; filter panel adjusts height naturally.
+
+```css
+body.lst-body{
+  height: 100svh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  background: var(--bg);
+  color: var(--body-c);
+}
+```
+
+## Header
+
+Light, full-bleed; overrides the global `nav{position:absolute}` from `main.css`.
+
+```css
+.lst-header{
+  flex-shrink: 0;
+  position: relative;
+  z-index: 40;
+  height: var(--nav-h);
+  background: var(--soft);
+  border-bottom: 1px solid var(--line);
+}
+.lst-header nav{
+  position: relative;
+  top: auto; left: auto; right: auto;
+  background: transparent;
+}
+.lst-header .nav-inner{
+  height: var(--nav-h);
+  max-width: none;
+  padding: 0 var(--s8, 32px);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.lst-header .nav-left{ display: none; }
+.lst-header .logo-img{ height: 26px; width: auto; display: block; }
+.lst-header .nav-right{
+  display: flex; justify-content: flex-end; align-items: center; gap: var(--s3, 12px);
+}
+.lst-header .lang-pill,
+.lst-header .menu-pill{
+  background: var(--card);
+  border: 1px solid var(--line);
+  color: var(--ink);
+  border-radius: 999px;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+}
+.lst-header .menu-pill .burger span{ background: var(--ink); }
+.lst-header .menu-pill .avatar{ color: var(--ink); }
+.lst-header .lang-pill .divider{ color: var(--mute); }
+```
+
+## Search + filter band
+
+```css
+.searchband{
+  flex-shrink: 0;
+  position: relative;
+  z-index: 30;
+  background: var(--soft);
+  border-bottom: 1px solid var(--line);
+}
+.searchband-inner{
+  display: flex;
+  align-items: center;
+  gap: var(--s5, 20px);
+  padding: var(--s4, 16px) var(--s8, 32px);
+  min-height: var(--band-h);
+}
+
+.sbar{
+  flex: 1 1 auto;
+  display: grid;
+  grid-template-columns: 1.1fr 1fr 1.2fr;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--r-3, 3px);
+  box-shadow: var(--sh1);
+  max-width: 780px;
+}
+.sbar-field{
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 2px;
+  padding: 10px var(--s5, 20px);
+  border-right: 1px solid var(--line);
+  cursor: text;
+}
+.sbar-field-last{ border-right: 0; padding-right: 62px; }
+.sbar-label{
+  font-family: var(--body);
+  font-weight: 600;
+  font-size: 12px;
+  letter-spacing: .13em;
+  text-transform: uppercase;
+  color: var(--mute);
+}
+.sbar-field input{
+  border: 0;
+  background: transparent;
+  font-family: var(--body);
+  font-size: 14px;
+  color: var(--ink);
+  width: 100%;
+  padding: 0;
+}
+.sbar-field input::placeholder{ color: var(--mute); }
+.sbar-field input:focus{ outline: none; }
+.sbar-field:focus-within{ background: var(--soft); }
+
+.sbar-go{
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 40px; height: 40px;
+  display: grid; place-items: center;
+  background: var(--green);
+  color: var(--soft);
+  border: 0;
+  border-radius: var(--r-3, 3px);
+  cursor: pointer;
+  transition: background .18s ease;
+}
+.sbar-go:hover{ background: var(--green-d); }
+
+.filter-btn{
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 13px var(--s5, 20px);
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--r-3, 3px);
+  font-family: var(--body);
+  font-weight: 500;
+  font-size: 14px;
+  color: var(--ink);
+  cursor: pointer;
+  transition: border-color .18s ease, background .18s ease;
+}
+.filter-btn:hover{ border-color: var(--green-soft); }
+.filter-btn[aria-expanded="true"]{
+  background: var(--green);
+  border-color: var(--green);
+  color: var(--soft);
+}
+```
+
+**Collapsible filter panel**
+```css
+.filter-panel{ border-top: 1px solid var(--line); background: var(--card); }
+.filter-panel[hidden]{ display: none; }
+.filter-panel-inner{
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s8, 32px);
+  padding: var(--s6, 24px) var(--s8, 32px);
+}
+.fgroup{ display: flex; flex-direction: column; gap: 10px; }
+.fgroup-label{
+  font-family: var(--body);
+  font-weight: 600;
+  font-size: 12px;
+  letter-spacing: .13em;
+  text-transform: uppercase;
+  color: var(--mute);
+}
+.filter-chips{ display: flex; flex-wrap: wrap; gap: 8px; }
+.fchip, .schip{
+  padding: 8px 16px;
+  background: transparent;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  font-family: var(--body);
+  font-weight: 500;
+  font-size: 14px;
+  color: var(--body-c);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: border-color .18s ease, background .18s ease, color .18s ease;
+}
+.fchip:hover, .schip:hover{ border-color: var(--green-soft); color: var(--ink); }
+.fchip.active, .schip.active{
+  background: var(--green);
+  border-color: var(--green);
+  color: var(--soft);
+}
+```
+
+## Split layout
+
+`flex:1` takes remaining viewport height after header + band.
+
+```css
+main.split{
+  flex: 1;
+  display: grid;
+  grid-template-columns: var(--rail-w) 1fr;
+  overflow: hidden;
+  min-height: 0;
+}
+```
+
+## Left — scrolling results rail
+
+```css
+.results{
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  border-right: 1px solid var(--line);
+  scrollbar-width: thin;
+}
+.results-inner{ padding: var(--s12, 48px) var(--s8, 32px) 0; }
+.results-head{ margin-bottom: var(--s10, 40px); }
+
+/* Overrides global nav{position:absolute} from main.css */
+nav.lst-breadcrumb,
+nav.pager{
+  position: static;
+  top: auto; left: auto; right: auto;
+  z-index: auto;
+  background: none;
+  border: none;
+}
+nav.lst-breadcrumb{
+  position: static;
+  top: auto; left: auto; right: auto;
+  z-index: auto;
+  background: none;
+  border: none;
+  font-family: var(--body);
+  font-size: 12px;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: var(--mute);
+  margin-bottom: var(--s5, 20px);
+}
+nav.lst-breadcrumb a{ color: var(--mute); text-decoration: none; }
+nav.lst-breadcrumb a:hover{ color: var(--green-soft); }
+nav.lst-breadcrumb .sep{ margin: 0 8px; opacity: .6; }
+
+.lst-eyebrow{
+  font-family: var(--body);
+  font-weight: 600;
+  font-size: 13px;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: var(--green-soft);
+  margin-bottom: var(--s3, 12px);
+}
+.lst-city{
+  font-family: var(--display);
+  font-weight: 400;
+  font-size: clamp(2.6rem, 4.2vw, 4rem);
+  line-height: 1.04;
+  color: var(--ink);
+  margin: 0 0 var(--s4, 16px);
+}
+.lst-sub{
+  font-family: var(--body);
+  font-size: 20px;
+  line-height: 1.6;
+  color: var(--body-c);
+  max-width: 54ch;
+  margin: 0 0 var(--s5, 20px);
+}
+.results-count{
+  font-family: var(--body);
+  font-size: 14px;
+  letter-spacing: .04em;
+  color: var(--mute);
+  margin: 0;
+  padding-top: var(--s5, 20px);
+  border-top: 1px solid var(--line);
+}
+.results-count strong{ color: var(--ink); font-weight: 600; }
+```
+
+## Property cards — horizontal editorial rows
+
+```css
+.results-list{ display: block; }
+
+.pcard{
+  display: grid;
+  grid-template-columns: 400px 1fr;
+  gap: var(--s8, 32px);
+  padding: var(--s8, 32px) 0;
+  border-bottom: 1px solid var(--line);
+  text-decoration: none;
+  color: inherit;
+}
+.pcard:first-child{ border-top: 1px solid var(--line); }
+
+.pcard-img{
+  position: relative;
+  aspect-ratio: 16/9;
+  overflow: hidden;
+  background: var(--line);
+}
+.pcard-img .ph{
+  position: absolute; inset: 0;
+  background-color: var(--line);
+  background-size: cover;
+  background-position: center;
+  transform: scale(1);
+  transition: transform .5s cubic-bezier(.2,.7,.3,1);
+}
+.pcard:hover .pcard-img .ph{ transform: scale(1.04); }
+
+.pcard-body{
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  padding-top: 4px;
+}
+.pcard-kicker{
+  font-family: var(--heading);
+  font-style: italic;
+  font-size: 20px;
+  color: var(--green-soft);
+  margin-bottom: 4px;
+}
+.pcard-title{
+  font-family: var(--heading);
+  font-weight: 400;
+  font-size: 22px;
+  line-height: 1.2;
+  color: var(--ink);
+  margin: 0 0 10px;
+}
+.pcard-meta{
+  font-family: var(--body);
+  font-size: 14px;
+  color: var(--body-c);
+  margin-bottom: var(--s4, 16px);
+}
+.pcard-tags{ display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: auto; }
+.pcard-tag{
+  padding: 5px 12px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  font-family: var(--body);
+  font-size: 12px;
+  letter-spacing: .06em;
+  color: var(--mute);
+  background: var(--card);
+}
+.pcard-footer{
+  display: flex;
+  align-items: baseline;
+  gap: 6px;
+  padding-top: var(--s5, 20px);
+}
+.pcard-price{
+  font-family: var(--body);
+  font-size: 22px;
+  font-weight: 700;
+  color: var(--ink);
+}
+.pcard-per{
+  font-family: var(--body);
+  font-size: 13px;
+  color: var(--mute);
+}
+```
+
+**Favourite button**
+```css
+.fav-btn{
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  z-index: 2;
+  width: 32px; height: 32px;
+  display: grid; place-items: center;
+  background: rgba(252,253,251,.88);
+  border: none;
+  border-radius: 50%;
+  color: var(--mute);
+  cursor: pointer;
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  transition: color .18s ease, background .18s ease, transform .18s ease;
+}
+.fav-btn:hover{
+  background: var(--card);
+  color: var(--ink);
+  transform: scale(1.1);
+}
+.fav-btn[aria-pressed="true"] svg{
+  fill: var(--danger);
+  stroke: var(--danger);
+}
+```
+
+**Card active state (marker click) & no-results**
+```css
+.pcard.is-active{ background: var(--soft); }
+.pcard.is-active .pcard-title{ color: var(--green); }
+
+.no-results{
+  display: none;
+  padding: var(--s16, 64px) 0;
+  font-family: var(--body);
+  font-size: 20px;
+  color: var(--mute);
+  text-align: center;
+}
+.no-results.show{ display: block; }
+```
+
+## Pagination
+
+```css
+.pager{
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--s5, 20px);
+  padding: var(--s10, 40px) 0;
+  border-bottom: 1px solid var(--line);
+}
+.pager-range{
+  font-family: var(--body);
+  font-size: 14px;
+  color: var(--mute);
+}
+.pager-range strong{ color: var(--ink); font-weight: 600; }
+.pager-btns{ display: flex; gap: 8px; }
+.pager-btn{
+  height: 42px;
+  min-width: 42px;
+  padding: 0 18px;
+  display: inline-flex; align-items: center; gap: 8px;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  font-family: var(--body);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ink);
+  cursor: pointer;
+  transition: border-color .18s ease, color .18s ease;
+}
+.pager-btn:hover:not(:disabled){ border-color: var(--green-soft); color: var(--green); }
+.pager-btn:disabled{ opacity: .35; cursor: not-allowed; }
+```
+
+## Rail footer
+
+Lives inside the scroll rail, never pushes the map off-screen.
+
+```css
+.rail-foot{ padding: var(--s12, 48px) 0 var(--s10, 40px); }
+```
+
+## Right — map pane
+
+```css
+.mappane{
+  position: relative;
+  background: var(--soft);
+}
+.map-canvas{ position: absolute; inset: 0; }
+.map-fallback{
+  position: absolute; inset: 0;
+  display: grid; place-items: center;
+  padding: var(--s8, 32px);
+  text-align: center;
+  font-family: var(--body);
+  font-size: 14px;
+  color: var(--mute);
+  background:
+    repeating-linear-gradient(45deg, transparent 0 18px, rgba(216,219,207,.5) 18px 19px),
+    var(--soft);
+}
+.map-fallback[hidden]{ display: none; }
+.map-fallback code{ font-size: 12px; color: var(--green-soft); }
+```
+
+**Price markers — circular house icon**
+```css
+.cb-marker{
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  display: grid;
+  place-items: center;
+  background: var(--card);
+  border: 2px solid var(--line);
+  border-radius: 50%;
+  box-shadow: var(--sh1);
+  color: var(--ink);
+  cursor: pointer;
+  transition: background .18s ease, color .18s ease, border-color .18s ease, transform .18s ease, box-shadow .18s ease;
+}
+.cb-marker:hover,
+.cb-marker.is-active{
+  background: var(--green);
+  border-color: var(--green);
+  color: var(--soft);
+  transform: scale(1.18) translateY(-2px);
+  box-shadow: var(--sh3);
+}
+```
+
+**Mapbox UI chrome overrides**
+```css
+.mapboxgl-ctrl-group{
+  border: 1px solid var(--line) !important;
+  border-radius: var(--r-3, 3px) !important;
+  box-shadow: var(--sh1) !important;
+}
+.mapboxgl-popup-content{
+  padding: 0 !important;
+  border-radius: 0 !important;
+  box-shadow: var(--sh3) !important;
+  overflow: hidden;
+  width: 236px;
+}
+.mapboxgl-popup-close-button{ font-size: 20px; color: var(--ink); padding: 4px 8px; }
+.map-pop-img{
+  height: 132px;
+  background: var(--line) center/cover no-repeat;
+}
+.map-pop-body{ padding: 14px 16px 16px; background: var(--card); }
+.map-pop-kicker{
+  font-family: var(--heading);
+  font-style: italic;
+  font-size: 14px;
+  color: var(--green-soft);
+  margin-bottom: 2px;
+}
+.map-pop-title{
+  font-family: var(--heading);
+  font-size: 19px;
+  line-height: 1.2;
+  color: var(--ink);
+  margin: 0 0 6px;
+}
+.map-pop-meta{
+  font-family: var(--body);
+  font-size: 13px;
+  color: var(--mute);
+  margin-bottom: 8px;
+}
+.map-pop-price{
+  font-family: var(--display);
+  font-size: 19px;
+  color: var(--ink);
+}
+.map-pop-price span{ font-family: var(--body); font-size: 12px; color: var(--mute); }
+```
+
+## Mobile map toggle
+
+Hidden on desktop where both panes are visible.
+
+```css
+.map-toggle{
+  display: none;
+  position: fixed;
+  left: 50%;
+  bottom: 24px;
+  transform: translateX(-50%);
+  z-index: 60;
+  align-items: center;
+  gap: 8px;
+  padding: 13px 22px;
+  background: var(--green);
+  color: var(--soft);
+  border: 0;
+  border-radius: 999px;
+  box-shadow: var(--sh3);
+  font-family: var(--body);
+  font-weight: 500;
+  font-size: 14px;
+  cursor: pointer;
+}
+```
+
+## Focus + motion floor
+
+```css
+.pcard:focus-visible,
+.fchip:focus-visible,
+.schip:focus-visible,
+.filter-btn:focus-visible,
+.pager-btn:focus-visible,
+.sbar-go:focus-visible,
+.map-toggle:focus-visible,
+.cb-marker:focus-visible{
+  outline: 2px solid var(--green-soft);
+  outline-offset: 3px;
+}
+@media (prefers-reduced-motion: reduce){
+  *{ animation: none !important; transition: none !important; }
+  .pcard:hover .pcard-img .ph{ transform: none; }
+}
+```
+
+## Responsive breakpoints
+
+| Breakpoint | Behaviour |
+|---|---|
+| `≤1240px` | `--rail-w: 65%`; `.pcard` grid narrows to `320px 1fr` |
+| `≤1080px` | `--rail-w: 100%`; split becomes single column; map becomes a fixed full-screen overlay toggled by `.map-open` on `body`; `.map-toggle` button appears |
+| `≤860px` | Search band wraps; search bar and filter button go full width; rail padding tightens |
+| `≤620px` | Search bar fields stack (single column); property cards stack to single column, smaller title/kicker |
+| `≤560px` | Language pill hidden in header |
+| `≤640px` | Burger menu icon hidden; **full mobile mode**: page becomes normal scrolling (`height:auto`), map pane and toggle hidden entirely (`display:none !important`) — results rail is the whole page |
+
+```css
+@media (max-width: 1240px){
+  :root{ --rail-w: 65%; }
+  .pcard{ grid-template-columns: 320px 1fr; gap: var(--s6, 24px); }
+}
+@media (max-width: 1080px){
+  :root{ --rail-w: 100%; }
+  main.split{ grid-template-columns: 1fr; }
+  .results{ border-right: 0; }
+  .mappane{
+    position: fixed;
+    inset: 0;
+    z-index: 50;
+    display: none;
+  }
+  body.lst-body.map-open .mappane{ display: block; }
+  body.lst-body.map-open .results{ display: none; }
+  .map-toggle{ display: inline-flex; }
+}
+@media (max-width: 860px){
+  .searchband-inner{ flex-wrap: wrap; padding: var(--s4, 16px) var(--s5, 20px); }
+  .sbar{ max-width: none; width: 100%; }
+  .filter-btn{ width: 100%; justify-content: center; }
+  .results-inner{ padding: var(--s8, 32px) var(--s5, 20px) 0; }
+}
+@media (max-width: 620px){
+  .sbar{ grid-template-columns: 1fr; }
+  .sbar-field{ border-right: 0; border-bottom: 1px solid var(--line); }
+  .sbar-field-last{ border-bottom: 0; }
+  .pcard{ grid-template-columns: 1fr; gap: var(--s5, 20px); padding: var(--s6, 24px) 0; }
+  .pcard-title{ font-size: 20px; }
+  .pcard-kicker{ font-size: 17px; }
+}
+@media (max-width: 560px){
+  .lst-header .lang-pill{ display: none; }
+}
+@media (max-width: 640px){
+  .lst-header .menu-pill .burger{ display: none; }
+}
+@media (max-width: 640px){
+  body.lst-body{
+    height: auto;
+    overflow: auto;
+    display: block;
+  }
+  .searchband{
+    position: static;
+    height: auto;
+  }
+  main.split{
+    display: block;
+    overflow: visible;
+    flex: none;
+    height: auto;
+  }
+  .results{
+    overflow: visible;
+    width: 100%;
+    border-right: none;
+    height: auto;
+  }
+  .results-inner{
+    overflow: visible;
+    height: auto;
+  }
+  .mappane{ display: none !important; }
+  .map-toggle{ display: none !important; }
+}
+```

@@ -105,7 +105,7 @@ export function Footer() {
           <p className="font-display italic text-[clamp(18px,2vw,26px)]">
             Built on trust, shaped by detail, defined by <em className="not-italic font-semibold">quality, intention, and care.</em>
           </p>
-          <form className="flex gap-3 mt-6 max-w-[480px] mx-auto max-[560px]:flex-col" onSubmit={(e) => e.preventDefault()} aria-label="Newsletter sign-up">
+          <form className="flex gap-3 mt-6 max-w-[480px] mx-auto max-[560px]:flex-col" aria-label="Newsletter sign-up">
             <input
               type="email"
               placeholder="Enter your email address"
