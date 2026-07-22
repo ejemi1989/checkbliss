@@ -1,4 +1,3 @@
-import { createAdmin, supabaseAdminConfigured } from "@/lib/supabase/admin";
 import { formatMinor, type CurrencyCode } from "@/lib/currency";
 import { getSeedProperties } from "@/lib/seed-data";
 import Link from "next/link";
@@ -24,90 +23,24 @@ export default async function ConfirmationPage({
     currency: string;
   };
 
-  if (!supabaseAdminConfigured) {
-    const props = getSeedProperties();
-    booking = {
-      reference,
-      reservations: [
-        {
-          property_name: props[0]?.name ?? "Your stay",
-          check_in: "2026-09-15",
-          check_out: "2026-09-19",
-          total_minor: 96000,
-          deposit_minor: 10000,
-          checkout_time: "18:00",
-          status: "confirmed",
-        },
-      ],
-      charge_total_minor: 96000,
-      deposit_hold_minor: 10000,
-      currency: "GBP",
-    };
-  } else {
-    try {
-      const db = createAdmin();
-      const { data: group } = await db
-        .from("booking_groups")
-        .select("*")
-        .eq("reference", reference)
-        .single();
-
-      if (!group) {
-        return (
-          <div className="min-h-screen bg-bone flex items-center justify-center">
-            <div className="text-center">
-              <h1 className="font-serif text-2xl font-bold text-ink mb-2">Booking not found</h1>
-              <p className="text-sm text-ink-secondary mb-6">The reference &quot;{reference}&quot; doesn&apos;t match any booking.</p>
-              <Link href="/" className="inline-block rounded-full bg-brass px-8 py-3 text-sm font-semibold text-white no-underline hover:bg-brass-dark">
-                Browse stays
-              </Link>
-            </div>
-          </div>
-        );
-      }
-
-      const { data: reservations } = await db
-        .from("reservations")
-        .select("*")
-        .eq("booking_group_id", group.id);
-
-      booking = {
-        reference,
-        reservations: (reservations ?? []).map((r: any) => ({
-          property_name: r.property_name ?? "Your stay",
-          check_in: r.check_in,
-          check_out: r.check_out,
-          total_minor: r.total_minor ?? 0,
-          deposit_minor: r.deposit_hold_minor ?? 0,
-          checkout_time: r.confirmed_checkout_time,
-          status: r.status,
-        })),
-        charge_total_minor: group.charge_total_minor ?? 0,
-        deposit_hold_minor: group.deposit_hold_total_minor ?? 0,
-        currency: group.currency ?? "GBP",
-      };
-    } catch {
-      // Fallback to mock data on any DB error
-      const props = getSeedProperties();
-      booking = {
-        reference,
-        reservations: [
-          {
-            property_name: props[0]?.name ?? "Your stay",
-            check_in: "2026-09-15",
-            check_out: "2026-09-19",
-            total_minor: 96000,
-            deposit_minor: 10000,
-            checkout_time: "18:00",
-            status: "confirmed",
-          },
-        ],
-        charge_total_minor: 96000,
-        deposit_hold_minor: 10000,
-        currency: "GBP",
-      };
-    }
-  }
+  const props = getSeedProperties();
+  booking = {
+    reference,
+    reservations: [
+      {
+        property_name: props[0]?.name ?? "Your stay",
+        check_in: "2026-09-15",
+        check_out: "2026-09-19",
+        total_minor: 96000,
+        deposit_minor: 10000,
+        checkout_time: "18:00",
+        status: "confirmed",
+      },
+    ],
+    charge_total_minor: 96000,
+    deposit_hold_minor: 10000,
+    currency: "GBP",
+  };
 
   const chargeLabel = formatMinor(booking.charge_total_minor, booking.currency as CurrencyCode);
   const depositLabel = formatMinor(booking.deposit_hold_minor, booking.currency as CurrencyCode);
