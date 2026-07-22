@@ -48,7 +48,7 @@ export default function RootLayout({
       lang="en"
       className={`${inter.variable} ${playfair.variable} ${newsreader.variable} ${hankenGrotesk.variable}`}
     >
-      <body>
+      <body suppressHydrationWarning>
         {children}
       </body>
     </html>
