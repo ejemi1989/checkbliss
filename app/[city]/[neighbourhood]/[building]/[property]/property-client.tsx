@@ -328,6 +328,7 @@ export function PropertyClient({ property: prop, formattedNightly, formattedDepo
                   <span className="bc-deposit-amt" id="bcDepositAmt">{formattedDeposit}</span>
                 </div>
                 <p className="bc-deposit-sub">Refunded on checkout · not included in total above</p>
+                <Link href="/policy" className="text-link">View terms</Link>
               </div>
 
               <Link href={`/book/${prop.slug}`} className="bc-cta">Reserve</Link>

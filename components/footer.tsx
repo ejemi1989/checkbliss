@@ -1,74 +1,122 @@
 import Link from "next/link";
 
+function SocialIcon({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <a
+      href="#"
+      aria-label={label}
+      className="flex items-center justify-center w-[34px] h-[34px] border border-hairline rounded-full text-ink hover:border-green-soft hover:text-green-soft transition-colors"
+    >
+      {children}
+    </a>
+  );
+}
+
 export function Footer() {
   return (
-    <footer className="bg-soft border-t border-line pt-section pb-section-sm px-[var(--spacing-gutter)]" role="contentinfo">
-      <div className="max-w-[1240px] mx-auto">
-        <div className="grid grid-cols-[2fr_1fr_1fr_1fr] gap-10 mb-16 max-md:grid-cols-2 max-sm:grid-cols-1 max-sm:gap-7">
+    <footer className="border-t border-hairline pt-16 pb-12" role="contentinfo">
+      <div className="max-w-[1240px] mx-auto px-[var(--spacing-gutter)]">
+
+        {/* 3-column nav */}
+        <nav className="grid grid-cols-3 gap-10 pb-12 border-b border-hairline max-sm:grid-cols-1 max-sm:gap-8" aria-label="Footer navigation">
+          {/* Explore */}
           <div>
-            <img src="/assets/images/logo/logo-wrd.png" alt="CheckinBliss" className="h-8 w-auto mb-3" />
-            <p className="font-sans text-sm leading-relaxed text-ink-secondary max-w-[32ch]">
-              Verified Hospitality. Built on trust, shaped by detail, defined by quality, intention, and care.
+            <h3 className="font-sans text-xs tracking-[.08em] uppercase text-mute font-semibold mb-[18px]">Explore</h3>
+            <Link href="/search" className="block font-sans text-[14.5px] text-ink font-medium mb-[10px] no-underline hover:text-green-soft transition-colors">How it works</Link>
+            <Link href="/search" className="block font-sans text-[14.5px] text-ink font-medium mb-[10px] no-underline hover:text-green-soft transition-colors">Selection process</Link>
+            <Link href="/search" className="block font-sans text-[14.5px] text-ink font-medium mb-[10px] no-underline hover:text-green-soft transition-colors">Hospitality</Link>
+          </div>
+
+          {/* Support */}
+          <div>
+            <h3 className="font-sans text-xs tracking-[.08em] uppercase text-mute font-semibold mb-[18px]">Support</h3>
+            <Link href="/search" className="block font-sans text-[14.5px] text-ink font-medium mb-[10px] no-underline hover:text-green-soft transition-colors">FAQ</Link>
+            <Link href="/search" className="block font-sans text-[14.5px] text-ink font-medium mb-[10px] no-underline hover:text-green-soft transition-colors">Contact us</Link>
+            <span className="flex items-center gap-2 font-sans text-[14.5px] text-hairline font-medium mb-[10px] cursor-default">
+              Affiliate programme
+              <span className="font-sans text-[9px] tracking-[.1em] uppercase font-bold px-2 py-[2px] border border-hairline rounded-full text-mute whitespace-nowrap">Soon</span>
+            </span>
+            <span className="block font-sans text-[14.5px] text-hairline font-medium mb-[10px] cursor-default">Reviews</span>
+          </div>
+
+          {/* CheckinBliss */}
+          <div>
+            <h3 className="font-sans text-xs tracking-[.08em] uppercase text-mute font-semibold mb-[18px]">CheckinBliss</h3>
+            <Link href="/search" className="block font-sans text-[14.5px] text-ink font-medium mb-[10px] no-underline hover:text-green-soft transition-colors">About us</Link>
+            <Link href="/search" className="block font-sans text-[14.5px] text-ink font-medium mb-[10px] no-underline hover:text-green-soft transition-colors">Story</Link>
+            <Link href="/search" className="block font-sans text-[14.5px] text-ink font-medium mb-[10px] no-underline hover:text-green-soft transition-colors">Press</Link>
+            <span className="block font-sans text-[14.5px] text-hairline font-medium mb-[10px] cursor-default">Careers</span>
+          </div>
+        </nav>
+
+        {/* Bottom bar */}
+        <div className="py-8 flex flex-col gap-4">
+          {/* Destinations row */}
+          <div className="flex items-center flex-wrap gap-x-2 gap-y-1">
+            <Link href="/search?where=Lagos" className="font-sans text-sm font-medium text-ink no-underline hover:text-green-soft transition-colors">Lagos</Link>
+            <span className="text-hairline select-none">·</span>
+            <Link href="/search?where=Abuja" className="font-sans text-sm font-medium text-ink no-underline hover:text-green-soft transition-colors">Abuja</Link>
+            <span className="text-hairline select-none">·</span>
+            <span className="font-sans text-[13px] text-mute font-semibold">Coming soon:</span>
+            <span className="font-sans text-[13px] text-mute italic">Port Harcourt,</span>
+            <span className="font-sans text-[13px] text-mute italic">Accra,</span>
+            <span className="font-sans text-[13px] text-mute italic">Nairobi</span>
+          </div>
+
+          {/* Statement + social */}
+          <div className="flex items-center justify-between flex-wrap gap-6 max-sm:flex-col max-sm:items-start">
+            <p className="font-sans text-xs leading-relaxed text-mute">
+              CheckinBliss is operated by Lyxio Curtis Ltd, a UK-registered company. Company number SC863027.
             </p>
-          </div>
-          <div>
-            <div className="font-sans text-xs font-semibold uppercase tracking-[0.14em] text-mute mb-5">Navigation</div>
-            {["Stay", "Lifestyle", "About"].map((l) => (
-              <Link key={l} href={l === "Stay" ? "/search" : "#"} className="block font-sans text-sm text-ink-secondary mb-2 no-underline hover:text-green-soft transition-colors">
-                {l}
-              </Link>
-            ))}
-          </div>
-          <div>
-            <div className="font-sans text-xs font-semibold uppercase tracking-[0.14em] text-mute mb-5">Legal</div>
-            {["Privacy Policy", "Cookies Policy", "Terms of Service", "Accessibility"].map((l) => (
-              <span key={l} className="block font-sans text-sm text-ink-secondary mb-2 cursor-pointer hover:text-green-soft transition-colors">
-                {l}
-              </span>
-            ))}
-          </div>
-          <div>
-            <div className="font-sans text-xs font-semibold uppercase tracking-[0.14em] text-mute mb-5">Destinations</div>
-            {["Lagos", "Abuja", "Coming Soon"].map((l) => (
-              <Link key={l} href={l === "Coming Soon" ? "#" : `/search?where=${l}`} className="block font-sans text-sm text-ink-secondary mb-2 no-underline hover:text-green-soft transition-colors">
-                {l}
-              </Link>
-            ))}
-            <div className="font-sans text-xs font-semibold uppercase tracking-[0.14em] text-mute mb-5 mt-8">Contact</div>
-            <span className="block font-sans text-sm text-ink-secondary mb-2">hello@checkinbliss.com</span>
-            <span className="block font-sans text-sm text-ink-secondary mb-2">+44 000 000 000</span>
-            <span className="block font-sans text-sm text-ink-secondary mb-2 cursor-pointer hover:text-green-soft transition-colors">Press Enquiries</span>
+            <div className="flex items-center gap-3 shrink-0">
+              <SocialIcon label="Instagram">
+                <svg className="w-[18px] h-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                  <rect x="2" y="2" width="20" height="20" rx="5" /><path d="M16 11.37A4 4 0 1112.63 8 4 4 0 0116 11.37z" /><line x1="17.5" y1="6.5" x2="17.51" y2="6.5" />
+                </svg>
+              </SocialIcon>
+              <SocialIcon label="TikTok">
+                <svg className="w-[18px] h-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                  <path d="M9 12a4 4 0 107 3V6h3a8 8 0 01-4 7" />
+                </svg>
+              </SocialIcon>
+              <SocialIcon label="X (Twitter)">
+                <svg className="w-[18px] h-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                  <path d="M4 4l6.5 8.5L4 20h3l5-5.5L17 20h4l-7-9.5L21 4h-3l-4.5 5L8 4H4z" />
+                </svg>
+              </SocialIcon>
+            </div>
           </div>
         </div>
 
-        <div className="p-8 bg-brass text-bone text-center mb-10 rounded-sm">
+        {/* Legal links */}
+        <div className="flex items-center flex-wrap gap-x-2 gap-y-1">
+          <Link href="/privacy" className="font-sans text-[13px] text-mute font-medium no-underline hover:text-green-soft transition-colors">Privacy</Link>
+          <span className="text-hairline select-none">·</span>
+          <Link href="/terms" className="font-sans text-[13px] text-mute font-medium no-underline hover:text-green-soft transition-colors">Terms</Link>
+          <span className="text-hairline select-none">·</span>
+          <Link href="/cookies" className="font-sans text-[13px] text-mute font-medium no-underline hover:text-green-soft transition-colors">Cookies</Link>
+          <span className="text-hairline select-none">·</span>
+          <Link href="/accessibility" className="font-sans text-[13px] text-mute font-medium no-underline hover:text-green-soft transition-colors">Accessibility</Link>
+        </div>
+
+        {/* Newsletter */}
+        <div className="mt-10 p-8 bg-brass text-bone rounded-sm text-center">
           <p className="font-display italic text-[clamp(18px,2vw,26px)]">
             Built on trust, shaped by detail, defined by <em className="not-italic font-semibold">quality, intention, and care.</em>
           </p>
+          <form className="flex gap-3 mt-6 max-w-[480px] mx-auto max-[560px]:flex-col" onSubmit={(e) => e.preventDefault()} aria-label="Newsletter sign-up">
+            <input
+              type="email"
+              placeholder="Enter your email address"
+              aria-label="Email address"
+              className="flex-1 bg-transparent border-b border-bone/30 px-3 py-3 text-bone text-sm placeholder:text-bone/50 outline-none font-sans max-[560px]:text-center"
+            />
+            <button type="submit" className="bg-bone text-brass font-sans text-sm font-semibold px-6 py-3 rounded-sm transition-colors hover:bg-bone-secondary shrink-0 max-[560px]:w-full">
+              Subscribe
+            </button>
+          </form>
         </div>
 
-        <div className="flex items-center justify-between flex-wrap gap-4 mb-6 text-[13px] text-mute max-sm:flex-col max-sm:text-center">
-          <span className="flex gap-x-5">
-            <a href="#" className="text-mute hover:text-green-soft transition-colors" aria-label="Instagram">
-              <svg className="w-[18px] h-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-                <rect x="2" y="2" width="20" height="20" rx="5"/><path d="M16 11.37A4 4 0 1112.63 8 4 4 0 0116 11.37z"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/>
-              </svg>
-            </a>
-            <a href="#" className="text-mute hover:text-green-soft transition-colors" aria-label="LinkedIn">
-              <svg className="w-[18px] h-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-                <path d="M16 8a6 6 0 016 6v7h-4v-7a2 2 0 00-2-2 2 2 0 00-2 2v7h-4v-7a6 6 0 016-6z"/><rect x="2" y="9" width="4" height="12"/><circle cx="4" cy="4" r="2"/>
-              </svg>
-            </a>
-            <a href="#" className="text-mute hover:text-green-soft transition-colors" aria-label="X (Twitter)">
-              <svg className="w-[18px] h-[18px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-                <path d="M4 4l6.5 8.5L4 20h3l5-5.5L17 20h4l-7-9.5L21 4h-3l-4.5 5L8 4H4z"/>
-              </svg>
-            </a>
-          </span>
-        </div>
-        <div className="flex items-center justify-between flex-wrap gap-4 text-[13px] text-mute max-sm:flex-col max-sm:text-center">
-          <span>&copy; 2026 CheckinBliss. All rights reserved.</span>
-        </div>
       </div>
     </footer>
   );

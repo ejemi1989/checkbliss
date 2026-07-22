@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
+import { HeroSearch } from "@/components/hero-search";
 import "./landing.css";
 
 
@@ -191,27 +192,7 @@ export function HomePageClient() {
 
       {/* ── Search bar ── */}
       <div className="search-wrap">
-        <div className="search">
-          <div className="field">
-            <label>Where</label>
-            <span>Lagos, Nigeria</span>
-          </div>
-          <div className="field">
-            <label>Check-in</label>
-            <span>22 Jun 2026</span>
-          </div>
-          <div className="field">
-            <label>Check-out</label>
-            <span>26 Jun 2026</span>
-          </div>
-          <div className="field">
-            <label>Guests</label>
-            <span>2 guests</span>
-          </div>
-          <Link href="/search" className="search-btn" style={{ textDecoration: "none", display: "flex", alignItems: "center", justifyContent: "center" }}>
-            Search
-          </Link>
-        </div>
+        <HeroSearch />
       </div>
 
       {/* ── Intro band ── */}
