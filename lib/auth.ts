@@ -15,7 +15,7 @@
  * sees only Lagos data, not Abuja).
  */
 
-export type Role = "admin" | "operator" | "owner";
+export type Role = "admin" | "operator" | "owner" | "guest";
 
 export interface AuthUser {
   email: string;

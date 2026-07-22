@@ -5,22 +5,17 @@ import Link from "next/link";
 import { DIASPORA_COUNTRIES } from "@/lib/countries";
 import { signupAction } from "@/actions/auth";
 
-type Role = "operator" | "owner";
-
 interface FormErrors {
   name?: string;
   email?: string;
   phone?: string;
   password?: string;
-  city?: string;
-  property?: string;
   country?: string;
 }
 
 export default function SignupPage() {
   const [pending, setPending] = useState(false);
-  const [serverState, setServerState] = useState<{ success?: boolean; role?: string; message?: string; error?: string } | null>(null);
-  const [role, setRole] = useState<Role>("owner");
+  const [serverState, setServerState] = useState<{ success?: boolean; message?: string; error?: string } | null>(null);
   const [errors, setErrors] = useState<FormErrors>({});
   const [submitted, setSubmitted] = useState(false);
   const [verifyMethod, setVerifyMethod] = useState<"id" | "flight" | null>(null);
@@ -34,8 +29,6 @@ export default function SignupPage() {
     if (!pw) e.password = "Required";
     else if (pw.length < 8) e.password = "At least 8 characters";
     if (!fd.get("country")) e.country = "Required";
-    if (role === "operator" && !fd.get("city")) e.city = "Required";
-    if (role === "owner" && !fd.get("property")) e.property = "Required";
     setErrors(e);
     return Object.keys(e).length === 0;
   }
@@ -51,7 +44,7 @@ export default function SignupPage() {
       if (result?.error) {
         setServerState({ error: result.error });
       } else {
-        setServerState({ success: true, role, message: result?.message || "Account created." });
+        setServerState({ success: true, message: result?.message || "Account created." });
         setSubmitted(true);
       }
     } catch {
@@ -78,7 +71,7 @@ export default function SignupPage() {
         className="signup-image-panel"
       >
         <img
-          src="https://images.unsplash.com/photo-1600210492486-724fe5c67fb0?auto=format&fit=crop&w=1200&q=80"
+          src="/assets/images/hero/hero-01.jpg"
           alt=""
           style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }}
           onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
@@ -86,14 +79,14 @@ export default function SignupPage() {
         <div style={{ position: "absolute", inset: 0, background: "linear-gradient(160deg, rgba(23,25,21,0.75) 0%, rgba(23,25,21,0.25) 50%, rgba(23,25,21,0.65) 100%)" }} />
         <div style={{ position: "relative", zIndex: 10, display: "flex", flexDirection: "column", justifyContent: "space-between", height: "100%", padding: "48px 56px" }}>
           <Link href="/" style={{ textDecoration: "none" }}>
-            <img src="/assets/images/logo/Logo.png" alt="CheckinBliss" style={{ height: 32, width: "auto" }} />
+            <img src="/assets/images/logo/Logo1.png" alt="CheckinBliss" style={{ height: 32, width: "auto" }} />
           </Link>
           <div style={{ paddingBottom: 32 }}>
             <p style={{ fontFamily: 'var(--font-newsreader), Georgia, serif', fontStyle: "italic", fontSize: "clamp(18px, 2vw, 26px)", color: "rgba(255,255,255,0.88)", lineHeight: 1.45, marginBottom: 12, maxWidth: 380 }}>
-              List your property or help us verify apartments in Lagos &amp; Abuja.
+              The Premium way to stay in Africa.
             </p>
             <p style={{ fontSize: 14, color: "rgba(255,255,255,0.5)", lineHeight: 1.6, maxWidth: 340 }}>
-              Join the platform built for the diaspora. Every apartment inspected in person. Every owner paid in their currency.
+              Hand-selected apartments in Lagos and Abuja. Instantly bookable from anywhere.
             </p>
           </div>
         </div>
@@ -105,7 +98,7 @@ export default function SignupPage() {
           {/* Mobile logo */}
           <div style={{ textAlign: "center", marginBottom: 32 }} className="signup-mobile-logo">
             <Link href="/" style={{ textDecoration: "none" }}>
-              <img src="/assets/images/logo/Logo.png" alt="CheckinBliss" style={{ height: 28, width: "auto", margin: "0 auto" }} />
+              <img src="/assets/images/logo/Logo1.png" alt="CheckinBliss" style={{ height: 28, width: "auto", margin: "0 auto" }} />
             </Link>
           </div>
 
@@ -116,12 +109,15 @@ export default function SignupPage() {
                   <polyline points="20 6 9 17 4 12" />
                 </svg>
               </div>
-              <h2 style={{ fontFamily: 'var(--font-newsreader), Georgia, serif', fontSize: "clamp(22px, 2.5vw, 28px)", fontWeight: 500, color: "#171915", marginBottom: 8 }}>Account requested</h2>
-              <p style={{ fontSize: 14, color: "#44483D", marginBottom: 28, maxWidth: 340, margin: "0 auto 28px" }}>
-                We&rsquo;ll review your {serverState.role === "operator" ? "operator" : "owner"} application and get back to you within 24 hours.
+              <h2 style={{ fontFamily: 'var(--font-newsreader), Georgia, serif', fontSize: "clamp(22px, 2.5vw, 28px)", fontWeight: 500, color: "#171915", marginBottom: 8 }}>Account created</h2>
+              <p style={{ fontSize: 14, color: "#44483D", marginBottom: 8, maxWidth: 340, margin: "0 auto 8px" }}>
+                You&rsquo;re all set. Start browsing verified apartments in Lagos and Abuja.
               </p>
-              <Link href="/login" style={{ display: "inline-block", padding: "14px 32px", borderRadius: 6, backgroundColor: "#2F3D2C", color: "#F4F6F0", fontSize: 15, fontWeight: 600, textDecoration: "none" }}>
-                Go to sign in
+              <p style={{ fontSize: 13, color: "#6A6E63", marginBottom: 28, maxWidth: 340, margin: "0 auto 28px" }}>
+                We&rsquo;ll verify your phone number via text message before your first booking.
+              </p>
+              <Link href="/" style={{ display: "inline-block", padding: "14px 32px", borderRadius: 6, backgroundColor: "#2F3D2C", color: "#F4F6F0", fontSize: 15, fontWeight: 600, textDecoration: "none" }}>
+                Browse apartments
               </Link>
             </div>
           ) : (
@@ -129,7 +125,7 @@ export default function SignupPage() {
               <div style={{ marginBottom: 32 }}>
                 <p style={{ fontSize: 11, fontWeight: 600, letterSpacing: "0.14em", textTransform: "uppercase" as const, color: "#6A6E63", marginBottom: 8 }}>Get started</p>
                 <h1 style={{ fontFamily: 'var(--font-newsreader), Georgia, serif', fontSize: "clamp(26px, 3vw, 34px)", fontWeight: 500, lineHeight: 1.15, color: "#171915", margin: 0 }}>Create your account</h1>
-                <p style={{ fontSize: 14, color: "#44483D", marginTop: 8 }}>Join as an operator or property owner.</p>
+                <p style={{ fontSize: 14, color: "#44483D", marginTop: 8 }}>Book verified apartments in Lagos and Abuja.</p>
               </div>
 
               {/* Google sign-up */}
@@ -158,45 +154,8 @@ export default function SignupPage() {
                 </div>
               </div>
 
-              {/* Role selector */}
-              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10, marginBottom: 28 }}>
-                {(["owner", "operator"] as const).map((r) => {
-                  const active = role === r;
-                  return (
-                    <button
-                      key={r}
-                      type="button"
-                      onClick={() => { setRole(r); setErrors({}); }}
-                      style={{
-                        padding: 16, borderRadius: 8, border: `1px solid ${active ? "#2F3D2C" : "#D8DBCF"}`,
-                        backgroundColor: active ? "rgba(47,61,44,0.06)" : "#FCFDFB",
-                        textAlign: "left", cursor: "pointer", transition: "border-color 0.15s, background-color 0.15s",
-                      }}
-                    >
-                      <div style={{
-                        width: 36, height: 36, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center", marginBottom: 10,
-                        backgroundColor: active ? "#2F3D2C" : "#F4F6F0", color: active ? "#F4F6F0" : "#6A6E63",
-                      }}>
-                        {r === "owner" ? (
-                          <svg style={{ width: 18, height: 18 }} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-                            <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z" />
-                            <polyline points="9 22 9 12 15 12 15 22" />
-                          </svg>
-                        ) : (
-                          <svg style={{ width: 18, height: 18 }} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-                            <path d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-                          </svg>
-                        )}
-                      </div>
-                      <div style={{ fontSize: 14, fontWeight: 600, color: "#171915" }}>{r === "owner" ? "Property Owner" : "Operator"}</div>
-                      <div style={{ fontSize: 11, color: "#6A6E63", marginTop: 4 }}>{r === "owner" ? "List your apartments and earn" : "Verify and inspect properties"}</div>
-                    </button>
-                  );
-                })}
-              </div>
-
               <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
-                <input type="hidden" name="role" value={role} />
+                <input type="hidden" name="role" value="guest" />
 
                 <div>
                   <label style={labelStyle}>Full name</label>
@@ -212,7 +171,7 @@ export default function SignupPage() {
                   </div>
                   <div>
                     <label style={labelStyle}>Phone number</label>
-                    <input type="tel" name="phone" placeholder="+234 800 000 0000" style={inputStyle(!!errors.phone)} required />
+                    <input type="tel" name="phone" placeholder="+1 555 000 0000" style={inputStyle(!!errors.phone)} required />
                     {errors.phone && <p style={{ fontSize: 10, color: "#EF4444", marginTop: 4 }}>{errors.phone}</p>}
                   </div>
                 </div>
@@ -234,10 +193,10 @@ export default function SignupPage() {
                   {errors.country && <p style={{ fontSize: 10, color: "#EF4444", marginTop: 4 }}>{errors.country}</p>}
                 </div>
 
-                {/* Verification notice */}
+                {/* Phone verification notice */}
                 <div style={{ padding: 14, borderRadius: 8, backgroundColor: "rgba(92,107,79,0.06)", border: "1px solid rgba(92,107,79,0.15)" }}>
                   <p style={{ fontSize: 13, color: "#44483D", lineHeight: 1.55 }}>
-                    <strong style={{ color: "#171915" }}>Diaspora verification required.</strong> We verify your phone number via text message to confirm you are booking from abroad. Flight ticket or government ID may be required for first-time guests.
+                    <strong style={{ color: "#171915" }}>Phone verification required.</strong> We&rsquo;ll send a text message to verify your number. This confirms you&rsquo;re booking from outside Africa.
                   </p>
                 </div>
 
@@ -246,7 +205,7 @@ export default function SignupPage() {
                   <label style={labelStyle}>Verify with (optional for now)</label>
                   <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
                     {([
-                      { id: "id" as const, label: "Government ID", desc: "Passport, driver's license, or national ID" },
+                      { id: "id" as const, label: "Government ID", desc: "Passport, driver&rsquo;s license, or national ID" },
                       { id: "flight" as const, label: "Flight ticket", desc: "Upcoming or recent booking confirmation" },
                     ]).map((opt) => {
                       const active = verifyMethod === opt.id;
@@ -295,46 +254,13 @@ export default function SignupPage() {
                             Tap to upload
                           </span>
                           <span style={{ fontSize: 11, color: "#6A6E63", display: "block", marginTop: 4 }}>
-                            {verifyMethod === "id" ? "Passport, driver's license, or national ID" : "Booking confirmation or e-ticket"}
+                            {verifyMethod === "id" ? "Passport, driver&rsquo;s license, or national ID" : "Booking confirmation or e-ticket"}
                           </span>
                         </label>
                       </div>
                     </div>
                   )}
                 </div>
-
-                {/* Role-specific fields */}
-                {role === "operator" && (
-                  <div>
-                    <label style={labelStyle}>Assigned city</label>
-                    <select name="city" defaultValue="" style={{ ...inputStyle(!!errors.city), appearance: "none" as const, cursor: "pointer" }} required>
-                      <option value="" disabled>Select a city</option>
-                      <option value="Lagos">Lagos</option>
-                      <option value="Abuja">Abuja</option>
-                      <option value="Port Harcourt">Port Harcourt</option>
-                    </select>
-                    {errors.city && <p style={{ fontSize: 10, color: "#EF4444", marginTop: 4 }}>{errors.city}</p>}
-                  </div>
-                )}
-
-                {role === "owner" && (
-                  <>
-                    <div>
-                      <label style={labelStyle}>Property name or address</label>
-                      <input type="text" name="property" placeholder="e.g. The Palms, Victoria Island" style={inputStyle(!!errors.property)} required />
-                      {errors.property && <p style={{ fontSize: 10, color: "#EF4444", marginTop: 4 }}>{errors.property}</p>}
-                    </div>
-                    <div>
-                      <label style={labelStyle}>How many properties do you own?</label>
-                      <select name="propertyCount" defaultValue="1" style={{ ...inputStyle(), appearance: "none" as const, cursor: "pointer" }}>
-                        <option value="1">1 property</option>
-                        <option value="2">2–4 properties</option>
-                        <option value="5">5–10 properties</option>
-                        <option value="10">10+ properties</option>
-                      </select>
-                    </div>
-                  </>
-                )}
 
                 {serverState?.error && (
                   <div style={{ padding: "10px 14px", borderRadius: 8, backgroundColor: "rgba(239,68,68,0.06)", border: "1px solid rgba(239,68,68,0.18)" }}>
@@ -352,7 +278,7 @@ export default function SignupPage() {
                     cursor: pending || submitted ? "wait" : "pointer", transition: "background-color 0.2s",
                   }}
                 >
-                  {pending || submitted ? "Submitting\u2026" : role === "owner" ? "Apply as owner" : "Apply as operator"}
+                  {pending || submitted ? "Creating account\u2026" : "Create account"}
                 </button>
               </form>
 

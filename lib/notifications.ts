@@ -3,7 +3,7 @@
  * Production: persists to `notifications` table via `createAdmin()`.
  */
 
-export type NotifRole = "admin" | "operator" | "owner";
+export type NotifRole = "admin" | "operator" | "owner" | "guest";
 
 export interface Notification {
   id: string;

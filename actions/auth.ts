@@ -11,6 +11,7 @@ const roleRoutes: Record<Role, string> = {
   admin: "/admin",
   operator: "/dashboard/operator",
   owner: "/dashboard/owner",
+  guest: "/account",
 };
 
 const MOCK_SESSION_COOKIE = "cb_mock_session";
@@ -22,6 +23,9 @@ function mockUserFromEmail(email: string): AuthUser {
   }
   if (email === "owner@checkbliss.com") {
     return { id: "mock-owner", email, role: "owner", name: "Adaora Mensah" };
+  }
+  if (email === "guest@checkbliss.com") {
+    return { id: "mock-guest", email, role: "guest", name: "Temi Adetola" };
   }
   // operator variants
   const cities = mockOperatorCities(email);
@@ -156,7 +160,7 @@ export async function signupAction(_prev: unknown, formData: FormData) {
     return { error: "All required fields must be filled." };
   }
 
-  if (role !== "operator" && role !== "owner") {
+  if (role !== "guest" && role !== "operator" && role !== "owner") {
     return { error: "Please select a valid role." };
   }
 

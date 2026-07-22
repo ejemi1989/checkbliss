@@ -6,6 +6,7 @@ import { loginAction } from "@/actions/auth";
 
 const CREDENTIALS = [
   { role: "Admin", email: "admin@checkbliss.com", sub: "Strategic oversight, financial control" },
+  { role: "Guest", email: "guest@checkbliss.com", sub: "Browse and book apartments" },
   { role: "Operator — Lagos", email: "operator-lagos@checkbliss.com", sub: "Lagos city operations" },
   { role: "Operator — Abuja", email: "operator-abuja@checkbliss.com", sub: "Abuja city operations" },
   { role: "Owner", email: "owner@checkbliss.com", sub: "Property portfolio" },
