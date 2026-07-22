@@ -71,91 +71,102 @@ export function SearchResultsClient({
     : "Sort";
 
   return (
-    <div className="min-h-screen bg-bone">
+    <div className="min-h-screen bg-canvas">
       {/* Header */}
-      <header className="bg-card border-b border-line sticky top-0 z-50">
-        <div className="max-w-[1240px] mx-auto px-8 py-4 flex items-center gap-5 max-sm:px-5">
-          <Link href="/" className="font-sans text-sm font-medium text-ink-secondary no-underline hover:text-green-soft transition-colors shrink-0">
-            &#8592; Home
-          </Link>
+      <header className="bg-card border-b border-hairline">
+        <div className="max-w-[1240px] mx-auto px-8 py-5 flex items-center justify-between max-sm:px-5">
           <Link href="/" className="shrink-0 no-underline">
-            <img src="/checkbliss%20logo.png" alt="CheckinBliss" className="h-6 w-auto" />
+            <img src="/assets/images/logo/Logo.png" alt="CheckinBliss" className="h-9 w-auto" />
           </Link>
-          <div className="ml-auto relative">
-            <button
-              className="flex items-center gap-1.5 font-sans text-xs font-semibold text-ink-secondary bg-bone border border-hairline rounded-full py-1.5 px-3 cursor-pointer hover:bg-hairline-dark/20 transition-colors"
-              onClick={() => setCurrencyOpen(!currencyOpen)}
-              onBlur={() => setTimeout(() => setCurrencyOpen(false), 200)}
-            >
-              {currency}
-            </button>
-            {currencyOpen && (
-              <div className="absolute top-full right-0 mt-1 w-36 bg-white rounded-xl border border-hairline shadow-xl z-50 overflow-hidden">
-                {CURRENCY_OPTIONS.map((c) => (
-                  <button
-                    key={c.code}
-                    className={`w-full text-left px-3 py-2 text-sm font-medium cursor-pointer border-none transition-colors ${currency === c.code ? "bg-primary text-white" : "text-ink-secondary hover:bg-bone"}`}
-                    onClick={() => updateCurrency(c.code)}
-                  >
-                    <span className="mr-1.5">{c.flag}</span>
-                    {c.label}
-                  </button>
-                ))}
-              </div>
-            )}
+          <div className="flex items-center gap-4">
+            <Link href="/" className="font-sans text-[13px] font-medium text-ink-secondary no-underline hover:text-green-soft transition-colors">
+              Home
+            </Link>
+            <div className="relative">
+              <button
+                className="flex items-center gap-1.5 font-sans text-[13px] font-medium text-ink-secondary border-b border-transparent hover:border-hairline transition-colors pb-0.5 cursor-pointer bg-transparent"
+                onClick={() => setCurrencyOpen(!currencyOpen)}
+                onBlur={() => setTimeout(() => setCurrencyOpen(false), 200)}
+              >
+                {currency}
+                <svg className={`w-2.5 h-2.5 transition-transform ${currencyOpen ? "rotate-180" : ""}`} viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M3 5l3 3 3-3"/>
+                </svg>
+              </button>
+              {currencyOpen && (
+                <div className="absolute top-full right-0 mt-2 w-36 bg-card rounded-xl border border-hairline shadow-xl z-50 overflow-hidden">
+                  {CURRENCY_OPTIONS.map((c) => (
+                    <button
+                      key={c.code}
+                      className={`w-full text-left px-4 py-2.5 text-[13px] font-medium cursor-pointer border-none bg-transparent transition-colors ${currency === c.code ? "bg-primary-bg text-primary" : "text-ink-secondary hover:bg-bone"}`}
+                      onClick={() => updateCurrency(c.code)}
+                    >
+                      <span className="mr-2">{c.flag}</span>
+                      {c.label}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </header>
 
       {/* Search bar */}
-      <div className="bg-card px-8 py-4 border-b border-line max-sm:px-5">
-        <div className="max-w-[1240px] mx-auto">
-          <Suspense fallback={<div className="h-12 bg-soft rounded-sm animate-pulse" />}>
+      <div className="bg-card border-b border-hairline">
+        <div className="max-w-[860px] mx-auto px-8 py-6 max-sm:px-5">
+          <Suspense fallback={<div className="h-[52px] bg-bone rounded-[var(--radius-sm)] animate-pulse" />}>
             <SearchBar />
           </Suspense>
         </div>
       </div>
 
       {/* Filters */}
-      <div className="px-8 py-3 bg-bone border-b border-line max-sm:px-5">
-        <div className="max-w-[1240px] mx-auto flex items-center gap-2">
-          {/* Sort dropdown */}
-          <div className="relative ml-auto">
-            <button
-              onClick={() => setSortOpen(!sortOpen)}
-              className={`inline-flex items-center gap-1 px-3 py-1 rounded-full border text-[13px] font-medium cursor-pointer whitespace-nowrap transition-all ${
-                sort ? "border-green-soft text-ink bg-green-soft/5" : "border-line text-ink-secondary bg-card hover:border-green-soft hover:text-ink"
-              }`}
-            >
-              {sortLabel}
-              <svg className={`w-3 h-3 transition-transform ${sortOpen ? "rotate-180" : ""}`} viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M3 5l3 3 3-3"/>
-              </svg>
-            </button>
-            {sortOpen && (
-              <div className="absolute top-full right-0 mt-1 w-40 bg-card border border-line rounded-[var(--radius-md)] shadow-lg z-40 py-1 animate-slideIn">
-                {[
-                  { label: "Price ↑", key: "price-asc" as SortKey },
-                  { label: "Price ↓", key: "price-desc" as SortKey },
-                  { label: "Beds ↑", key: "beds-asc" as SortKey },
-                  { label: "Beds ↓", key: "beds-desc" as SortKey },
-                  { label: "Name", key: "name" as SortKey },
-                ].map((opt) => (
-                  <button
-                    key={opt.key}
-                    onClick={() => cycleSort(opt.key)}
-                    className={`w-full text-left px-4 py-2 text-sm font-sans cursor-pointer border-none bg-transparent transition-colors ${
-                      sort === opt.key ? "text-ink font-semibold bg-soft" : "text-ink-secondary hover:bg-soft"
-                    }`}
-                  >
-                    {opt.label}
-                  </button>
-                ))}
-              </div>
-            )}
+      {hasSearch && (
+        <div className="px-8 py-4 max-sm:px-5">
+          <div className="max-w-[1240px] mx-auto flex items-center justify-between">
+            <p className="font-sans text-[13px] text-mute font-medium">
+              {filtered.length} {filtered.length === 1 ? "stay" : "stays"}
+            </p>
+            <div className="relative">
+              <button
+                onClick={() => setSortOpen(!sortOpen)}
+                onBlur={() => setTimeout(() => setSortOpen(false), 200)}
+                className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-full border text-[13px] font-medium cursor-pointer transition-all ${
+                  sort ? "border-green-soft text-ink bg-green-soft/5" : "border-hairline text-ink-secondary bg-card hover:border-line"
+                }`}
+              >
+                {sortLabel}
+                <svg className={`w-3 h-3 transition-transform ${sortOpen ? "rotate-180" : ""}`} viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path d="M3 5l3 3 3-3"/>
+                </svg>
+              </button>
+              {sortOpen && (
+                <div className="absolute top-full right-0 mt-2 w-44 bg-card rounded-xl border border-hairline shadow-lg z-40 py-2 animate-slideIn">
+                  {[
+                    { label: "Price ↑", key: "price-asc" as SortKey },
+                    { label: "Price ↓", key: "price-desc" as SortKey },
+                    { label: "Bedrooms ↑", key: "beds-asc" as SortKey },
+                    { label: "Bedrooms ↓", key: "beds-desc" as SortKey },
+                    { label: "Name A–Z", key: "name" as SortKey },
+                  ].map((opt) => (
+                    <button
+                      key={opt.key}
+                      onMouseDown={(e) => e.preventDefault()}
+                      onClick={() => cycleSort(opt.key)}
+                      className={`w-full text-left px-4 py-2.5 text-[13px] font-sans cursor-pointer border-none bg-transparent transition-colors ${
+                        sort === opt.key ? "text-ink font-semibold bg-soft" : "text-ink-secondary hover:bg-bone"
+                      }`}
+                    >
+                      {opt.label}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
         </div>
-      </div>
+      )}
 
       {/* Results */}
       <main className="py-10 pb-[80px]" id="main-content">
@@ -163,40 +174,47 @@ export function SearchResultsClient({
           {filtered.length === 0 && hasSearch ? (
             <div className="text-center py-16">
               <h1 className="font-display text-2xl font-medium text-ink mb-3">No stays found</h1>
-              <p className="font-sans text-sm text-ink-secondary mb-8 max-w-[480px] mx-auto">
+              <p className="font-sans text-[14px] text-ink-secondary mb-8 max-w-[480px] mx-auto">
                 No stays match your search. Try a different city or date range.
               </p>
-              <div className="flex items-center justify-center gap-x-3 flex-wrap">
-                <Link href="/search?where=Lagos" className="rounded-full border border-line px-5 py-2.5 text-xs font-medium text-ink-secondary hover:bg-card transition-colors no-underline">Browse Lagos</Link>
-                <Link href="/search?where=Abuja" className="rounded-full border border-line px-5 py-2.5 text-xs font-medium text-ink-secondary hover:bg-card transition-colors no-underline">Browse Abuja</Link>
-                <Link href="/search" className="rounded-[var(--radius-sm)] bg-brass px-5 py-2.5 text-xs font-semibold text-bone hover:bg-brass-dark transition-colors no-underline">Clear search</Link>
+              <div className="flex items-center justify-center gap-3 flex-wrap">
+                <Link href="/search?where=Lagos" className="rounded-full border border-hairline px-5 py-2.5 text-[13px] font-medium text-ink-secondary hover:bg-card transition-colors no-underline">Browse Lagos</Link>
+                <Link href="/search?where=Abuja" className="rounded-full border border-hairline px-5 py-2.5 text-[13px] font-medium text-ink-secondary hover:bg-card transition-colors no-underline">Browse Abuja</Link>
+                <Link href="/search" className="rounded-[var(--radius-sm)] bg-brass px-5 py-2.5 text-[13px] font-semibold text-bone hover:bg-brass-dark transition-colors no-underline">Clear search</Link>
               </div>
             </div>
           ) : filtered.length === 0 ? (
-            <div className="text-center py-16">
+            <div className="text-center py-24">
+              <img src="/assets/images/logo/Logo.png" alt="CheckinBliss" className="h-8 w-auto mx-auto mb-8 opacity-60" />
               <h1 className="font-display text-2xl font-medium text-ink mb-3">Browse stays</h1>
-              <p className="font-sans text-sm text-ink-secondary">Select a city to get started.</p>
+              <p className="font-sans text-[14px] text-ink-secondary mb-8">Select a city to begin searching.</p>
+              <div className="flex items-center justify-center gap-3 flex-wrap">
+                <Link href="/search?where=Lagos" className="rounded-full border border-hairline px-6 py-3 text-[14px] font-medium text-ink-secondary hover:bg-card hover:border-line transition-colors no-underline">Lagos</Link>
+                <Link href="/search?where=Abuja" className="rounded-full border border-hairline px-6 py-3 text-[14px] font-medium text-ink-secondary hover:bg-card hover:border-line transition-colors no-underline">Abuja</Link>
+              </div>
             </div>
           ) : (
             <>
-              <p className="font-sans text-sm text-mute mb-8">Every apartment inspected in person. Instant booking — no host approval needed.</p>
-              <div className="grid grid-cols-[1fr_380px] gap-8 items-start max-lg:grid-cols-1">
-                <div className="flex flex-col gap-6 max-sm:gap-10">
+              <div className="grid grid-cols-[1fr_380px] gap-10 items-start max-lg:grid-cols-1">
+                <div className="flex flex-col gap-8 max-sm:gap-10">
                   {filtered.map((p) => (
-                    <PropertyCard key={p.id} p={p} currency={displayCurrency} />
+                    <PropertyCard key={p.id} p={p} currency={currency} />
                   ))}
                 </div>
-                <div className="sticky top-[80px] max-lg:hidden">
-                  <div className="bg-card border border-line rounded-[var(--radius-lg)] overflow-hidden">
-                    <div className="relative w-full aspect-[4/3] bg-ink flex items-center justify-center">
-                      <div className="text-center px-6">
-                        <svg className="w-10 h-10 text-white/30 mx-auto mb-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
-                        <p className="font-sans text-sm text-white/40">{displayWhere} map view</p>
+                <div className="sticky top-[80px] space-y-6 max-lg:hidden">
+                  <div className="bg-card rounded-[var(--radius-lg)] border border-hairline overflow-hidden">
+                    <div className="relative w-full aspect-[4/3] bg-ink/90 flex items-center justify-center">
+                      <div className="text-center">
+                        <svg className="w-12 h-12 text-white/20 mx-auto mb-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="0.8"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                        <p className="font-sans text-[14px] text-white/40">{displayWhere}</p>
+                        <p className="font-sans text-[12px] text-white/25 mt-1">Map view</p>
                       </div>
                     </div>
-                    <div className="p-4">
-                      <p className="font-sans text-xs text-mute">All properties are within {displayWhere}&rsquo;s most desirable neighbourhoods.</p>
-                    </div>
+                  </div>
+                  <div className="bg-card rounded-[var(--radius-lg)] border border-hairline p-5">
+                    <p className="font-sans text-[13px] text-mute">
+                      Every apartment in {displayWhere} is inspected in person before listing. Instant booking — no host approval needed.
+                    </p>
                   </div>
                 </div>
               </div>
@@ -215,30 +233,40 @@ function PropertyCard({ p, currency = "GBP" }: { p: SeedProperty; currency?: Cur
   return (
     <Link
       href={propertyHref(p)}
-      className="flex gap-5 no-underline text-inherit group bg-card border border-line rounded-[var(--radius-lg)] overflow-hidden hover:border-green-soft/40 transition-all max-sm:flex-col"
+      className="flex gap-6 no-underline text-inherit group bg-card rounded-[var(--radius-lg)] overflow-hidden border border-hairline hover:border-green-soft/30 transition-all max-sm:flex-col"
     >
-      <div className="w-[260px] shrink-0 relative aspect-[5/4] overflow-hidden max-sm:w-full max-sm:aspect-[16/9]">
-        <img src={p.cover_photo_url ?? undefined} alt={p.name} className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" loading="lazy" />
+      <div className="w-[280px] shrink-0 relative max-sm:w-full">
+        <div className="aspect-[5/4] overflow-hidden">
+          <img
+            src={p.cover_photo_url ?? undefined}
+            alt={p.name}
+            className="w-full h-full object-cover transition-transform duration-600 group-hover:scale-105"
+            loading="lazy"
+          />
+        </div>
       </div>
-      <div className="flex flex-col justify-center py-5 pr-5 max-sm:py-3 max-sm:px-4">
-        <p className="font-display italic text-sm text-green-soft mb-1">{p.neighbourhood}</p>
-        <h2 className="font-display text-[clamp(18px,1.6vw,22px)] font-medium text-ink leading-tight mb-1">{p.name}</h2>
-        <p className="font-sans text-[13px] text-mute mb-2">{p.city}, Nigeria</p>
-        <div className="flex items-center gap-2 font-sans text-[13px] text-ink-secondary flex-wrap">
-          <span>{p.bedrooms} bed{p.bedrooms > 1 ? "s" : ""}</span><span>&middot;</span>
+      <div className="flex flex-col justify-center py-6 pr-5 max-sm:py-4 max-sm:px-5 max-sm:pb-6">
+        <p className="font-sans text-[11px] font-semibold uppercase tracking-[0.12em] text-mute mb-1.5">{p.neighbourhood}</p>
+        <h2 className="font-display text-[clamp(18px,1.8vw,24px)] font-normal text-ink leading-[1.2] mb-1">{p.name}</h2>
+        <p className="font-sans text-[13px] text-ink-secondary/70 mb-3">{p.city}, Nigeria</p>
+        <div className="flex items-center gap-2 font-sans text-[13px] text-ink-secondary/80">
+          <span>{p.bedrooms} bed{p.bedrooms > 1 ? "s" : ""}</span>
+          <span className="text-hairline-dark">·</span>
           <span>{p.sleeps} guest{p.sleeps > 1 ? "s" : ""}</span>
         </div>
-        <div className="flex items-center gap-2 mt-2 font-sans text-[13px]">
-          <span className="font-semibold text-ink">{formatMinor(displayMinor, currency)}</span>
-          <span className="font-normal text-ink-secondary">/ night</span>
-        </div>
-        {p.amenities && p.amenities.length > 0 && (
-          <div className="flex items-center gap-1.5 mt-2 flex-wrap">
-            {p.amenities.slice(0, 3).map((a) => (
-              <span key={a} className="text-[11px] text-mute bg-soft px-2 py-0.5 rounded-full">{a}</span>
-            ))}
+        <div className="flex items-end justify-between mt-3">
+          <div className="flex items-baseline gap-1">
+            <span className="font-sans text-[20px] font-semibold text-ink tracking-[-0.01em]">{formatMinor(displayMinor, currency)}</span>
+            <span className="font-sans text-[13px] font-normal text-ink-secondary/70">night</span>
           </div>
-        )}
+          {p.amenities && p.amenities.length > 0 && (
+            <div className="hidden sm:flex items-center gap-1.5">
+              {p.amenities.slice(0, 2).map((a) => (
+                <span key={a} className="text-[11px] text-mute bg-bone px-2 py-0.5 rounded-full">{a}</span>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
     </Link>
   );
