@@ -1,6 +1,8 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
+import mapboxgl from "mapbox-gl";
+import "mapbox-gl/dist/mapbox-gl.css";
 
 export interface MapMarker {
   lat: number;
@@ -19,6 +21,23 @@ interface MapBoxProps {
   height?: string;
 }
 
+function MapFallback({ className, height }: { className?: string; height?: string }) {
+  return (
+    <div className={`bg-ink/90 flex items-center justify-center ${className ?? ""}`} style={{ height: height ?? "100%" }}>
+      <div className="text-center">
+        <svg className="w-10 h-10 text-white/20 mx-auto mb-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="0.8">
+          <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z" /><circle cx="12" cy="10" r="3" />
+        </svg>
+        <p className="font-sans text-sm text-white/40">Map unavailable</p>
+      </div>
+    </div>
+  );
+}
+
+function isBadToken(token: string): boolean {
+  return !token || token.startsWith("sk.");
+}
+
 export function MapBox({
   markers,
   center,
@@ -28,92 +47,76 @@ export function MapBox({
   height = "100%",
 }: MapBoxProps) {
   const containerRef = useRef<HTMLDivElement>(null);
-  const mapRef = useRef<any>(null);
-  const loadedRef = useRef(false);
+  const mapRef = useRef<mapboxgl.Map | null>(null);
+  const markersRef = useRef<mapboxgl.Marker[]>([]);
+  const [mapError, setMapError] = useState(false);
+  const token = process.env.NEXT_PUBLIC_MAPBOX_TOKEN ?? "";
 
   useEffect(() => {
-    const token = process.env.NEXT_PUBLIC_MAPBOX_TOKEN;
-    if (!token || typeof window === "undefined") return;
+    if (isBadToken(token)) return;
     const container = containerRef.current;
-    if (!container || markers.length === 0) return;
-    let cancelled = false;
+    if (!container) return;
 
-    async function init() {
-      if (!(window as any).mapboxgl) {
-        await new Promise<void>((resolve) => {
-          const existing = document.querySelector("script[src*='mapbox-gl']");
-          if (existing) {
-            existing.addEventListener("load", () => resolve());
-            return;
-          }
-          const css = document.createElement("link");
-          css.href = "https://api.mapbox.com/mapbox-gl-js/v3.6.0/mapbox-gl.css";
-          css.rel = "stylesheet";
-          document.head.appendChild(css);
-          const script = document.createElement("script");
-          script.src = "https://api.mapbox.com/mapbox-gl-js/v3.6.0/mapbox-gl.js";
-          script.async = true;
-          script.addEventListener("load", () => resolve());
-          document.head.appendChild(script);
-        });
-        if (cancelled) return;
-      }
+    mapboxgl.accessToken = token;
 
-      const mapboxgl = (window as any).mapboxgl;
-      mapboxgl.accessToken = token;
-
-      if (mapRef.current) mapRef.current.remove();
-      const mapCenter = center ?? { lat: markers[0].lat, lng: markers[0].lng };
-
-      const map = new mapboxgl.Map({
-        container,
-        style: "mapbox://styles/mapbox/light-v11",
-        center: [mapCenter.lng, mapCenter.lat],
-        zoom,
-        interactive,
-      });
-
-      if (!interactive) {
-        map.scrollZoom.disable();
-        map.dragPan.disable();
-        map.doubleClickZoom.disable();
-      }
-
-      markers.forEach((m) => {
-        const el = document.createElement("div");
-        const color = m.color ?? "#2F3D2C";
-        el.innerHTML = `<span style="background:${color};color:#FCFDFB;padding:4px 8px;border-radius:999px;font-size:11px;font-weight:600;white-space:nowrap;box-shadow:0 2px 8px rgba(0,0,0,.2);cursor:${interactive ? "pointer" : "default"}">${m.label ?? ""}</span>`;
-        const marker = new mapboxgl.Marker({ element: el.firstElementChild, anchor: "bottom" })
-          .setLngLat([m.lng, m.lat])
-          .addTo(map);
-        if (m.popup && interactive) {
-          marker.setPopup(new mapboxgl.Popup({ offset: 25 }).setText(m.popup));
-        }
-      });
-
-      mapRef.current = map;
-      loadedRef.current = true;
+    if (mapRef.current) {
+      markersRef.current.forEach((m) => m.remove());
+      markersRef.current = [];
     }
 
-    init();
+    const mapCenter = center ?? (markers.length > 0 ? { lat: markers[0].lat, lng: markers[0].lng } : { lat: 0, lng: 0 });
+
+    const map = new mapboxgl.Map({
+      container,
+      style: "mapbox://styles/mapbox/light-v11",
+      center: [mapCenter.lng, mapCenter.lat],
+      zoom,
+      interactive,
+    });
+
+    map.on("error", (e) => {
+      const msg = (e.error?.message ?? "").toLowerCase();
+      if (msg.includes("unauthorized") || msg.includes("forbidden") || msg.includes("not found")) {
+        setMapError(true);
+        markersRef.current.forEach((m) => m.remove());
+        markersRef.current = [];
+        map.remove();
+        mapRef.current = null;
+      }
+    });
+
+    if (!interactive) {
+      map.scrollZoom.disable();
+      map.dragPan.disable();
+      map.doubleClickZoom.disable();
+    }
+
+    const created = markers.map((m) => {
+      const el = document.createElement("div");
+      const color = m.color ?? "#2F3D2C";
+      el.innerHTML = `<span style="background:${color};color:#FCFDFB;padding:4px 8px;border-radius:999px;font-size:11px;font-weight:600;white-space:nowrap;box-shadow:0 2px 8px rgba(0,0,0,.2);cursor:${interactive ? "pointer" : "default"}">${m.label ?? ""}</span>`;
+      const marker = new mapboxgl.Marker({ element: el.firstElementChild as HTMLElement, anchor: "bottom" })
+        .setLngLat([m.lng, m.lat])
+        .addTo(map);
+      if (m.popup && interactive) {
+        marker.setPopup(new mapboxgl.Popup({ offset: 25 }).setText(m.popup));
+      }
+      return marker;
+    });
+
+    mapRef.current = map;
+    markersRef.current = created;
 
     return () => {
-      cancelled = true;
-      mapRef.current?.remove();
+      created.forEach((m) => m.remove());
+      map.remove();
+      mapRef.current = null;
+      markersRef.current = [];
     };
-  }, [markers, center, zoom, interactive]);
+  }, [token, markers, center, zoom, interactive]);
 
-  if (!process.env.NEXT_PUBLIC_MAPBOX_TOKEN) {
-    return (
-      <div className={`bg-ink/90 flex items-center justify-center ${className}`} style={{ height }}>
-        <div className="text-center">
-          <svg className="w-10 h-10 text-white/20 mx-auto mb-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="0.8">
-            <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/>
-          </svg>
-          <p className="font-sans text-sm text-white/40">Map unavailable</p>
-        </div>
-      </div>
-    );
+  if (isBadToken(token) || mapError) {
+    return <MapFallback className={className} height={height} />;
   }
 
   return <div ref={containerRef} className={className} style={{ height }} />;
