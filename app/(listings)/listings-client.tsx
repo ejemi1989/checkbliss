@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import Link from "next/link";
+import { MapBox } from "@/components/map-box";
 
 /* ---------- Data ---------- */
 export interface ListingProperty {
@@ -25,67 +26,8 @@ export interface ListingsPageProps {
   totalCount: number;
 }
 
-const MAPBOX_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_TOKEN || "";
-
-/* ---------- Component ---------- */
 export function ListingsClient({ city, eyebrow, properties }: ListingsPageProps) {
   const [mapOpen, setMapOpen] = useState(true);
-  const mapRef = useRef<any>(null);
-  const mapContainerRef = useRef<HTMLDivElement>(null);
-  const markersRef = useRef<any[]>([]);
-
-  useEffect(() => {
-    if (!MAPBOX_TOKEN) return;
-    const script = document.createElement("script");
-    script.src = "https://api.mapbox.com/mapbox-gl-js/v3.6.0/mapbox-gl.js";
-    script.async = true;
-    document.head.appendChild(script);
-
-    const tokenScript = document.createElement("script");
-    tokenScript.textContent = `window.__CB_MAPBOX_TOKEN__=${JSON.stringify(MAPBOX_TOKEN)};`;
-    document.head.appendChild(tokenScript);
-
-    const jsScript = document.createElement("script");
-    jsScript.src = "/js/listings.js";
-    jsScript.async = true;
-    document.head.appendChild(jsScript);
-
-    const interactionsScript = document.createElement("script");
-    interactionsScript.src = "/js/interactions.js";
-    interactionsScript.async = true;
-    document.head.appendChild(interactionsScript);
-  }, []);
-
-  useEffect(() => {
-    if (mapRef.current || !mapContainerRef.current || !window.mapboxgl) return;
-    try {
-      window.mapboxgl.accessToken = MAPBOX_TOKEN;
-      const map = new window.mapboxgl.Map({
-        container: mapContainerRef.current,
-        style: "mapbox://styles/mapbox/light-v11",
-        center: city === "Lagos" ? [3.4219, 6.4295] : [7.4837, 9.0695],
-        zoom: 11,
-      });
-      mapRef.current = map;
-
-      // Add markers
-      const markers = properties.map((p) => {
-        const el = document.createElement("div");
-        el.className = "map-pin";
-        el.textContent = `$${p.price}`;
-        const marker = new window.mapboxgl.Marker(el).setLngLat([p.lng, p.lat]).addTo(map);
-        return marker;
-      });
-      markersRef.current = markers;
-    } catch (err) {
-      console.warn("Mapbox init failed:", err);
-    }
-
-    return () => {
-      markersRef.current.forEach((m) => m.remove());
-      mapRef.current?.remove();
-    };
-  }, [city, properties]);
 
   return (
     <>
@@ -284,10 +226,13 @@ export function ListingsClient({ city, eyebrow, properties }: ListingsPageProps)
         </section>
 
         <aside className={`mappane ${mapOpen ? "" : "mappane--hidden"}`} aria-label={`Map of ${city} apartments`}>
-          <div id="map" className="map-canvas" ref={mapContainerRef}></div>
-          <div className="map-fallback" id="mapFallback" hidden>
-            <p>Map unavailable. Add your Mapbox token in <code>js/listings.js</code> to enable it.</p>
-          </div>
+          <MapBox
+            markers={properties.map((p) => ({ lat: p.lat, lng: p.lng, label: `$${p.price}` }))}
+            center={city === "Lagos" ? { lat: 6.4295, lng: 3.4219 } : { lat: 9.0695, lng: 7.4837 }}
+            zoom={11}
+            className="map-canvas"
+            height="100%"
+          />
         </aside>
       </main>
 
