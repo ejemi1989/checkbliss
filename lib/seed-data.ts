@@ -27,6 +27,8 @@ export interface SeedProperty {
   images: string[];
   cover_photo_url: string | null;
   owner_id?: string;
+  lat?: number;
+  lng?: number;
 }
 
 export interface SeedReservation {

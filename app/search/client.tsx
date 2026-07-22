@@ -1,12 +1,14 @@
 "use client";
 
-import { useState, useMemo, Suspense, useEffect, useRef } from "react";
+import { useState, useMemo, Suspense, useEffect } from "react";
 import Link from "next/link";
 import type { SeedProperty } from "@/lib/seed-data";
 import { SearchBar } from "@/components/search-bar";
 import { Footer } from "@/components/footer";
 import { propertyHref } from "@/lib/slug";
 import { formatMinor, convertMinor, type CurrencyCode, CURRENCY_OPTIONS } from "@/lib/currency";
+import { NEIGHBOURHOOD_COORDS } from "@/lib/map-coords";
+import { MapBox } from "@/components/map-box";
 
 type SortKey = "price-asc" | "price-desc" | "beds-asc" | "beds-desc" | "name" | null;
 
@@ -47,8 +49,6 @@ export function SearchResultsClient({
 
   const [sort, setSort] = useState<SortKey>(null);
   const [sortOpen, setSortOpen] = useState(false);
-  const mapContainerRef = useRef<HTMLDivElement>(null);
-  const mapRef = useRef<any>(null);
 
   const filtered = useMemo(() => {
     let result = [...properties];
@@ -67,20 +67,23 @@ export function SearchResultsClient({
   }, [properties, sort, hasSearch, displayWhere]);
 
   const propertyCoords = useMemo(() => {
-    const center = activeWhere === "Abuja"
-      ? { lat: 9.0695, lng: 7.4837 }
-      : { lat: 6.4295, lng: 3.4219 };
-    return filtered.map((p, i) => ({
-      id: p.id,
-      name: p.name,
-      lat: center.lat + (Math.sin(i * 2.3) * 0.06),
-      lng: center.lng + (Math.cos(i * 2.7) * 0.08),
-      price: formatMinor(
-        currency === "GBP" ? p.nightly_rate_minor : convertMinor(p.nightly_rate_minor, currency),
-        currency,
-      ),
-    }));
-  }, [filtered, activeWhere, currency]);
+    return filtered.map((p, i) => {
+      const coords = NEIGHBOURHOOD_COORDS[p.neighbourhood] ?? (filtered[0]?.city === "Abuja"
+        ? { lat: 9.0695, lng: 7.4837 }
+        : { lat: 6.4295, lng: 3.4219 });
+      const jitter = i > 0 ? 0.003 : 0;
+      return {
+        id: p.id,
+        name: p.name,
+        lat: coords.lat + (Math.sin(i * 1.7) * jitter),
+        lng: coords.lng + (Math.cos(i * 2.1) * jitter),
+        price: formatMinor(
+          currency === "GBP" ? p.nightly_rate_minor : convertMinor(p.nightly_rate_minor, currency),
+          currency,
+        ),
+      };
+    });
+  }, [filtered, currency]);
 
   const cycleSort = (key: SortKey) => {
     setSort((prev) => (prev === key ? null : key));
@@ -91,77 +94,8 @@ export function SearchResultsClient({
     ? { "price-asc": "Price ↑", "price-desc": "Price ↓", "beds-asc": "Beds ↑", "beds-desc": "Beds ↓", "name": "Name" }[sort]
     : "Sort";
 
-  useEffect(() => {
-    const MAPBOX_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_TOKEN;
-    if (typeof window === "undefined" || !MAPBOX_TOKEN) return;
-    const container = mapContainerRef.current;
-    if (!container || propertyCoords.length === 0) return;
-    let cancelled = false;
-
-    async function loadAndRender() {
-      if (!(window as any).mapboxgl) {
-        await new Promise<void>((resolve) => {
-          const css = document.createElement("link");
-          css.href = "https://api.mapbox.com/mapbox-gl-js/v3.6.0/mapbox-gl.css";
-          css.rel = "stylesheet";
-          document.head.appendChild(css);
-          const script = document.createElement("script");
-          script.src = "https://api.mapbox.com/mapbox-gl-js/v3.6.0/mapbox-gl.js";
-          script.async = true;
-          script.addEventListener("load", () => resolve());
-          document.head.appendChild(script);
-        });
-        if (cancelled) return;
-      }
-
-      const mapboxgl = (window as any).mapboxgl;
-      mapboxgl.accessToken = MAPBOX_TOKEN;
-
-      if (mapRef.current) mapRef.current.remove();
-
-      const map = new mapboxgl.Map({
-        container,
-        style: "mapbox://styles/mapbox/light-v11",
-        center: [propertyCoords[0].lng, propertyCoords[0].lat],
-        zoom: 11,
-        interactive: false,
-      });
-
-      propertyCoords.forEach((c) => {
-        const el = document.createElement("div");
-        el.innerHTML = `<span class="map-marker-badge">${c.price}</span>`;
-        new mapboxgl.Marker({ element: el.firstElementChild, anchor: "bottom" })
-          .setLngLat([c.lng, c.lat])
-          .addTo(map);
-      });
-
-      mapRef.current = map;
-    }
-
-    loadAndRender();
-
-    return () => {
-      cancelled = true;
-      mapRef.current?.remove();
-    };
-  }, [propertyCoords]);
-
   return (
     <div className="min-h-screen bg-canvas">
-      <style>{`
-        .map-marker-badge {
-          background: #2F3D2C;
-          color: #FCFDFB;
-          padding: 4px 8px;
-          border-radius: 999px;
-          font-size: 11px;
-          font-weight: 600;
-          font-family: var(--font-sans, Inter, system-ui, sans-serif);
-          white-space: nowrap;
-          box-shadow: 0 2px 8px rgba(0,0,0,.2);
-          cursor: default;
-        }
-      `}</style>
       {/* Header */}
       <header className="bg-card border-b border-hairline">
         <div className="max-w-[1240px] mx-auto px-8 py-5 flex items-center justify-between max-sm:px-5">
@@ -293,12 +227,16 @@ export function SearchResultsClient({
                 </div>
                 <div className="sticky top-[80px] space-y-6 max-lg:hidden">
                   <div className="bg-card rounded-[var(--radius-lg)] border border-hairline overflow-hidden">
-                    <div ref={mapContainerRef} className="w-full aspect-[4/3] bg-ink/90 flex items-center justify-center">
-                      <div className="text-center map-placeholder">
-                        <svg className="w-12 h-12 text-white/20 mx-auto mb-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="0.8"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
-                        <p className="font-sans text-[14px] text-white/40">{displayWhere}</p>
-                      </div>
-                    </div>
+                    <MapBox
+                      markers={propertyCoords.map((c) => ({
+                        lat: c.lat,
+                        lng: c.lng,
+                        label: c.price,
+                      }))}
+                      center={propertyCoords.length > 0 ? { lat: propertyCoords[0].lat, lng: propertyCoords[0].lng } : undefined}
+                      zoom={11}
+                      className="w-full aspect-[4/3]"
+                    />
                   </div>
                   <div className="bg-card rounded-[var(--radius-lg)] border border-hairline p-5">
                     <p className="font-sans text-[13px] text-mute">

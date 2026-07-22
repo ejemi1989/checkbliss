@@ -1,7 +1,9 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
+import { MapBox } from "@/components/map-box";
+import { NEIGHBOURHOOD_COORDS } from "@/lib/map-coords";
 
 export interface PropertyClientProps {
   property: {
@@ -70,27 +72,13 @@ export function PropertyClient({ property: prop, formattedNightly, formattedDepo
     ? [prop.images[0], prop.images[1] || prop.cover_photo_url]
     : [prop.cover_photo_url, prop.cover_photo_url];
 
-  useEffect(() => {
-    if (!MAPBOX_TOKEN) return;
-    const script = document.createElement("script");
-    script.src = "https://api.mapbox.com/mapbox-gl-js/v3.6.0/mapbox-gl.js";
-    script.async = true;
-    document.head.appendChild(script);
-
-    const tokenScript = document.createElement("script");
-    tokenScript.textContent = `window.__CB_MAPBOX_TOKEN__=${JSON.stringify(MAPBOX_TOKEN)};`;
-    document.head.appendChild(tokenScript);
-
-    const jsScript = document.createElement("script");
-    jsScript.src = "/js/property.js";
-    jsScript.async = true;
-    document.head.appendChild(jsScript);
-
-    const interactionsScript = document.createElement("script");
-    interactionsScript.src = "/js/interactions.js";
-    interactionsScript.async = true;
-    document.head.appendChild(interactionsScript);
-  }, []);
+  const propCoords = useMemo(() => {
+    return [{
+      lat: NEIGHBOURHOOD_COORDS[prop.neighbourhood]?.lat ?? (prop.city === "Abuja" ? 9.0695 : 6.4295),
+      lng: NEIGHBOURHOOD_COORDS[prop.neighbourhood]?.lng ?? (prop.city === "Abuja" ? 7.4837 : 3.4219),
+      label: prop.branded_name,
+    }];
+  }, [prop.neighbourhood, prop.city, prop.branded_name]);
 
   return (
     <>
@@ -387,10 +375,13 @@ export function PropertyClient({ property: prop, formattedNightly, formattedDepo
               The apartment and Murtala Muhammed International, so you can see the journey before you land.
             </p>
             <div className="mapwrap">
-              <div id="propMap" className="propmap"></div>
-              <div className="map-fallback" id="mapFallback" hidden>
-                <p>Map unavailable. Add your Mapbox token in <code>js/property.js</code> to enable it.</p>
-              </div>
+              <MapBox
+                markers={propCoords}
+                center={propCoords[0]}
+                zoom={14}
+                className="propmap"
+                height="100%"
+              />
             </div>
             <ul className="map-key">
               <li><span className="key-dot key-home" aria-hidden="true"></span>{prop.branded_name}, {prop.neighbourhood.split(",")[0]}</li>
