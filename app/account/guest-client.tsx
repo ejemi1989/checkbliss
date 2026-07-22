@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef } from "react";
+import { useRouter } from "next/navigation";
 import { formatMinor } from "@/lib/currency";
 import { getOwnerBookings } from "@/lib/data";
 import { submitDispute } from "@/actions/disputes";
@@ -338,6 +339,8 @@ function ContactTab({ user }: { user: { name: string; email: string } }) {
 
 function SettingsTab({ user }: { user: { name: string; email: string } }) {
   const [saved, setSaved] = useState(false);
+  const [photo, setPhoto] = useState<string | null>(null);
+  const fileRef = useRef<HTMLInputElement>(null);
 
   function handleSave(e: React.FormEvent) {
     e.preventDefault();
@@ -345,11 +348,54 @@ function SettingsTab({ user }: { user: { name: string; email: string } }) {
     setTimeout(() => setSaved(false), 3000);
   }
 
+  function handlePhotoChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) return;
+    const reader = new FileReader();
+    reader.onload = () => setPhoto(reader.result as string);
+    reader.readAsDataURL(file);
+  }
+
   return (
     <div className="space-y-5">
       <h1 className="font-display text-2xl font-medium text-ink">Account settings</h1>
 
-      <form onSubmit={handleSave} className="p-6 rounded-xl border border-hairline bg-card space-y-4">
+      <form onSubmit={handleSave} className="p-6 rounded-xl border border-hairline bg-card space-y-5">
+        {/* Avatar upload */}
+        <div className="flex items-center gap-5">
+          <div className="w-20 h-20 rounded-full border-2 border-hairline bg-primary-bg overflow-hidden shrink-0 flex items-center justify-center">
+            {photo ? (
+              <img src={photo} alt="Profile" className="w-full h-full object-cover" />
+            ) : (
+              <span className="font-display text-2xl font-medium text-ink-secondary">{user.name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2)}</span>
+            )}
+          </div>
+          <div>
+            <p className="text-sm font-medium text-ink mb-1">Profile photo</p>
+            <p className="text-xs text-ink-secondary mb-2">JPG or PNG, max 5MB</p>
+            <input
+              ref={fileRef}
+              type="file"
+              accept="image/jpeg,image/png,image/webp"
+              onChange={handlePhotoChange}
+              className="hidden"
+            />
+            <div className="flex gap-2">
+              <button type="button" onClick={() => fileRef.current?.click()} className="px-4 py-2 rounded-lg border border-line text-sm font-medium text-ink-secondary hover:bg-primary-bg transition-colors cursor-pointer">
+                Upload photo
+              </button>
+              {photo && (
+                <button type="button" onClick={() => setPhoto(null)} className="px-4 py-2 rounded-lg text-sm font-medium text-mute hover:text-danger transition-colors cursor-pointer">
+                  Remove
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+
+        <hr className="border-hairline" />
+
         <div className="grid grid-cols-2 gap-4 max-sm:grid-cols-1">
           <div className="flex flex-col gap-1">
             <label className="text-xs font-semibold uppercase tracking-wider text-mute">Full name</label>
