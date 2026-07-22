@@ -203,12 +203,12 @@ export async function signupAction(_prev: unknown, formData: FormData) {
 }
 
 export async function logoutAction() {
+  if (!supabaseServerConfigured) {
+    const cookieStore = await cookies();
+    cookieStore.delete(MOCK_SESSION_COOKIE);
+    redirect("/login");
+  }
   try {
-    if (!supabaseServerConfigured) {
-      const cookieStore = await cookies();
-      cookieStore.delete(MOCK_SESSION_COOKIE);
-      redirect("/login");
-    }
     const supabase = await createClient();
     await supabase.auth.signOut();
   } catch {
