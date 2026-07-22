@@ -51,10 +51,12 @@ export function BookingFlow(props: Props) {
   const steps: Step[] = ["dates", "checkout", "payment"];
   const currentIndex = steps.indexOf(step);
 
-  const today = new Date();
-  const minDate = new Date(today);
-  minDate.setDate(minDate.getDate() + 14);
-  const minDateStr = minDate.toISOString().split("T")[0];
+  const [minDateStr] = useState(() => {
+    const today = new Date();
+    const minDate = new Date(today);
+    minDate.setDate(minDate.getDate() + 14);
+    return minDate.toISOString().split("T")[0];
+  });
 
   const nights = checkIn && checkOut
     ? Math.max(1, Math.round((new Date(checkOut).getTime() - new Date(checkIn).getTime()) / (1000 * 60 * 60 * 24)))

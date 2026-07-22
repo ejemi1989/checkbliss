@@ -36,10 +36,12 @@ export function SearchBar() {
     return () => document.removeEventListener("mousedown", onClick);
   }, []);
 
-  const today = new Date();
-  const minDate = new Date(today);
-  minDate.setDate(minDate.getDate() + 14);
-  const minDateStr = minDate.toISOString().split("T")[0];
+  const [minDateStr] = useState(() => {
+    const today = new Date();
+    const minDate = new Date(today);
+    minDate.setDate(minDate.getDate() + 14);
+    return minDate.toISOString().split("T")[0];
+  });
 
   const suggestions = where.length > 0
     ? [

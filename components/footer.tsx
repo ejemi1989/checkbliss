@@ -67,7 +67,7 @@ export function Footer() {
           </span>
         </div>
         <div className="flex items-center justify-between flex-wrap gap-4 text-[13px] text-mute max-sm:flex-col max-sm:text-center">
-          <span>&copy; {new Date().getFullYear()} CheckinBliss. All rights reserved.</span>
+          <span>&copy; 2026 CheckinBliss. All rights reserved.</span>
         </div>
       </div>
     </footer>

@@ -14,10 +14,9 @@ const RATES: Record<CurrencyCode, number> = {
 
 export function formatMinor(amount: number, currency: CurrencyCode = "GBP"): string {
   const major = amount / 100;
-  return `${SYMBOLS[currency]}${major.toLocaleString("en-GB", {
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  })}`;
+  const [intPart, fracPart] = major.toFixed(2).split(".");
+  const formatted = intPart.replace(/\B(?=(\d{3})+(?!\d))/g, ",") + "." + fracPart;
+  return `${SYMBOLS[currency]}${formatted}`;
 }
 
 /** Convert a GBP minor-unit amount to another currency's minor units */
