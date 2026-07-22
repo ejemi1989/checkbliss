@@ -8,5 +8,5 @@ export function generateMetadata(): Metadata {
 
 export default async function OwnerPropertiesPage() {
   const user = await getSession();
-  return <OwnerDashboard user={user} initialTab="home" />;
+  return <OwnerDashboard user={user} initialTab="properties" />;
 }

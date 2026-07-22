@@ -126,6 +126,10 @@ export interface OwnerBookingView {
   amount_minor: number;
   nights: number;
   guest_count: number;
+  property: string;
+  city: string;
+  neighbourhood: string;
+  guests: number;
 }
 
 export interface CurationItem {

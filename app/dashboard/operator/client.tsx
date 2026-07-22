@@ -124,6 +124,7 @@ export function OperatorDashboard({ user, initialTab }: { user: AuthUser | null;
   const [photosTab, setPhotosTab] = useState<"browse" | "manage">("browse");
   const [selectedProperty, setSelectedProperty] = useState("");
   const [photos, setPhotos] = useState<PropertyPhoto[]>([]);
+  const [outcomeInspId, setOutcomeInspId] = useState<string | null>(null);
   const [photosLoading, setPhotosLoading] = useState(false);
   const [editingPhoto, setEditingPhoto] = useState<string | null>(null);
   const [editAltText, setEditAltText] = useState("");
@@ -371,7 +372,8 @@ export function OperatorDashboard({ user, initialTab }: { user: AuthUser | null;
                       <span className={`text-[11px] font-semibold ${statusColor(i.status)}`}>{statusLabel(i.status)}</span>
                     </div>
                     {(i.status === "pending" || i.status === "in_progress") && (
-                      <div className="flex gap-x-2 mt-3">
+                      <div className="flex flex-col gap-2 mt-3">
+                        <div className="flex gap-x-2">
                         <button
                           disabled={pendingAction === `start-${i.id}`}
                           onClick={() => action(`start-${i.id}`, async () => { const r = await startInspection({ inspectionId: i.id }); if (r.ok) setInspections((prev) => prev.map((x) => x.id === i.id ? { ...x, status: "in_progress" } : x)); notify(r.ok ? `Inspection ${i.id} started` : r.message, r.ok ? "success" : "error"); })}
@@ -382,6 +384,36 @@ export function OperatorDashboard({ user, initialTab }: { user: AuthUser | null;
                           onClick={() => action(`complete-${i.id}`, async () => { const r = await completeInspection({ inspectionId: i.id }); if (r.ok) setInspections((prev) => prev.map((x) => x.id === i.id ? { ...x, status: "completed" } : x)); notify(r.ok ? `Inspection ${i.id} completed` : r.message, r.ok ? "success" : "error"); })}
                           className="px-4 py-2 rounded-xl text-sm font-medium border border-hairline text-ink-secondary hover:bg-primary-bg transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-wait"
                         >{pendingAction === `complete-${i.id}` ? "Completing..." : "Complete"}</button>
+                        </div>
+                        {outcomeInspId === i.id ? (
+                          <div className="flex gap-2">
+                            {[
+                              { key: "clean", label: "CLEAN", color: "bg-success/10 text-success border-success/20" },
+                              { key: "damage", label: "DAMAGE", color: "bg-danger/10 text-danger border-danger/20" },
+                              { key: "noshow", label: "NOSHOW", color: "bg-warning/10 text-warning border-warning/20" },
+                              { key: "guestpresent", label: "GUESTPRESENT", color: "bg-primary/10 text-primary border-primary/20" },
+                            ].map((o) => (
+                              <button
+                                key={o.key}
+                                onClick={() => {
+                                  action(`complete-${i.id}`, async () => {
+                                    const r = await completeInspection({ inspectionId: i.id, notes: o.key });
+                                    if (r.ok) setInspections((prev) => prev.map((x) => x.id === i.id ? { ...x, status: "completed" } : x));
+                                    notify(r.ok ? `Inspection ${i.id} completed — ${o.key}` : r.message, r.ok ? "success" : "error");
+                                  });
+                                  setOutcomeInspId(null);
+                                }}
+                                className={`px-3 py-1.5 rounded-full text-[11px] font-semibold border cursor-pointer hover:opacity-80 transition-opacity ${o.color}`}
+                              >
+                                {o.label}
+                              </button>
+                            ))}
+                          </div>
+                        ) : (
+                          <button onClick={() => setOutcomeInspId(i.id)} className="text-xs font-medium text-primary hover:underline cursor-pointer bg-transparent border-none text-left">
+                            Select outcome
+                          </button>
+                        )}
                       </div>
                     )}
                   </div>
@@ -899,6 +931,75 @@ export function OperatorDashboard({ user, initialTab }: { user: AuthUser | null;
                     <span className="text-[11px] font-semibold text-success">{v.status}</span>
                   </div>
                 ))}
+              </div>
+            </div>
+          )}
+
+          {/* ---------- PERFORMANCE ---------- */}
+          {tab === "performance" && (
+            <div className="space-y-5">
+              <h2 className="font-sans text-xl font-medium text-ink">Your performance</h2>
+
+              <div className="grid grid-cols-4 gap-4 max-lg:grid-cols-2">
+                {[
+                  { label: "Inspections", value: stats.find((s) => s.label.includes("Inspections"))?.value ?? "12", sub: "this month" },
+                  { label: "Properties", value: "8", sub: "active" },
+                  { label: "Claims submitted", value: claims.filter((c) => c.admin_decision !== "rejected").length.toString(), sub: "this month" },
+                  { label: "Quality score", value: stats.find((s) => s.label.includes("Quality"))?.value ?? "92%", sub: "30-day avg" },
+                ].map((m) => (
+                  <div key={m.label} className="p-4 rounded-xl border border-hairline bg-white">
+                    <p className="text-xs font-medium text-ink-secondary mb-1">{m.label}</p>
+                    <p className="font-sans text-2xl font-semibold text-ink">{m.value}</p>
+                    <p className="text-xs text-ink-secondary mt-0.5">{m.sub}</p>
+                  </div>
+                ))}
+              </div>
+
+              {/* Revenue share */}
+              <div className="p-5 rounded-xl border border-hairline bg-white">
+                <h3 className="font-sans text-base font-medium text-ink mb-4">Revenue share</h3>
+                <div className="grid grid-cols-3 gap-4 mb-4">
+                  <div>
+                    <p className="text-xs text-ink-secondary mb-0.5">City revenue (MTD)</p>
+                    <p className="font-sans text-2xl font-semibold text-ink">£{(640000 / 100)}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-ink-secondary mb-0.5">Commission rate</p>
+                    <p className="font-sans text-2xl font-semibold text-primary">6%</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-ink-secondary mb-0.5">Your earnings</p>
+                    <p className="font-sans text-2xl font-semibold text-success">£{Math.round(640000 * 0.06 / 100)}</p>
+                  </div>
+                </div>
+                <div className="bg-primary-bg rounded-lg p-4">
+                  <p className="text-xs text-ink-secondary mb-2">Earnings breakdown</p>
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className="flex-1 h-2 rounded-full bg-hairline overflow-hidden">
+                      <div className="h-full bg-success rounded-full" style={{ width: "60%" }} />
+                    </div>
+                    <span className="text-xs font-medium text-success">60% paid</span>
+                  </div>
+                  <p className="text-[11px] text-ink-secondary">Next payout: ~£{Math.round(640000 * 0.06 * 0.4 / 100)} pending (end of month)</p>
+                </div>
+              </div>
+
+              {/* Response metrics */}
+              <div className="p-5 rounded-xl border border-hairline bg-white">
+                <h3 className="font-sans text-base font-medium text-ink mb-4">Response metrics</h3>
+                <div className="grid grid-cols-3 gap-4">
+                  {[
+                    { label: "Avg response time", value: "2.4 min", target: "Under 5 min" },
+                    { label: "Inspection completion", value: "100%", target: "Target: 95%" },
+                    { label: "Verification rate", value: "92%", target: "Target: 90%" },
+                  ].map((m) => (
+                    <div key={m.label} className="text-center p-3 rounded-lg bg-primary-bg">
+                      <p className="font-sans text-2xl font-semibold text-ink">{m.value}</p>
+                      <p className="text-xs text-ink-secondary mt-0.5">{m.label}</p>
+                      <p className="text-[10px] text-mute mt-1">{m.target}</p>
+                    </div>
+                  ))}
+                </div>
               </div>
             </div>
           )}

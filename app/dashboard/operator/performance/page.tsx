@@ -8,5 +8,5 @@ export function generateMetadata(): Metadata {
 
 export default async function OperatorPerformancePage() {
   const user = await getSession();
-  return <OperatorDashboard user={user} initialTab="today" />;
+  return <OperatorDashboard user={user} initialTab="performance" />;
 }

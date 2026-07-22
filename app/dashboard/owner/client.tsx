@@ -42,7 +42,7 @@ function statusColor(s: string) {
   }
 }
 
-type OwnerTab = "home" | "bookings" | "claims" | "payouts" | "calendar" | "notifications";
+type OwnerTab = "home" | "properties" | "bookings" | "claims" | "payouts" | "calendar" | "notifications";
 
 export function OwnerDashboard({ user, initialTab }: { user: AuthUser | null; initialTab?: OwnerTab }) {
   const [tab, setTab] = useState<OwnerTab>(initialTab ?? "home");
@@ -207,6 +207,64 @@ export function OwnerDashboard({ user, initialTab }: { user: AuthUser | null; in
                   ))}
                 </div>
               </div>
+            </div>
+          )}
+
+          {/* ---------- PROPERTIES ---------- */}
+          {tab === "properties" && (
+            <div className="space-y-5">
+              <h2 className="font-display text-xl font-medium text-ink">Your properties</h2>
+
+              {properties.map((prop) => (
+                <div key={prop.name} className="p-5 rounded-xl border border-hairline bg-card space-y-4">
+                  <div className="flex items-start justify-between">
+                    <div>
+                      <h3 className="font-display text-lg font-medium text-ink">{prop.name}</h3>
+                      <p className="text-sm text-ink-secondary mt-0.5">{prop.meta}</p>
+                      <p className="text-xs text-mute mt-1">{prop.beds} bed{prop.beds > 1 ? "s" : ""} · {prop.baths} bath{prop.baths > 1 ? "s" : ""} · sleeps {prop.sleeps}</p>
+                    </div>
+                    <span className={`text-[11px] font-semibold px-2.5 py-1 rounded-full ${prop.active ? "bg-success/10 text-success" : "bg-danger/10 text-danger"}`}>
+                      {prop.active ? "Active" : "Inactive"}
+                    </span>
+                  </div>
+
+                  {/* Revenue breakdown per property */}
+                  <div className="grid grid-cols-4 gap-3">
+                    {[
+                      { label: "Monthly revenue", value: `£${(prop.monthly_minor / 100).toLocaleString()}` },
+                      { label: "Bookings", value: `${prop.bookings} this month` },
+                      { label: "Occupancy", value: prop.occ },
+                      { label: "Avg nightly", value: `£${Math.round(prop.monthly_minor / (parseInt(prop.bookings) || 1) / 100)}` },
+                    ].map((m) => (
+                      <div key={m.label} className="text-center p-3 rounded-lg bg-primary-bg">
+                        <p className="font-display text-lg font-semibold text-ink">{m.value}</p>
+                        <p className="text-[10px] text-ink-secondary mt-0.5">{m.label}</p>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Earnings bar */}
+                  <div className="bg-primary-bg rounded-lg p-4">
+                    <div className="flex items-center justify-between mb-2">
+                      <p className="text-xs font-medium text-ink-secondary">Revenue trend</p>
+                      <p className="text-xs text-ink-secondary">Last 3 months</p>
+                    </div>
+                    <div className="flex items-end gap-1 h-16">
+                      {[60, 75, parseInt(prop.occ)].map((h, i) => (
+                        <div key={i} className="flex-1 flex flex-col justify-end items-center gap-1">
+                          <span className="text-[10px] text-ink-secondary">{h}%</span>
+                          <div className="w-full rounded-t-sm bg-success/60" style={{ height: `${h}%` }} />
+                        </div>
+                      ))}
+                    </div>
+                    <div className="flex justify-between mt-2">
+                      {["Apr", "May", "Jun"].map((m) => (
+                        <span key={m} className="text-[10px] text-mute">{m}</span>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              ))}
             </div>
           )}
 

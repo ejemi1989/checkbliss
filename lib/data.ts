@@ -23,11 +23,11 @@ const mm = String(today.getMonth() + 1).padStart(2, "0");
 
 export function getOwnerBookings(): OwnerBookingView[] {
   return [
-    { id: "B001", unit: "Unit 1 — The Palms Maisonette", guest: "Chidi Okafor", check_in: `${yyyy}-${mm}-18`, check_out: `${yyyy}-${mm}-22`, status: "confirmed", amount_minor: 84000, nights: 4, guest_count: 3 },
-    { id: "B002", unit: "Unit 2 — Sunset Dove", guest: "Folake Adeyemi", check_in: `${yyyy}-${mm}-20`, check_out: `${yyyy}-${mm}-24`, status: "confirmed", amount_minor: 64000, nights: 4, guest_count: 2 },
-    { id: "B003", unit: "Unit 1 — The Palms Maisonette", guest: "Emeka Nwosu", check_in: `${yyyy}-${mm}-25`, check_out: `${yyyy}-${mm}-30`, status: "confirmed", amount_minor: 108000, nights: 5, guest_count: 4 },
-    { id: "B004", unit: "Unit 2 — Sunset Dove", guest: "Zainab Bello", check_in: `${yyyy}-07-01`, check_out: `${yyyy}-07-04`, status: "confirmed", amount_minor: 48000, nights: 3, guest_count: 2 },
-    { id: "B005", unit: "Unit 1 — The Palms Maisonette", guest: "Tunde Balogun", check_in: `${yyyy}-07-05`, check_out: `${yyyy}-07-08`, status: "pending", amount_minor: 72000, nights: 3, guest_count: 2 },
+    { id: "B001", unit: "Unit 1 — The Palms Maisonette", guest: "Chidi Okafor", check_in: `${yyyy}-${mm}-18`, check_out: `${yyyy}-${mm}-22`, status: "confirmed", amount_minor: 84000, nights: 4, guest_count: 3, property: "The Palms Maisonette", city: "Lagos", neighbourhood: "Victoria Island", guests: 3 },
+    { id: "B002", unit: "Unit 2 — Sunset Dove", guest: "Folake Adeyemi", check_in: `${yyyy}-${mm}-20`, check_out: `${yyyy}-${mm}-24`, status: "confirmed", amount_minor: 64000, nights: 4, guest_count: 2, property: "Sunset Dove", city: "Lagos", neighbourhood: "Ikoyi", guests: 2 },
+    { id: "B003", unit: "Unit 1 — The Palms Maisonette", guest: "Emeka Nwosu", check_in: `${yyyy}-${mm}-25`, check_out: `${yyyy}-${mm}-30`, status: "confirmed", amount_minor: 108000, nights: 5, guest_count: 4, property: "The Palms Maisonette", city: "Lagos", neighbourhood: "Victoria Island", guests: 4 },
+    { id: "B004", unit: "Unit 2 — Sunset Dove", guest: "Zainab Bello", check_in: `${yyyy}-07-01`, check_out: `${yyyy}-07-04`, status: "confirmed", amount_minor: 48000, nights: 3, guest_count: 2, property: "Sunset Dove", city: "Lagos", neighbourhood: "Ikoyi", guests: 2 },
+    { id: "B005", unit: "Unit 1 — The Palms Maisonette", guest: "Tunde Balogun", check_in: `${yyyy}-07-05`, check_out: `${yyyy}-07-08`, status: "pending", amount_minor: 72000, nights: 3, guest_count: 2, property: "The Palms Maisonette", city: "Lagos", neighbourhood: "Victoria Island", guests: 2 },
   ];
 }
 
@@ -513,4 +513,65 @@ export async function getAllApprovedPropertiesAsync(): Promise<SeedProperty[]> {
 
   if (!data) return [];
   return (data as Record<string, unknown>[]).map(mapRowToSeedProperty);
+}
+
+/* ---------- Admin Payouts ---------- */
+
+export interface PendingPayout {
+  id: string;
+  owner: string;
+  owner_email: string;
+  period: string;
+  units: number;
+  nights: number;
+  revenue_minor: number;
+  fee_minor: number;
+  payout_minor: number;
+  status: "pending" | "approved" | "rejected";
+  requested_at: string;
+  property_ids: string[];
+}
+
+export function getPendingPayouts(): PendingPayout[] {
+  const yyyy = new Date().getFullYear().toString();
+  const mm = (new Date().getMonth() + 1 - 1).toString().padStart(2, "0"); // last month
+  return [
+    { id: "PO-001", owner: "Adaora Mensah", owner_email: "a.mensah@mail.com", period: `${yyyy}-${mm}`, units: 2, nights: 18, revenue_minor: 420000, fee_minor: 63000, payout_minor: 357000, status: "pending", requested_at: `${yyyy}-${mm}-28`, property_ids: ["P001", "P002"] },
+    { id: "PO-002", owner: "Ngozi Okonkwo", owner_email: "ngozi.o@mail.com", period: `${yyyy}-${mm}`, units: 1, nights: 8, revenue_minor: 220000, fee_minor: 33000, payout_minor: 187000, status: "pending", requested_at: `${yyyy}-${mm}-28`, property_ids: ["P005"] },
+    { id: "PO-003", owner: "Ibrahim Musa", owner_email: "ibrahim.m@mail.com", period: `${yyyy}-${mm}`, units: 1, nights: 4, revenue_minor: 95000, fee_minor: 14250, payout_minor: 80750, status: "pending", requested_at: `${yyyy}-${mm}-28`, property_ids: ["P007"] },
+    { id: "PO-004", owner: "Adaora Mensah", owner_email: "a.mensah@mail.com", period: `${yyyy}-05`, units: 2, nights: 14, revenue_minor: 340000, fee_minor: 51000, payout_minor: 289000, status: "approved", requested_at: `2026-05-28`, property_ids: ["P001", "P002"] },
+  ];
+}
+
+/* ---------- Admin Reconciliation ---------- */
+
+export interface ReconciliationRecord {
+  id: string;
+  type: "booking_charge" | "payout" | "deposit_hold" | "refund" | "fee";
+  amount_minor: number;
+  stripe_id: string;
+  booking_ref?: string;
+  property?: string;
+  date: string;
+  matched: boolean;
+  matched_with?: string;
+  discrepancy_minor?: number;
+}
+
+export function getReconciliation(): { records: ReconciliationRecord[]; matchedTotal: number; unmatchedTotal: number } {
+  const yyyy = new Date().getFullYear().toString();
+  const mm = (new Date().getMonth() + 1).toString().padStart(2, "0");
+  const records: ReconciliationRecord[] = [
+    { id: "R001", type: "booking_charge", amount_minor: 84000, stripe_id: "pi_3QxY...abc123", booking_ref: "PAY-2026-0618", property: "The Palms Maisonette", date: `${yyyy}-${mm}-18`, matched: true, matched_with: "R004" },
+    { id: "R002", type: "booking_charge", amount_minor: 64000, stripe_id: "pi_3QxZ...def456", booking_ref: "PAY-2026-0620", property: "Sunset Dove", date: `${yyyy}-${mm}-20`, matched: true, matched_with: "R005" },
+    { id: "R003", type: "booking_charge", amount_minor: 108000, stripe_id: "pi_3Qxa...ghi789", booking_ref: "PAY-2026-0625", property: "The Palms Maisonette", date: `${yyyy}-${mm}-25`, matched: false },
+    { id: "R004", type: "payout", amount_minor: 357000, stripe_id: "po_3QxY...jkl012", date: `${yyyy}-${mm}-28`, matched: true, matched_with: "R001" },
+    { id: "R005", type: "payout", amount_minor: 187000, stripe_id: "po_3QxZ...mno345", date: `${yyyy}-${mm}-28`, matched: true, matched_with: "R002" },
+    { id: "R006", type: "deposit_hold", amount_minor: 50000, stripe_id: "pi_3QxY...pqr678", booking_ref: "DEPT-2026-0618", property: "The Palms Maisonette", date: `${yyyy}-${mm}-18`, matched: false },
+    { id: "R007", type: "fee", amount_minor: 63000, stripe_id: "app_fee_abc", date: `${yyyy}-${mm}-28`, matched: true, matched_with: "R004" },
+    { id: "R008", type: "refund", amount_minor: 42000, stripe_id: "re_3QxW...stu901", booking_ref: "B001", property: "Ikoyi Garden Villa", date: `${yyyy}-${mm}-05`, matched: false },
+  ];
+  const matchedTotal = records.filter(r => r.matched).reduce((s, r) => s + r.amount_minor, 0);
+  const unmatchedTotal = records.filter(r => !r.matched).reduce((s, r) => s + r.amount_minor, 0);
+  return { records, matchedTotal, unmatchedTotal };
 }

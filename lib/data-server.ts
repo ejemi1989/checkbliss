@@ -507,9 +507,10 @@ export async function getOwnerBookingsFromDB(
 
     return data.map((r: Record<string, unknown>) => {
       const prop = (r.properties as Record<string, unknown>) ?? {};
+      const propName = (prop.name as string) ?? "";
       return {
         id: r.id as string,
-        unit: (prop.name as string) ?? "",
+        unit: propName,
         guest: (r.guest_name as string) ?? "",
         check_in: r.check_in as string,
         check_out: r.check_out as string,
@@ -517,6 +518,10 @@ export async function getOwnerBookingsFromDB(
         amount_minor: (r.total_minor as number) ?? 0,
         nights: (r.nights as number) ?? 0,
         guest_count: (r.guest_count as number) ?? 0,
+        property: propName,
+        city: "",
+        neighbourhood: "",
+        guests: (r.guest_count as number) ?? 0,
       };
     });
   } catch {
