@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, Suspense } from "react";
+import { useState, useMemo, Suspense, useEffect } from "react";
 import Link from "next/link";
 import type { SeedProperty } from "@/lib/seed-data";
 import { SearchBar } from "@/components/search-bar";
@@ -26,14 +26,17 @@ export function SearchResultsClient({
   const hasSearch = !!(activeWhere || checkIn || checkOut);
   const displayWhere = activeWhere || "Lagos";
 
-  const [currency, setCurrency] = useState<CurrencyCode>(() => {
-    if (displayCurrency !== "GBP") return displayCurrency;
+  const defaultCurrency: CurrencyCode = displayCurrency !== "GBP" ? displayCurrency : "GBP";
+  const [currency, setCurrency] = useState<CurrencyCode>(defaultCurrency);
+  const [hydrated, setHydrated] = useState(false);
+
+  useEffect(() => {
     try {
       const v = localStorage.getItem("checkbliss_currency");
-      if (v === "USD" || v === "EUR") return v;
+      if (v === "USD" || v === "EUR") setCurrency(v);
     } catch { /* SSR guard */ }
-    return "GBP";
-  });
+    setHydrated(true);
+  }, []);
   const [currencyOpen, setCurrencyOpen] = useState(false);
 
   const updateCurrency = (c: CurrencyCode) => {
