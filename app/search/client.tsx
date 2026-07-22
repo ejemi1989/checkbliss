@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, Suspense, useEffect } from "react";
+import { useState, useMemo, Suspense, useEffect, useRef } from "react";
 import Link from "next/link";
 import type { SeedProperty } from "@/lib/seed-data";
 import { SearchBar } from "@/components/search-bar";
@@ -47,6 +47,8 @@ export function SearchResultsClient({
 
   const [sort, setSort] = useState<SortKey>(null);
   const [sortOpen, setSortOpen] = useState(false);
+  const mapContainerRef = useRef<HTMLDivElement>(null);
+  const mapRef = useRef<{ map: any; markers: any[] }>({ map: null, markers: [] });
 
   const filtered = useMemo(() => {
     let result = [...properties];
@@ -64,6 +66,22 @@ export function SearchResultsClient({
     return result;
   }, [properties, sort, hasSearch, displayWhere]);
 
+  const propertyCoords = useMemo(() => {
+    const center = activeWhere === "Abuja"
+      ? { lat: 9.0695, lng: 7.4837 }
+      : { lat: 6.4295, lng: 3.4219 };
+    return filtered.map((p, i) => ({
+      id: p.id,
+      name: p.name,
+      lat: center.lat + (Math.sin(i * 2.3) * 0.06),
+      lng: center.lng + (Math.cos(i * 2.7) * 0.08),
+      price: formatMinor(
+        currency === "GBP" ? p.nightly_rate_minor : convertMinor(p.nightly_rate_minor, currency),
+        currency,
+      ),
+    }));
+  }, [filtered, activeWhere, currency]);
+
   const cycleSort = (key: SortKey) => {
     setSort((prev) => (prev === key ? null : key));
     setSortOpen(false);
@@ -72,6 +90,63 @@ export function SearchResultsClient({
   const sortLabel = sort
     ? { "price-asc": "Price ↑", "price-desc": "Price ↓", "beds-asc": "Beds ↑", "beds-desc": "Beds ↓", "name": "Name" }[sort]
     : "Sort";
+
+  useEffect(() => {
+    const MAPBOX_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_TOKEN;
+    if (!MAPBOX_TOKEN) return;
+    const existing = document.querySelector("script[src*='mapbox-gl']");
+    if (existing) return;
+    const script = document.createElement("script");
+    script.src = "https://api.mapbox.com/mapbox-gl-js/v3.6.0/mapbox-gl.js";
+    script.async = true;
+    document.head.appendChild(script);
+  }, []);
+
+  useEffect(() => {
+    const container = mapContainerRef.current;
+    if (!container || propertyCoords.length === 0) return;
+    if (mapRef.current.map) {
+      mapRef.current.markers.forEach((m: any) => m.remove());
+      mapRef.current.markers = [];
+      propertyCoords.forEach((c) => {
+        const el = document.createElement("div");
+        el.innerHTML = `<span style="background:#2F3D2C;color:#FCFDFB;padding:4px 8px;border-radius:999px;font-size:11px;font-weight:600;white-space:nowrap;box-shadow:0 2px 8px rgba(0,0,0,.2)">${c.price}</span>`;
+        const marker = new (window as any).mapboxgl.Marker({ element: el.firstElementChild, anchor: "bottom" })
+          .setLngLat([c.lng, c.lat])
+          .addTo(mapRef.current.map);
+        mapRef.current.markers.push(marker);
+      });
+      mapRef.current.map.flyTo({ center: propertyCoords.length === 1 ? [propertyCoords[0].lng, propertyCoords[0].lat] : undefined });
+      return;
+    }
+    if (typeof window === "undefined" || !(window as any).mapboxgl) return;
+    try {
+      (window as any).mapboxgl.accessToken = process.env.NEXT_PUBLIC_MAPBOX_TOKEN || "";
+      const map = new (window as any).mapboxgl.Map({
+        container,
+        style: "mapbox://styles/mapbox/light-v11",
+        center: propertyCoords.length === 1 ? [propertyCoords[0].lng, propertyCoords[0].lat] : undefined,
+        zoom: propertyCoords.length === 1 ? 14 : 11,
+        interactive: false,
+      });
+      mapRef.current.map = map;
+      propertyCoords.forEach((c) => {
+        const el = document.createElement("div");
+        el.innerHTML = `<span style="background:#2F3D2C;color:#FCFDFB;padding:4px 8px;border-radius:999px;font-size:11px;font-weight:600;white-space:nowrap;box-shadow:0 2px 8px rgba(0,0,0,.2)">${c.price}</span>`;
+        const marker = new (window as any).mapboxgl.Marker({ element: el.firstElementChild, anchor: "bottom" })
+          .setLngLat([c.lng, c.lat])
+          .addTo(map);
+        mapRef.current.markers.push(marker);
+      });
+    } catch (err) {
+      console.warn("Mapbox init failed:", err);
+    }
+    return () => {
+      mapRef.current.markers.forEach((m: any) => m.remove());
+      mapRef.current.map?.remove();
+      mapRef.current = { map: null, markers: [] };
+    };
+  }, [propertyCoords]);
 
   return (
     <div className="min-h-screen bg-canvas">
@@ -206,13 +281,7 @@ export function SearchResultsClient({
                 </div>
                 <div className="sticky top-[80px] space-y-6 max-lg:hidden">
                   <div className="bg-card rounded-[var(--radius-lg)] border border-hairline overflow-hidden">
-                    <div className="relative w-full aspect-[4/3] bg-ink/90 flex items-center justify-center">
-                      <div className="text-center">
-                        <svg className="w-12 h-12 text-white/20 mx-auto mb-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="0.8"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
-                        <p className="font-sans text-[14px] text-white/40">{displayWhere}</p>
-                        <p className="font-sans text-[12px] text-white/25 mt-1">Map view</p>
-                      </div>
-                    </div>
+                    <div ref={mapContainerRef} className="w-full aspect-[4/3]" />
                   </div>
                   <div className="bg-card rounded-[var(--radius-lg)] border border-hairline p-5">
                     <p className="font-sans text-[13px] text-mute">
