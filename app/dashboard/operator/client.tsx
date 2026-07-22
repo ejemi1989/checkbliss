@@ -4,7 +4,7 @@ import { useState, useCallback } from "react";
 import Link from "next/link";
 import { logoutAction } from "@/actions/auth";
 import { formatMinor } from "@/lib/currency";
-import { getCurationQueue, getPipeline, getInspections, getVerifications, getOperatorStats, getOperatorClaims, getOwnersForCity } from "@/lib/data";
+import { getCurationQueue, getPipeline, getInspections, getVerifications, getOperatorStats, getOperatorClaims, getOwnersForCity, getOperatorBookings } from "@/lib/data";
 import { decideCuration } from "@/actions/curation";
 import { startInspection, completeInspection } from "@/actions/inspections";
 import { logVerification } from "@/actions/verification";
@@ -31,11 +31,23 @@ const I = {
   shield: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" /></svg>,
   users: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M22 21v-2a4 4 0 0 0-3-3.87" /><path d="M16 3.13a4 4 0 0 1 0 7.75" /></svg>,
   plus: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>,
+  bed: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M2 4v16" /><path d="M2 8h18a2 2 0 0 1 2 2v10" /><path d="M2 17h20" /><path d="M6 8v9" /></svg>,
+  inProgress: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" /><polyline points="12 6 12 12 16 14" /></svg>,
+  home: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" /><polyline points="9 22 9 12 15 12 15 22" /></svg>,
 };
 
 function fmt(n: number) { return formatMinor(n); }
 
 function statusLabel(s: string) { return s.replace(/_/g, " "); }
+
+/* Bookings tab: date helpers for grouping in-progress / upcoming / recent stays */
+function isInProgress(checkIn: string, checkOut: string): boolean {
+  const today = new Date().toISOString().slice(0, 10);
+  return checkIn <= today && checkOut >= today;
+}
+function isFuture(checkIn: string): boolean {
+  return checkIn > new Date().toISOString().slice(0, 10);
+}
 
 function statusColor(s: string) {
   switch (s) {
@@ -85,9 +97,10 @@ export function OperatorDashboard({ user }: { user: AuthUser | null }) {
   const [verifModalOpen, setVerifModalOpen] = useState(false);
   const [verifForm, setVerifForm] = useState({ propertyId: "", notes: "", photos: 0 });
 
-  /* city-scoped claims + owners (structure.md: row-level access) */
+  /* city-scoped claims + owners + bookings (structure.md: row-level access) */
   const [claims, setClaims] = useState(() => getOperatorClaims(assignedCities));
   const [owners] = useState(() => getOwnersForCity(assignedCities));
+  const [bookings] = useState(() => getOperatorBookings(assignedCities));
   const [claimModalOpen, setClaimModalOpen] = useState(false);
   const [claimForm, setClaimForm] = useState({
     propertyId: "",
@@ -122,6 +135,10 @@ export function OperatorDashboard({ user }: { user: AuthUser | null }) {
   /* edit property modal */
   const [editModal, setEditModal] = useState<(typeof curation)[0] | null>(null);
   const [editForm, setEditForm] = useState({ name: "", description: "", rate: 0, beds: 1, baths: 1, guests: 2, extended: false, extendedPrice: 0 });
+
+  /* Onboarding modal — operator sources a new property */
+  const [onboardModalOpen, setOnboardModalOpen] = useState(false);
+  const [onboardForm, setOnboardForm] = useState({ name: "", city: "Lagos", address: "", bedrooms: 1, maxGuests: 2, ownerName: "", ownerPhone: "", ownerEmail: "" });
 
   async function loadPhotos(propertyId: string) {
     setPhotosLoading(true);
@@ -172,6 +189,12 @@ export function OperatorDashboard({ user }: { user: AuthUser | null }) {
   const todayInspections = inspections.filter((i) => i.checkout_date === todayStr);
   const pendingInspections = inspections.filter((i) => i.status === "pending");
 
+  /* Bookings tab: pre-computed buckets (complex boolean expressions confused the JSX parser) */
+  const inProgressBookings = bookings.filter((b) => b.status === "confirmed" && isInProgress(b.check_in, b.check_out));
+  const upcomingBookings = bookings.filter((b) => b.status === "confirmed" && !isInProgress(b.check_in, b.check_out) && isFuture(b.check_in));
+  const pendingBookings = bookings.filter((b) => b.status === "pending");
+  const recentBookings = bookings.filter((b) => b.status === "completed" || (b.status === "confirmed" && !isFuture(b.check_in) && !isInProgress(b.check_in, b.check_out)));
+
   return (
     <div className="min-h-screen bg-canvas">
       {/* Notification */}
@@ -210,6 +233,7 @@ export function OperatorDashboard({ user }: { user: AuthUser | null }) {
               { id: "today", icon: "calendar" as keyof typeof I, label: "Today" },
               { id: "curation", icon: "gavel" as keyof typeof I, label: "Curation" },
               { id: "inspections", icon: "clipboard" as keyof typeof I, label: "Inspections" },
+              { id: "bookings", icon: "bed" as keyof typeof I, label: "Bookings" },
               { id: "claims", icon: "shield" as keyof typeof I, label: "Damage Claims", badge: claims.filter((c) => c.admin_decision === "pending").length },
               { id: "owners", icon: "users" as keyof typeof I, label: "Owners" },
               { id: "photos", icon: "camera" as keyof typeof I, label: "Photos" },
@@ -308,16 +332,25 @@ export function OperatorDashboard({ user }: { user: AuthUser | null }) {
             </div>
           )}
 
-          {/* ---------- CURATION ---------- */}
+          {/* ---------- CURATION (structure.md: onboarding workflow for new properties) ---------- */}
           {tab === "curation" && (
             <div className="space-y-4">
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between flex-wrap gap-3">
                 <p className="font-sans text-lg font-medium text-ink">{curation.length} properties pending review</p>
-                <select value={curationFilter} onChange={(e) => setCurationFilter(e.target.value)} className="text-xs border border-hairline rounded-lg px-3 py-1.5 outline-none text-ink">
-                  <option value="all">All</option>
-                  <option value="new">New submissions</option>
-                  <option value="resubmit">Resubmitted</option>
-                </select>
+                <div className="flex items-center gap-x-2">
+                  <button
+                    onClick={() => { setOnboardForm({ name: "", city: assignedCities[0] ?? "Lagos", address: "", bedrooms: 1, maxGuests: 2, ownerName: "", ownerPhone: "", ownerEmail: "" }); setOnboardModalOpen(true); }}
+                    className="text-sm font-medium px-4 py-2 rounded-xl bg-primary text-white hover:bg-primary-dark transition-colors cursor-pointer flex items-center gap-x-1.5"
+                  >
+                    <span className="w-3.5 h-3.5">{I.plus}</span>
+                    Onboard new property
+                  </button>
+                  <select value={curationFilter} onChange={(e) => setCurationFilter(e.target.value)} className="text-xs border border-hairline rounded-lg px-3 py-1.5 outline-none text-ink">
+                    <option value="all">All</option>
+                    <option value="new">New submissions</option>
+                    <option value="resubmit">Resubmitted</option>
+                  </select>
+                </div>
               </div>
               <div className="space-y-3">
                 {filteredCuration.map((p) => (
@@ -408,6 +441,136 @@ export function OperatorDashboard({ user }: { user: AuthUser | null }) {
                   </div>
                 ))}
               </div>
+            </div>
+          )}
+
+          {/* ---------- BOOKINGS (structure.md: city-scoped bookings view) ---------- */}
+          {tab === "bookings" && (
+            <div className="space-y-6">
+              <div>
+                <p className="font-sans text-lg font-medium text-ink">Bookings — {assignedCities.length > 0 ? assignedCities.join(" + ") : "all cities"}</p>
+                <p className="text-xs text-ink-secondary mt-0.5">City-scoped guest stays for first-line issue resolution. Tap any stay to view guest contact and stay details.</p>
+              </div>
+
+              {/* In-progress stays */}
+              <section>
+                <div className="flex items-center gap-x-2 mb-3">
+                  <span className="w-2 h-2 rounded-full bg-success animate-pulse" />
+                  <h3 className="font-sans text-sm font-semibold uppercase tracking-wider text-ink-secondary">In progress</h3>
+                </div>
+                {inProgressBookings.length === 0 ? (
+                  <div className="bg-white border border-hairline rounded-xl p-5 text-center text-sm text-ink-secondary">
+                    No active stays in your city right now.
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {inProgressBookings.map((b) => (
+                      <div key={b.id} className="bg-white border border-hairline rounded-xl p-5">
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1">
+                            <div className="flex items-center gap-x-2">
+                              <p className="font-sans text-base font-medium text-ink">{b.property_name} · {b.unit}</p>
+                              <span className="text-[11px] font-semibold text-success bg-success/10 px-2 py-0.5 rounded-full">Active</span>
+                            </div>
+                            <p className="text-xs text-ink-secondary mt-1.5">{b.guest} · {b.guest_email}</p>
+                            <div className="flex items-center gap-x-4 mt-2 text-xs text-ink-secondary">
+                              <span>Check-in {b.check_in}</span>
+                              <span>Check-out {b.check_out}</span>
+                              <span>{b.nights} night{b.nights === 1 ? "" : "s"}</span>
+                              <span>{b.guest_count} guest{b.guest_count === 1 ? "" : "s"}</span>
+                            </div>
+                          </div>
+                          <span className="font-sans text-base font-semibold tabular-nums text-ink">{fmt(b.amount_minor)}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </section>
+
+              {/* Upcoming stays */}
+              <section>
+                <div className="flex items-center gap-x-2 mb-3">
+                  <span className="w-2 h-2 rounded-full bg-primary" />
+                  <h3 className="font-sans text-sm font-semibold uppercase tracking-wider text-ink-secondary">Upcoming</h3>
+                </div>
+                {upcomingBookings.length === 0 ? (
+                  <div className="bg-white border border-hairline rounded-xl p-5 text-center text-sm text-ink-secondary">
+                    No upcoming bookings in your city.
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {upcomingBookings.map((b) => (
+                      <div key={b.id} className="bg-white border border-hairline rounded-xl p-5">
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1">
+                            <p className="font-sans text-base font-medium text-ink">{b.property_name} · {b.unit}</p>
+                            <p className="text-xs text-ink-secondary mt-1.5">{b.guest} · {b.guest_email}</p>
+                            <div className="flex items-center gap-x-4 mt-2 text-xs text-ink-secondary">
+                              <span>{b.check_in} → {b.check_out}</span>
+                              <span>{b.nights} night{b.nights === 1 ? "" : "s"}</span>
+                              <span>{b.guest_count} guest{b.guest_count === 1 ? "" : "s"}</span>
+                            </div>
+                          </div>
+                          <span className="font-sans text-sm font-semibold tabular-nums text-ink-secondary">{fmt(b.amount_minor)}</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </section>
+
+              {/* Pending confirmation */}
+              {pendingBookings.length > 0 && (
+                <section>
+                  <div className="flex items-center gap-x-2 mb-3">
+                    <span className="w-2 h-2 rounded-full bg-warning" />
+                    <h3 className="font-sans text-sm font-semibold uppercase tracking-wider text-ink-secondary">Pending confirmation</h3>
+                  </div>
+                  <div className="space-y-3">
+                    {pendingBookings.map((b) => (
+                      <div key={b.id} className="bg-white border border-hairline rounded-xl p-5">
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1">
+                            <p className="font-sans text-base font-medium text-ink">{b.property_name} · {b.unit}</p>
+                            <p className="text-xs text-ink-secondary mt-1.5">{b.guest} · {b.guest_email}</p>
+                            <div className="flex items-center gap-x-4 mt-2 text-xs text-ink-secondary">
+                              <span>{b.check_in} → {b.check_out}</span>
+                              <span>{b.nights} night{b.nights === 1 ? "" : "s"}</span>
+                            </div>
+                          </div>
+                          <span className="text-[11px] font-semibold text-warning">Pending</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </section>
+              )}
+
+              {/* Recent stays (for context during resolution) */}
+              <section>
+                <div className="flex items-center gap-x-2 mb-3">
+                  <span className="w-2 h-2 rounded-full bg-ink-secondary" />
+                  <h3 className="font-sans text-sm font-semibold uppercase tracking-wider text-ink-secondary">Recent (last 30 days)</h3>
+                </div>
+                {recentBookings.length === 0 ? (
+                  <div className="bg-white border border-hairline rounded-xl p-5 text-center text-sm text-ink-secondary">
+                    No recent stays in your city.
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    {recentBookings.map((b) => (
+                      <div key={b.id} className="bg-white border border-hairline rounded-xl p-4 flex items-center justify-between">
+                        <div>
+                          <p className="font-sans text-sm font-medium text-ink">{b.property_name} · {b.unit}</p>
+                          <p className="text-xs text-ink-secondary mt-0.5">{b.guest} · {b.check_in} → {b.check_out}</p>
+                        </div>
+                        <span className="text-xs text-ink-secondary">{fmt(b.amount_minor)}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </section>
             </div>
           )}
 
@@ -934,6 +1097,162 @@ export function OperatorDashboard({ user }: { user: AuthUser | null }) {
                   className="flex-1 py-2.5 rounded-xl text-sm font-semibold bg-primary text-white hover:bg-primary-dark transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-wait border-none"
                 >{pendingAction === `edit-prop-${editModal.id}` ? "Saving..." : "Save Changes"}</button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Onboard New Property Modal — operator sources a property */}
+      {onboardModalOpen && (
+        <div className="fixed inset-0 z-50 bg-black/30 backdrop-blur-sm flex items-center justify-center p-4" onClick={() => setOnboardModalOpen(false)}>
+          <div className="bg-white rounded-2xl w-full max-w-lg p-6 shadow-xl animate-modalIn max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-5">
+              <div>
+                <h3 className="text-lg font-bold text-ink">Onboard a new property</h3>
+                <p className="text-xs text-ink-secondary mt-0.5">Source a property for your city. The owner will be invited to the platform.</p>
+              </div>
+              <button onClick={() => setOnboardModalOpen(false)} className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-primary-bg text-ink-secondary cursor-pointer">{I.x}</button>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-xs font-medium text-ink-secondary mb-1.5">Property name</label>
+                <input
+                  type="text"
+                  value={onboardForm.name}
+                  onChange={(e) => setOnboardForm({ ...onboardForm, name: e.target.value })}
+                  placeholder="e.g. The Banana Island Villa"
+                  className="w-full text-sm border border-hairline rounded-lg px-3 py-2 outline-none focus:border-primary text-ink placeholder:text-mute"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-medium text-ink-secondary mb-1.5">City</label>
+                  <select
+                    value={onboardForm.city}
+                    onChange={(e) => setOnboardForm({ ...onboardForm, city: e.target.value })}
+                    disabled={assignedCities.length === 1}
+                    className="w-full text-sm border border-hairline rounded-lg px-3 py-2 outline-none focus:border-primary text-ink bg-white disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {(assignedCities.length > 0 ? assignedCities : ["Lagos", "Abuja"]).map((c) => (
+                      <option key={c} value={c}>{c}</option>
+                    ))}
+                  </select>
+                  {assignedCities.length === 1 && (
+                    <p className="text-[10px] text-mute mt-1">Scoped to your assigned city.</p>
+                  )}
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-ink-secondary mb-1.5">Bedrooms</label>
+                  <input
+                    type="number"
+                    min={1}
+                    value={onboardForm.bedrooms}
+                    onChange={(e) => setOnboardForm({ ...onboardForm, bedrooms: parseInt(e.target.value) || 1 })}
+                    className="w-full text-sm border border-hairline rounded-lg px-3 py-2 outline-none focus:border-primary text-ink"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-ink-secondary mb-1.5">Address</label>
+                <input
+                  type="text"
+                  value={onboardForm.address}
+                  onChange={(e) => setOnboardForm({ ...onboardForm, address: e.target.value })}
+                  placeholder="Street, neighbourhood"
+                  className="w-full text-sm border border-hairline rounded-lg px-3 py-2 outline-none focus:border-primary text-ink placeholder:text-mute"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-medium text-ink-secondary mb-1.5">Max guests</label>
+                <input
+                  type="number"
+                  min={1}
+                  value={onboardForm.maxGuests}
+                  onChange={(e) => setOnboardForm({ ...onboardForm, maxGuests: parseInt(e.target.value) || 1 })}
+                  className="w-full text-sm border border-hairline rounded-lg px-3 py-2 outline-none focus:border-primary text-ink"
+                />
+              </div>
+
+              <div className="pt-3 border-t border-hairline">
+                <p className="text-xs font-semibold text-ink-secondary uppercase tracking-wider mb-3">Owner details</p>
+                <div className="space-y-3">
+                  <div>
+                    <label className="block text-xs font-medium text-ink-secondary mb-1.5">Owner full name</label>
+                    <input
+                      type="text"
+                      value={onboardForm.ownerName}
+                      onChange={(e) => setOnboardForm({ ...onboardForm, ownerName: e.target.value })}
+                      placeholder="e.g. Tunde Adebayo"
+                      className="w-full text-sm border border-hairline rounded-lg px-3 py-2 outline-none focus:border-primary text-ink placeholder:text-mute"
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs font-medium text-ink-secondary mb-1.5">WhatsApp</label>
+                      <input
+                        type="tel"
+                        value={onboardForm.ownerPhone}
+                        onChange={(e) => setOnboardForm({ ...onboardForm, ownerPhone: e.target.value })}
+                        placeholder="+234 800 000 0000"
+                        className="w-full text-sm border border-hairline rounded-lg px-3 py-2 outline-none focus:border-primary text-ink placeholder:text-mute"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-ink-secondary mb-1.5">Email</label>
+                      <input
+                        type="email"
+                        value={onboardForm.ownerEmail}
+                        onChange={(e) => setOnboardForm({ ...onboardForm, ownerEmail: e.target.value })}
+                        placeholder="owner@email.com"
+                        className="w-full text-sm border border-hairline rounded-lg px-3 py-2 outline-none focus:border-primary text-ink placeholder:text-mute"
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex gap-x-2 mt-6">
+              <button
+                onClick={() => setOnboardModalOpen(false)}
+                className="flex-1 py-2.5 rounded-xl text-sm font-medium border border-hairline text-ink-secondary hover:bg-primary-bg transition-colors cursor-pointer"
+              >Cancel</button>
+              <button
+                disabled={
+                  pendingAction === "onboard-property" ||
+                  !onboardForm.name ||
+                  !onboardForm.address ||
+                  !onboardForm.ownerName ||
+                  !onboardForm.ownerPhone
+                }
+                onClick={() => action("onboard-property", async () => {
+                  // Per structure.md, new properties start in `pending` state and
+                  // the operator schedules a physical inspection. We persist the
+                  // draft to the local state and surface it in the Curation queue
+                  // alongside other submissions. (Real impl writes via createProperty
+                  // server action + sends WhatsApp invite to the owner.)
+                  const newProp = {
+                    id: `OP-${Date.now()}`,
+                    name: onboardForm.name,
+                    city: onboardForm.city,
+                    submitted_at: new Date().toISOString().slice(0, 10),
+                    type: "new" as const,
+                    bedrooms: onboardForm.bedrooms,
+                    bathrooms: Math.max(1, onboardForm.bedrooms - 1),
+                    max_guests: onboardForm.maxGuests,
+                    price_minor: 0,
+                    status: "pending" as const,
+                  };
+                  setCuration((prev) => [newProp, ...prev]);
+                  notify(`Property "${onboardForm.name}" added to your curation queue. Schedule a physical inspection to proceed.`, "success");
+                  setOnboardModalOpen(false);
+                })}
+                className="flex-1 py-2.5 rounded-xl text-sm font-semibold bg-primary text-white hover:bg-primary-dark transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-wait border-none"
+              >{pendingAction === "onboard-property" ? "Adding..." : "Add to Curation"}</button>
             </div>
           </div>
         </div>

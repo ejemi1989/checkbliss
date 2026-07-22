@@ -180,6 +180,29 @@ export function getOwnersForCity(assignedCities?: string[]): OwnerDirectoryEntry
   return allOwners.filter((o) => cities.has(o.city));
 }
 
+/**
+ * Operator-scoped bookings. Filters by the operator's assigned city/cities
+ * so a Lagos operator only sees Lagos bookings, Abuja operator only sees Abuja.
+ * Per structure.md: "Bookings view for their city with guest details for
+ * stays in progress" — operators need this for first-line issue resolution
+ * during guest stays.
+ */
+export function getOperatorBookings(assignedCities?: string[]): AdminBookingView[] {
+  const all = getAdminBookings();
+  if (!assignedCities || assignedCities.length === 0) return [];
+  const cities = new Set(assignedCities);
+  // Map bookings to cities via property_id → property.city
+  return all.filter((b) => {
+    const prop = getAdminProperties().find((p) => p.id === b.property_id);
+    if (prop) return cities.has(prop.city);
+    // Fallback: infer city by property name
+    if (b.property_name.includes("GRA") || b.property_name.includes("Transcorp") || b.property_name.includes("Hilton") || b.property_name.includes("PH Waterfront")) {
+      return cities.has("Abuja");
+    }
+    return cities.has("Lagos");
+  });
+}
+
 export function getAdminOperators(): Operator[] {
   return [
     { id: "OP1", name: "Tunde Ogunlade", email: "tunde.o@checkinbliss.com", city: "Lagos", assigned_cities: ["Lagos"], properties_count: 18, verified_count: 47, status: "active", quality_score: 92, inspections_done: 28, created_at: `${yyyy}-01-15` },
