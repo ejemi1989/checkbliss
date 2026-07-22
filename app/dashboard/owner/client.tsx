@@ -1,13 +1,10 @@
 "use client";
 
 import { useState, useMemo, useEffect } from "react";
-import Link from "next/link";
-import { logoutAction } from "@/actions/auth";
 import { formatMinor } from "@/lib/currency";
 import { getOwnerBookings, getOwnerPayouts, getCalendarBookings, getOwnerProperties } from "@/lib/data";
 import { blockDates, unblockDates } from "@/actions/properties";
 import type { AuthUser } from "@/lib/auth";
-import { NotificationBell } from "@/components/notification-bell";
 import { NotificationsView } from "@/components/notifications-view";
 import { getSeedDamageClaims } from "@/lib/seed-data";
 
@@ -47,24 +44,8 @@ function statusColor(s: string) {
 
 type OwnerTab = "home" | "bookings" | "claims" | "payouts" | "calendar" | "notifications";
 
-/* ---------- sidebar config ----------
-   Per .context/admin/structure.md: Property Owner dashboard should be
-   lightweight. Keep only essential needs: calendar, bookings, claims
-   (view-only), payouts, calendar sync. Owners cannot modify property
-   details (operator submits changes for approval).
-   -------------------------------- */
-const SIDEBAR: { id: OwnerTab; icon: keyof typeof I; label: string }[] = [
-  { id: "home", icon: "barChart3", label: "Dashboard" },
-  { id: "bookings", icon: "calendar", label: "Bookings" },
-  { id: "claims", icon: "shield", label: "Damage Claims" },
-  { id: "payouts", icon: "receipt", label: "Payouts" },
-  { id: "calendar", icon: "sync", label: "Calendar Sync" },
-  { id: "notifications", icon: "bell", label: "Notifications" },
-];
-
 export function OwnerDashboard({ user, initialTab }: { user: AuthUser | null; initialTab?: OwnerTab }) {
   const [tab, setTab] = useState<OwnerTab>(initialTab ?? "home");
-  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [month, setMonth] = useState(new Date().getMonth());
   const [year, setYear] = useState(new Date().getFullYear());
   const [bookingModal, setBookingModal] = useState<(typeof bookings)[0] | null>(null);
@@ -81,9 +62,9 @@ export function OwnerDashboard({ user, initialTab }: { user: AuthUser | null; in
 
   const today = new Date();
   const displayName = user?.role === "owner" ? (user?.name ?? "Adaora Mensah") : "Adaora Mensah";
-  const initials = displayName.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase();
   const firstName = displayName.split(" ")[0];
-  const displayEmail = user?.role === "owner" ? (user?.email ?? "owner@checkbliss.com") : "owner@checkbliss.com";
+  const hour = today.getHours();
+  const greet = hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
 
   /* Escape key closes modals */
   useEffect(() => {
@@ -111,17 +92,13 @@ export function OwnerDashboard({ user, initialTab }: { user: AuthUser | null; in
 
   function monthLabel() { return new Date(year, month).toLocaleString("default", { month: "long", year: "numeric" }); }
 
-  const hour = today.getHours();
-  const greet = hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
-
   /* stats */
   const totalRevenue = bookings.reduce((s, b) => s + (b.status === "cancelled" ? 0 : b.amount_minor), 0);
   const activeBookings = bookings.filter((b) => b.status === "confirmed" || b.status === "pending").length;
-  const claimsCount = damageClaims.length;
   const occupancyPct = "68%";
 
   return (
-    <div className="flex h-screen overflow-hidden bg-canvas text-ink font-sans antialiased">
+    <>
       {/* notification toast */}
       {notification && (
         <div className={`fixed top-4 right-4 z-[60] px-4 py-2.5 rounded-xl text-sm font-medium animate-slideIn shadow-lg ${notification.type === "success" ? "bg-success text-white" : "bg-danger text-white"}`}>
@@ -129,82 +106,8 @@ export function OwnerDashboard({ user, initialTab }: { user: AuthUser | null; in
         </div>
       )}
 
-      {/* mobile overlay */}
-      {sidebarOpen && <div className="fixed inset-0 z-30 lg:hidden bg-black/30 backdrop-blur-sm" onClick={() => setSidebarOpen(false)} />}
-
-      {/* ---------- sidebar ---------- */}
-      <aside className={`fixed lg:static inset-y-0 left-0 z-40 w-64 bg-white border-r border-hairline shrink-0 flex flex-col transition-transform duration-300 lg:translate-x-0 ${sidebarOpen ? "translate-x-0" : "-translate-x-full"}`}>
-        <div className="p-5 border-b border-hairline flex items-center justify-between">
-          <Link href="/" className="no-underline">
-            <img src="/assets/images/logo/logo-wrd.png" alt="CheckinBliss" className="h-7 w-auto" />
-          </Link>
-          <button onClick={() => setSidebarOpen(false)} className="lg:hidden w-7 h-7 flex items-center justify-center text-ink-secondary">{I.x}</button>
-        </div>
-
-        <div className="flex-1 overflow-y-auto px-3 pb-3 scroll-thin">
-          <p className="text-[10px] uppercase tracking-widest font-semibold text-primary px-4 mb-2 mt-2">Owner</p>
-          <nav className="space-y-0.5">
-            {SIDEBAR.map((item) => {
-              const badge = item.id === "claims" ? String(claimsCount) : null;
-              return (
-                <button
-                  key={item.id}
-                  onClick={() => { setTab(item.id); setSidebarOpen(false); }}
-                  className={`w-full flex items-center gap-x-3 px-4 py-2.5 rounded-xl text-sm font-medium cursor-pointer border-none text-left transition-colors ${tab === item.id ? "bg-primary text-white" : "text-ink-secondary hover:bg-primary-bg hover:text-primary bg-transparent"}`}
-                >
-                  <span className="w-4 shrink-0 flex items-center justify-center">{I[item.icon]}</span>
-                  <span>{item.label}</span>
-                  {badge && badge !== "0" ? (
-                    <span className={`ml-auto text-[11px] px-2 py-0.5 rounded-full font-semibold ${tab === item.id ? "bg-white/20 text-white" : "bg-primary text-white"}`}>
-                      {badge}
-                    </span>
-                  ) : null}
-                </button>
-              );
-            })}
-          </nav>
-          <p className="text-[10px] uppercase tracking-widest font-semibold text-ink-secondary px-4 mt-6 mb-2">Account</p>
-          <nav className="space-y-0.5">
-            <form action={logoutAction}>
-              <button className="w-full flex items-center gap-x-3 px-4 py-2.5 rounded-xl text-sm font-medium text-ink-secondary hover:bg-primary-bg hover:text-primary cursor-pointer border-none text-left bg-transparent font-sans">
-                <span className="w-4 shrink-0 flex items-center justify-center">{I.logOut}</span><span>Logout</span>
-              </button>
-            </form>
-          </nav>
-        </div>
-
-        <div className="p-4 border-t border-hairline shrink-0 bg-primary-bg">
-          <div className="flex items-center gap-x-3">
-            <div className="w-8 h-8 rounded-xl bg-primary flex items-center justify-center text-white font-bold text-sm">{initials}</div>
-            <div>
-              <div className="text-sm font-semibold text-ink">{displayName}</div>
-              <div className="text-xs text-ink-secondary">{displayEmail}</div>
-            </div>
-          </div>
-        </div>
-      </aside>
-
-      {/* ---------- main ---------- */}
-      <div className="flex-1 flex flex-col min-w-0">
-        <header className="h-14 bg-white border-b border-hairline flex items-center justify-between px-4 lg:px-8 shrink-0">
-          <div className="flex items-center gap-x-4">
-            <button onClick={() => setSidebarOpen(true)} className="lg:hidden w-8 h-8 flex items-center justify-center rounded-lg hover:bg-primary-bg text-ink-secondary cursor-pointer">{I.hamburger}</button>
-            <div className="flex items-center gap-x-2">
-              <span className="text-sm font-semibold text-ink">Owner Dashboard</span>
-              <span className="text-[11px] px-2 py-0.5 rounded-full font-semibold bg-primary-bg text-primary">Verified</span>
-            </div>
-          </div>
-          <div className="flex items-center gap-x-2">
-            <NotificationBell role="owner" userId={user?.id} onViewAll={() => setTab("notifications")} />
-            <button onClick={() => alert("Owner Help:\n\n• Bookings: View upcoming stays and block dates.\n• Properties: Monitor your units' performance.\n• Claims: Review damage claims and disputes.\n• Payouts: Track your earnings.\n• Calendar Sync: Subscribe to your booking calendar.")} className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-primary-bg transition-colors text-ink-secondary cursor-pointer">
-              {I.helpCircle}
-            </button>
-          </div>
-        </header>
-
-        <div className="flex-1 overflow-auto p-4 lg:p-8 scroll-thin" onClick={() => sidebarOpen && setSidebarOpen(false)}>
-          {/* stats — only on dashboard home */}
-          {tab === "home" && (
+      {/* stats — only on dashboard home */}
+      {tab === "home" && (
           <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
             <div className="p-4 rounded-xl border bg-white border-hairline hover:-translate-y-0.5 hover:shadow-[0_8px_24px_rgba(0,0,0,0.06)] transition-all cursor-default">
               <p className="text-xs font-medium text-ink-secondary">Revenue (MTD)</p>
@@ -528,8 +431,6 @@ export function OwnerDashboard({ user, initialTab }: { user: AuthUser | null; in
 
           {/* ---------- NOTIFICATIONS ---------- */}
           {tab === "notifications" && <NotificationsView role="owner" userId={user?.id} />}
-        </div>
-      </div>
 
       {/* Booking detail modal */}
       {bookingModal && (
@@ -590,6 +491,6 @@ export function OwnerDashboard({ user, initialTab }: { user: AuthUser | null; in
           </div>
         </div>
       )}
-    </div>
+    </>
   );
 }

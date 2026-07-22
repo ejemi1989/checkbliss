@@ -196,7 +196,7 @@ export function OperatorDashboard({ user, initialTab }: { user: AuthUser | null;
   const recentBookings = bookings.filter((b) => b.status === "completed" || (b.status === "confirmed" && !isFuture(b.check_in) && !isInProgress(b.check_in, b.check_out)));
 
   return (
-    <div className="min-h-screen bg-canvas">
+    <>
       {/* Notification */}
       {notification && (
         <div className={`fixed top-4 right-4 z-[60] px-4 py-2.5 rounded-xl text-sm font-medium animate-slideIn shadow-lg ${
@@ -206,64 +206,8 @@ export function OperatorDashboard({ user, initialTab }: { user: AuthUser | null;
         </div>
       )}
 
-      {/* Header */}
-      <header className="border-b border-hairline bg-white px-8 py-4 flex items-center justify-between max-sm:px-5">
-        <div className="flex items-center gap-3">
-          <Link href="/" className="no-underline">
-            <img src="/assets/images/logo/logo-wrd.png" alt="CheckinBliss" className="h-7 w-auto" />
-          </Link>
-          <span className="text-[10px] font-sans font-semibold uppercase tracking-[0.5px] rounded-full bg-lagoon/15 text-lagoon-dark px-2.5 py-0.5">Operator</span>
-          {assignedCities.length > 0 && (
-            <span className="text-[10px] font-sans font-medium uppercase tracking-[0.5px] rounded-full bg-soft text-ink-secondary px-2.5 py-0.5">
-              {assignedCities.join(" + ")}
-            </span>
-          )}
-        </div>
-        <div className="flex items-center gap-x-3">
-          <NotificationBell role="operator" userId={user?.id} onViewAll={() => setTab("notifications")} />
-          <form action={logoutAction}>
-            <button className="text-xs font-sans font-medium text-ink-secondary hover:text-ink transition-colors cursor-pointer bg-transparent border-none">Sign out</button>
-          </form>
-        </div>
-      </header>
-
-      <div className="flex max-sm:flex-col">
-        {/* Sidebar */}
-        <nav className="w-56 border-r border-hairline bg-white shrink-0 max-sm:w-full max-sm:border-r-0 max-sm:border-b">
-          <div className="p-5 max-sm:p-3 max-sm:flex max-sm:gap-2 max-sm:overflow-x-auto">
-            {[
-              { id: "today", icon: "calendar" as keyof typeof I, label: "Today" },
-              { id: "curation", icon: "gavel" as keyof typeof I, label: "Curation" },
-              { id: "inspections", icon: "clipboard" as keyof typeof I, label: "Inspections" },
-              { id: "bookings", icon: "bed" as keyof typeof I, label: "Bookings" },
-              { id: "claims", icon: "shield" as keyof typeof I, label: "Damage Claims", badge: claims.filter((c) => c.admin_decision === "pending").length },
-              { id: "owners", icon: "users" as keyof typeof I, label: "Owners" },
-              { id: "photos", icon: "camera" as keyof typeof I, label: "Photos" },
-              { id: "verification", icon: "checkSquare" as keyof typeof I, label: "Verification" },
-              { id: "notifications", icon: "bell" as keyof typeof I, label: "Notifications" },
-            ].map((item) => (
-              <button key={item.id} onClick={() => setTab(item.id)} className={`w-full flex items-center gap-x-3 px-4 py-3 rounded-lg text-sm font-sans font-medium transition-colors cursor-pointer mb-1 last:mb-0 max-sm:whitespace-nowrap max-sm:flex-shrink-0 ${tab === item.id ? "bg-primary-bg text-primary" : "text-ink-secondary hover:bg-bone"}`}>
-                <span className="w-4 h-4 shrink-0 flex items-center justify-center">{I[item.icon]}</span>
-                <span className="flex-1 text-left">{item.label}</span>
-                {"badge" in item && item.badge && item.badge > 0 ? (
-                  <span className="text-[10px] font-sans font-semibold rounded-full bg-primary text-white px-2 py-0.5 min-w-[20px] text-center">{item.badge}</span>
-                ) : null}
-              </button>
-            ))}
-          </div>
-        </nav>
-
-        {/* Main */}
-        <main className="flex-1 p-8 max-sm:p-4">
-          <div className="mb-8">
-            <h1 className="font-sans text-[clamp(1.8rem,3vw,2.4rem)] font-medium leading-tight text-ink">Operator Dashboard</h1>
-            <p className="text-sm mt-1 text-ink-secondary">
-              {displayName} — {assignedCities.length > 0 ? assignedCities.join(" + ") : "Lagos"} · {pipeline.filter((p) => p.status === "approved").length} properties verified
-            </p>
-          </div>
-
-          {/* Stats */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+      {/* Stats */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
             {stats.map((s) => (
               <div key={s.label} className={`p-5 rounded-xl border ${s.accent ? "bg-primary text-white border-transparent" : "bg-white border-hairline hover:-translate-y-0.5 hover:shadow-[0_8px_24px_rgba(0,0,0,0.06)]"} transition-all cursor-default`}>
                 <p className={`text-xs font-sans font-semibold uppercase tracking-[0.1em] ${s.accent ? "text-blue-100" : "text-ink-secondary"}`}>{s.label}</p>
@@ -958,8 +902,6 @@ export function OperatorDashboard({ user, initialTab }: { user: AuthUser | null;
               </div>
             </div>
           )}
-        </main>
-      </div>
 
       {/* Confirm / Prompt Dialogs */}
       <ConfirmDialog
@@ -1418,6 +1360,6 @@ export function OperatorDashboard({ user, initialTab }: { user: AuthUser | null;
           </div>
         </div>
       )}
-    </div>
+    </>
   );
 }
