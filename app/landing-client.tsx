@@ -238,7 +238,7 @@ export function HomePageClient() {
             <article className="cat">
               <Link href="/abuja" style={{ textDecoration: "none", color: "inherit", display: "flex", flexDirection: "column", flex: 1 }}>
                 <div className="cat-img">
-                  <img src="/assets/images/cats/abuja.jpg" alt="Abuja" loading="lazy" />
+                  <img src="/assets/images/cats/abuja-calm.avif" alt="Abuja" loading="lazy" />
                 </div>
                 <div className="cat-body">
                   <p className="cat-kicker">Calmly</p>
@@ -345,7 +345,7 @@ export function HomePageClient() {
           <div className="promise-grid">
             <div className="promise-card">
               <div className="cat-img">
-                <img src="/assets/images/promise/inspected.jpg" alt="" loading="lazy" />
+                <img src="/assets/images/promise/inspected.avif" alt="" loading="lazy" />
               </div>
               <div className="cat-body">
                 <p className="cat-kicker">Always</p>
@@ -365,7 +365,7 @@ export function HomePageClient() {
             </div>
             <div className="promise-card">
               <div className="cat-img">
-                <img src="/assets/images/promise/mediated.jpg" alt="" loading="lazy" />
+                <img src="/assets/images/promise/mediated.avif" alt="" loading="lazy" />
               </div>
               <div className="cat-body">
                 <p className="cat-kicker">Personally</p>
