@@ -1,8 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
-import Script from "next/script";
 
 export interface PropertyClientProps {
   property: {
@@ -71,15 +70,30 @@ export function PropertyClient({ property: prop, formattedNightly, formattedDepo
     ? [prop.images[0], prop.images[1] || prop.cover_photo_url]
     : [prop.cover_photo_url, prop.cover_photo_url];
 
+  useEffect(() => {
+    if (!MAPBOX_TOKEN) return;
+    const script = document.createElement("script");
+    script.src = "https://api.mapbox.com/mapbox-gl-js/v3.6.0/mapbox-gl.js";
+    script.async = true;
+    document.head.appendChild(script);
+
+    const tokenScript = document.createElement("script");
+    tokenScript.textContent = `window.__CB_MAPBOX_TOKEN__=${JSON.stringify(MAPBOX_TOKEN)};`;
+    document.head.appendChild(tokenScript);
+
+    const jsScript = document.createElement("script");
+    jsScript.src = "/js/property.js";
+    jsScript.async = true;
+    document.head.appendChild(jsScript);
+
+    const interactionsScript = document.createElement("script");
+    interactionsScript.src = "/js/interactions.js";
+    interactionsScript.async = true;
+    document.head.appendChild(interactionsScript);
+  }, []);
+
   return (
     <>
-      <Script id="cb-mapbox-token" strategy="beforeInteractive">
-        {`window.__CB_MAPBOX_TOKEN__=${JSON.stringify(MAPBOX_TOKEN)};`}
-      </Script>
-      <Script src="https://api.mapbox.com/mapbox-gl-js/v3.6.0/mapbox-gl.js" strategy="afterInteractive" />
-      <Script src="/js/property.js" strategy="afterInteractive" />
-      <Script src="/js/interactions.js" strategy="afterInteractive" />
-
       <header className="prop-header">
         <nav>
           <div className="nav-inner">

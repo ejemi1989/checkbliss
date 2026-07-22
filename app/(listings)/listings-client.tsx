@@ -1,7 +1,6 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import Script from "next/script";
 import Link from "next/link";
 
 /* ---------- Data ---------- */
@@ -36,6 +35,28 @@ export function ListingsClient({ city, eyebrow, properties }: ListingsPageProps)
   const markersRef = useRef<any[]>([]);
 
   useEffect(() => {
+    if (!MAPBOX_TOKEN) return;
+    const script = document.createElement("script");
+    script.src = "https://api.mapbox.com/mapbox-gl-js/v3.6.0/mapbox-gl.js";
+    script.async = true;
+    document.head.appendChild(script);
+
+    const tokenScript = document.createElement("script");
+    tokenScript.textContent = `window.__CB_MAPBOX_TOKEN__=${JSON.stringify(MAPBOX_TOKEN)};`;
+    document.head.appendChild(tokenScript);
+
+    const jsScript = document.createElement("script");
+    jsScript.src = "/js/listings.js";
+    jsScript.async = true;
+    document.head.appendChild(jsScript);
+
+    const interactionsScript = document.createElement("script");
+    interactionsScript.src = "/js/interactions.js";
+    interactionsScript.async = true;
+    document.head.appendChild(interactionsScript);
+  }, []);
+
+  useEffect(() => {
     if (mapRef.current || !mapContainerRef.current || !window.mapboxgl) return;
     try {
       window.mapboxgl.accessToken = MAPBOX_TOKEN;
@@ -68,13 +89,6 @@ export function ListingsClient({ city, eyebrow, properties }: ListingsPageProps)
 
   return (
     <>
-      <Script id="cb-mapbox-token" strategy="beforeInteractive">
-        {`window.__CB_MAPBOX_TOKEN__=${JSON.stringify(MAPBOX_TOKEN)};`}
-      </Script>
-      <Script src="https://api.mapbox.com/mapbox-gl-js/v3.6.0/mapbox-gl.js" strategy="afterInteractive" />
-      <Script src="/js/listings.js" strategy="afterInteractive" />
-      <Script src="/js/interactions.js" strategy="afterInteractive" />
-
       <header className="lst-header">
         <nav>
           <div className="wrap nav-inner">
