@@ -48,7 +48,7 @@ export function SearchResultsClient({
   const [sort, setSort] = useState<SortKey>(null);
   const [sortOpen, setSortOpen] = useState(false);
   const mapContainerRef = useRef<HTMLDivElement>(null);
-  const mapRef = useRef<{ map: any; markers: any[] }>({ map: null, markers: [] });
+  const mapRef = useRef<any>(null);
 
   const filtered = useMemo(() => {
     let result = [...properties];
@@ -92,64 +92,70 @@ export function SearchResultsClient({
     : "Sort";
 
   useEffect(() => {
-    const MAPBOX_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_TOKEN;
-    if (!MAPBOX_TOKEN) return;
-    const existing = document.querySelector("script[src*='mapbox-gl']");
-    if (existing) return;
-    const script = document.createElement("script");
-    script.src = "https://api.mapbox.com/mapbox-gl-js/v3.6.0/mapbox-gl.js";
-    script.async = true;
-    document.head.appendChild(script);
-  }, []);
-
-  useEffect(() => {
+    if (typeof window === "undefined") return;
     const container = mapContainerRef.current;
     if (!container || propertyCoords.length === 0) return;
-    if (mapRef.current.map) {
-      mapRef.current.markers.forEach((m: any) => m.remove());
-      mapRef.current.markers = [];
+    let cancelled = false;
+
+    async function loadAndRender() {
+      if (!(window as any).L) {
+        const css = document.createElement("link");
+        css.href = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.css";
+        css.rel = "stylesheet";
+        document.head.appendChild(css);
+
+        await new Promise<void>((resolve) => {
+          const script = document.createElement("script");
+          script.src = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.js";
+          script.async = true;
+          script.addEventListener("load", () => resolve());
+          document.head.appendChild(script);
+        });
+        if (cancelled) return;
+      }
+
+      const L = (window as any).L;
+      if (mapRef.current) mapRef.current.remove();
+
+      const lat = propertyCoords[0].lat;
+      const lng = propertyCoords[0].lng;
+      const map = L.map(container, { zoomControl: false, attributionControl: false })
+        .setView([lat, lng], 11);
+      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", { maxZoom: 18 }).addTo(map);
+
       propertyCoords.forEach((c) => {
-        const el = document.createElement("div");
-        el.innerHTML = `<span style="background:#2F3D2C;color:#FCFDFB;padding:4px 8px;border-radius:999px;font-size:11px;font-weight:600;white-space:nowrap;box-shadow:0 2px 8px rgba(0,0,0,.2)">${c.price}</span>`;
-        const marker = new (window as any).mapboxgl.Marker({ element: el.firstElementChild, anchor: "bottom" })
-          .setLngLat([c.lng, c.lat])
-          .addTo(mapRef.current.map);
-        mapRef.current.markers.push(marker);
+        L.marker([c.lat, c.lng])
+          .addTo(map)
+          .bindTooltip(c.price, { permanent: true, direction: "top", className: "map-marker-tooltip" });
       });
-      mapRef.current.map.flyTo({ center: propertyCoords.length === 1 ? [propertyCoords[0].lng, propertyCoords[0].lat] : undefined });
-      return;
+
+      mapRef.current = map;
     }
-    if (typeof window === "undefined" || !(window as any).mapboxgl) return;
-    try {
-      (window as any).mapboxgl.accessToken = process.env.NEXT_PUBLIC_MAPBOX_TOKEN || "";
-      const map = new (window as any).mapboxgl.Map({
-        container,
-        style: "mapbox://styles/mapbox/light-v11",
-        center: propertyCoords.length === 1 ? [propertyCoords[0].lng, propertyCoords[0].lat] : undefined,
-        zoom: propertyCoords.length === 1 ? 14 : 11,
-        interactive: false,
-      });
-      mapRef.current.map = map;
-      propertyCoords.forEach((c) => {
-        const el = document.createElement("div");
-        el.innerHTML = `<span style="background:#2F3D2C;color:#FCFDFB;padding:4px 8px;border-radius:999px;font-size:11px;font-weight:600;white-space:nowrap;box-shadow:0 2px 8px rgba(0,0,0,.2)">${c.price}</span>`;
-        const marker = new (window as any).mapboxgl.Marker({ element: el.firstElementChild, anchor: "bottom" })
-          .setLngLat([c.lng, c.lat])
-          .addTo(map);
-        mapRef.current.markers.push(marker);
-      });
-    } catch (err) {
-      console.warn("Mapbox init failed:", err);
-    }
+
+    loadAndRender();
+
     return () => {
-      mapRef.current.markers.forEach((m: any) => m.remove());
-      mapRef.current.map?.remove();
-      mapRef.current = { map: null, markers: [] };
+      cancelled = true;
+      mapRef.current?.remove();
     };
   }, [propertyCoords]);
 
   return (
     <div className="min-h-screen bg-canvas">
+      <style>{`
+        .map-marker-tooltip {
+          background: #2F3D2C !important;
+          color: #FCFDFB !important;
+          border: none !important;
+          border-radius: 999px !important;
+          padding: 3px 8px !important;
+          font-size: 11px !important;
+          font-weight: 600 !important;
+          font-family: var(--font-sans, Inter, system-ui, sans-serif) !important;
+          box-shadow: 0 2px 8px rgba(0,0,0,.2) !important;
+        }
+        .map-marker-tooltip::before { border-top-color: #2F3D2C !important; }
+      `}</style>
       {/* Header */}
       <header className="bg-card border-b border-hairline">
         <div className="max-w-[1240px] mx-auto px-8 py-5 flex items-center justify-between max-sm:px-5">
@@ -281,7 +287,12 @@ export function SearchResultsClient({
                 </div>
                 <div className="sticky top-[80px] space-y-6 max-lg:hidden">
                   <div className="bg-card rounded-[var(--radius-lg)] border border-hairline overflow-hidden">
-                    <div ref={mapContainerRef} className="w-full aspect-[4/3]" />
+                    <div ref={mapContainerRef} className="w-full aspect-[4/3] bg-ink/90 flex items-center justify-center">
+                      <div className="text-center map-placeholder">
+                        <svg className="w-12 h-12 text-white/20 mx-auto mb-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="0.8"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                        <p className="font-sans text-[14px] text-white/40">{displayWhere}</p>
+                      </div>
+                    </div>
                   </div>
                   <div className="bg-card rounded-[var(--radius-lg)] border border-hairline p-5">
                     <p className="font-sans text-[13px] text-mute">
