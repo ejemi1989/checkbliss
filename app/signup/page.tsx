@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { DIASPORA_COUNTRIES } from "@/lib/countries";
-import { signupAction } from "@/actions/auth";
+import { signupAction, signInWithGoogle } from "@/actions/auth";
 
 interface FormErrors {
   name?: string;
@@ -131,6 +131,7 @@ export default function SignupPage() {
               {/* Google sign-up */}
               <button
                 type="button"
+                onClick={() => signInWithGoogle()}
                 style={{
                   width: "100%", display: "flex", alignItems: "center", justifyContent: "center", gap: 10,
                   padding: "12px 0", marginBottom: 28, borderRadius: 8, border: "1px solid #D8DBCF",

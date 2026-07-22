@@ -106,7 +106,7 @@ export function SignupDialog({ open, onClose }: Props) {
               </div>
               <h3 className="font-display text-xl font-medium text-ink mb-2">Application submitted</h3>
               <p className="font-sans text-sm text-ink-secondary mb-6 max-w-[320px] mx-auto">
-                We&rsquo;ll review your {serverState.role === "operator" ? "operator" : "owner"} application within 24 hours.
+                We&rsquo;ll review your application within 24 hours.
               </p>
               <button
                 onClick={onClose}

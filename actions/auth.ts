@@ -203,7 +203,19 @@ export async function signupAction(_prev: unknown, formData: FormData) {
     return { error: `Auth account created but profile setup failed: ${profileError.message}` };
   }
 
-  return { success: true, role };
+  // Auto-login after signup — redirect to account dashboard
+  const { error: signInError } = await supabase.auth.signInWithPassword({
+    email,
+    password,
+  });
+
+  if (signInError) {
+    // Sign-up succeeded but auto-login failed — redirect to login page
+    redirect("/login?registered=true");
+  }
+
+  const redirectPath = roleRoutes[role as Role] ?? "/account";
+  redirect(redirectPath);
 }
 
 export async function logoutAction() {
@@ -294,4 +306,21 @@ export async function getSession(): Promise<AuthUser | null> {
   } catch {
     return null;
   }
+}
+
+export async function signInWithGoogle() {
+  if (!supabaseServerConfigured) {
+    return { error: "Supabase not configured." };
+  }
+  const supabase = await createClient();
+  const { data, error } = await supabase.auth.signInWithOAuth({
+    provider: "google",
+    options: {
+      redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000"}/auth/callback`,
+    },
+  });
+  if (error || !data.url) {
+    return { error: error?.message ?? "Google sign-in failed." };
+  }
+  redirect(data.url);
 }
