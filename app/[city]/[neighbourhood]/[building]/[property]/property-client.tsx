@@ -265,7 +265,7 @@ export function PropertyClient({ property: prop, formattedNightly, formattedDepo
                   </p>
                 </div>
                 <div className="extra-action">
-                  <button className="solid-btn" type="button">Send us a message</button>
+                  <a href="mailto:hello@checkinbliss.com" className="solid-btn no-underline" style={{ display: "inline-block", cursor: "pointer" }}>Send us a message</a>
                 </div>
               </div>
             </section>
