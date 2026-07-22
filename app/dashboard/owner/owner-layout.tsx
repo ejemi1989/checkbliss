@@ -16,9 +16,10 @@ const I = {
   shield: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" /></svg>,
   hamburger: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="3" y1="6" x2="21" y2="6" /><line x1="3" y1="12" x2="21" y2="12" /><line x1="3" y1="18" x2="21" y2="18" /></svg>,
   logOut: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" /><polyline points="16 17 21 12 16 7" /><line x1="21" y1="12" x2="9" y2="12" /></svg>,
+  messageCircle: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" /></svg>,
 };
 
-type OwnerSection = "home" | "properties" | "bookings" | "claims" | "payouts" | "calendar" | "notifications";
+type OwnerSection = "home" | "properties" | "bookings" | "claims" | "payouts" | "calendar" | "notifications" | "whatsapp";
 
 const NAV_ITEMS: { id: OwnerSection; icon: keyof typeof I; label: string; href: string }[] = [
   { id: "home", icon: "barChart3", label: "Dashboard", href: "/dashboard/owner" },
@@ -28,6 +29,7 @@ const NAV_ITEMS: { id: OwnerSection; icon: keyof typeof I; label: string; href: 
   { id: "payouts", icon: "receipt", label: "Payouts", href: "/dashboard/owner/payouts" },
   { id: "calendar", icon: "sync", label: "Calendar Sync", href: "/dashboard/owner/calendar" },
   { id: "notifications", icon: "bell", label: "Notifications", href: "/dashboard/owner/notifications" },
+  { id: "whatsapp", icon: "messageCircle", label: "WhatsApp", href: "/dashboard/owner/whatsapp" },
 ];
 
 function getActiveSection(pathname: string): OwnerSection {
