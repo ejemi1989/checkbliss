@@ -92,21 +92,21 @@ export function SearchResultsClient({
     : "Sort";
 
   useEffect(() => {
-    if (typeof window === "undefined") return;
+    const MAPBOX_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_TOKEN;
+    if (typeof window === "undefined" || !MAPBOX_TOKEN) return;
     const container = mapContainerRef.current;
     if (!container || propertyCoords.length === 0) return;
     let cancelled = false;
 
     async function loadAndRender() {
-      if (!(window as any).L) {
-        const css = document.createElement("link");
-        css.href = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.css";
-        css.rel = "stylesheet";
-        document.head.appendChild(css);
-
+      if (!(window as any).mapboxgl) {
         await new Promise<void>((resolve) => {
+          const css = document.createElement("link");
+          css.href = "https://api.mapbox.com/mapbox-gl-js/v3.6.0/mapbox-gl.css";
+          css.rel = "stylesheet";
+          document.head.appendChild(css);
           const script = document.createElement("script");
-          script.src = "https://unpkg.com/leaflet@1.9.4/dist/leaflet.js";
+          script.src = "https://api.mapbox.com/mapbox-gl-js/v3.6.0/mapbox-gl.js";
           script.async = true;
           script.addEventListener("load", () => resolve());
           document.head.appendChild(script);
@@ -114,19 +114,25 @@ export function SearchResultsClient({
         if (cancelled) return;
       }
 
-      const L = (window as any).L;
+      const mapboxgl = (window as any).mapboxgl;
+      mapboxgl.accessToken = MAPBOX_TOKEN;
+
       if (mapRef.current) mapRef.current.remove();
 
-      const lat = propertyCoords[0].lat;
-      const lng = propertyCoords[0].lng;
-      const map = L.map(container, { zoomControl: false, attributionControl: false })
-        .setView([lat, lng], 11);
-      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", { maxZoom: 18 }).addTo(map);
+      const map = new mapboxgl.Map({
+        container,
+        style: "mapbox://styles/mapbox/light-v11",
+        center: [propertyCoords[0].lng, propertyCoords[0].lat],
+        zoom: 11,
+        interactive: false,
+      });
 
       propertyCoords.forEach((c) => {
-        L.marker([c.lat, c.lng])
-          .addTo(map)
-          .bindTooltip(c.price, { permanent: true, direction: "top", className: "map-marker-tooltip" });
+        const el = document.createElement("div");
+        el.innerHTML = `<span class="map-marker-badge">${c.price}</span>`;
+        new mapboxgl.Marker({ element: el.firstElementChild, anchor: "bottom" })
+          .setLngLat([c.lng, c.lat])
+          .addTo(map);
       });
 
       mapRef.current = map;
@@ -143,18 +149,18 @@ export function SearchResultsClient({
   return (
     <div className="min-h-screen bg-canvas">
       <style>{`
-        .map-marker-tooltip {
-          background: #2F3D2C !important;
-          color: #FCFDFB !important;
-          border: none !important;
-          border-radius: 999px !important;
-          padding: 3px 8px !important;
-          font-size: 11px !important;
-          font-weight: 600 !important;
-          font-family: var(--font-sans, Inter, system-ui, sans-serif) !important;
-          box-shadow: 0 2px 8px rgba(0,0,0,.2) !important;
+        .map-marker-badge {
+          background: #2F3D2C;
+          color: #FCFDFB;
+          padding: 4px 8px;
+          border-radius: 999px;
+          font-size: 11px;
+          font-weight: 600;
+          font-family: var(--font-sans, Inter, system-ui, sans-serif);
+          white-space: nowrap;
+          box-shadow: 0 2px 8px rgba(0,0,0,.2);
+          cursor: default;
         }
-        .map-marker-tooltip::before { border-top-color: #2F3D2C !important; }
       `}</style>
       {/* Header */}
       <header className="bg-card border-b border-hairline">
