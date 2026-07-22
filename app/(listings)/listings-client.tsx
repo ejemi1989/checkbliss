@@ -29,29 +29,11 @@ export interface ListingsPageProps {
 const MAPBOX_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_TOKEN || "";
 
 /* ---------- Component ---------- */
-export function ListingsClient({ city, eyebrow, properties, totalCount }: ListingsPageProps) {
-  const [filter, setFilter] = useState<"all" | "1-2-beds" | "3-4-beds" | "5-plus">("all");
-  const [tags, setTags] = useState<string[]>([]);
-  const [sort, setSort] = useState<"featured" | "price-asc" | "price-desc">("featured");
+export function ListingsClient({ city, eyebrow, properties }: ListingsPageProps) {
   const [mapOpen, setMapOpen] = useState(true);
-  const [filterOpen, setFilterOpen] = useState(false);
   const mapRef = useRef<any>(null);
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const markersRef = useRef<any[]>([]);
-
-  const visible = properties.filter((p) => {
-    if (filter === "1-2-beds" && !(p.beds >= 1 && p.beds <= 2)) return false;
-    if (filter === "3-4-beds" && !(p.beds >= 3 && p.beds <= 4)) return false;
-    if (filter === "5-plus" && !(p.beds >= 5)) return false;
-    if (tags.length > 0 && !tags.every((t) => p.tags.includes(t))) return false;
-    return true;
-  });
-
-  const sorted = [...visible].sort((a, b) => {
-    if (sort === "price-asc") return a.price - b.price;
-    if (sort === "price-desc") return b.price - a.price;
-    return 0;
-  });
 
   useEffect(() => {
     if (mapRef.current || !mapContainerRef.current || !window.mapboxgl) return;
@@ -83,10 +65,6 @@ export function ListingsClient({ city, eyebrow, properties, totalCount }: Listin
       mapRef.current?.remove();
     };
   }, [city, properties]);
-
-  const toggleTag = (t: string) => {
-    setTags((prev) => (prev.includes(t) ? prev.filter((x) => x !== t) : [...prev, t]));
-  };
 
   return (
     <>
@@ -143,78 +121,9 @@ export function ListingsClient({ city, eyebrow, properties, totalCount }: Listin
               </button>
             </label>
           </form>
-          <button
-            className="filter-btn"
-            aria-expanded={filterOpen}
-            aria-controls="filterPanel"
-            onClick={() => setFilterOpen((v) => !v)}
-            type="button"
-          >
-            <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round">
-              <path d="M2 4h12M4 8h8M6 12h4" />
-            </svg>
-            Filter &amp; sort
-          </button>
         </div>
 
-        <div className="filter-panel" id="filterPanel" hidden={!filterOpen}>
-          <div className="filter-panel-inner">
-            <div className="fgroup">
-              <span className="fgroup-label">Bedrooms</span>
-              <div className="filter-chips">
-                {[
-                  { id: "all", label: "All" },
-                  { id: "1-2-beds", label: "1–2" },
-                  { id: "3-4-beds", label: "3–4" },
-                  { id: "5-plus", label: "5+" },
-                ].map((opt) => (
-                  <button
-                    key={opt.id}
-                    className={`fchip ${filter === opt.id ? "active" : ""}`}
-                    onClick={() => setFilter(opt.id as any)}
-                    type="button"
-                  >
-                    {opt.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-            <div className="fgroup">
-              <span className="fgroup-label">Features</span>
-              <div className="filter-chips">
-                {["pool", "gym", "workspace"].map((t) => (
-                  <button
-                    key={t}
-                    className={`fchip ${tags.includes(t) ? "active" : ""}`}
-                    onClick={() => toggleTag(t)}
-                    type="button"
-                  >
-                    {t.charAt(0).toUpperCase() + t.slice(1)}
-                  </button>
-                ))}
-              </div>
-            </div>
-            <div className="fgroup">
-              <span className="fgroup-label">Sort by</span>
-              <div className="filter-chips">
-                {[
-                  { id: "featured", label: "Featured" },
-                  { id: "price-asc", label: "Price low to high" },
-                  { id: "price-desc", label: "Price high to low" },
-                ].map((opt) => (
-                  <button
-                    key={opt.id}
-                    className={`schip ${sort === opt.id ? "active" : ""}`}
-                    onClick={() => setSort(opt.id as any)}
-                    type="button"
-                  >
-                    {opt.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-          </div>
-        </div>
+        <div className="filter-panel" id="filterPanel" hidden></div>
       </div>
 
       <main className="split">
@@ -226,13 +135,10 @@ export function ListingsClient({ city, eyebrow, properties, totalCount }: Listin
               </nav>
               <div className="lst-eyebrow">{eyebrow}</div>
               <h1 className="lst-city">{city}</h1>
-              <p className="results-count">
-                <strong>{sorted.length}</strong> of {totalCount} apartments
-              </p>
             </header>
 
             <div className="results-list" id="listingsGrid">
-              {sorted.map((p) => (
+                {properties.map((p) => (
                 <Link
                   key={p.id}
                   href={p.href ?? `/${city.toLowerCase()}/${p.kicker.toLowerCase().replace(/\s+/g, "-")}/${p.title.toLowerCase().replace(/\s+/g, "-")}`}
@@ -271,7 +177,7 @@ export function ListingsClient({ city, eyebrow, properties, totalCount }: Listin
                 </Link>
               ))}
 
-              {sorted.length === 0 && (
+              {properties.length === 0 && (
                 <p className="no-results" id="noResults">
                   No apartments match this filter. Clear a filter to see more of {city}.
                 </p>
@@ -280,7 +186,7 @@ export function ListingsClient({ city, eyebrow, properties, totalCount }: Listin
 
             <nav className="pager" aria-label="Pagination">
               <span className="pager-range">
-                <strong>1–{sorted.length}</strong> of {sorted.length} apartments
+                <strong>1–{properties.length}</strong> of {properties.length} apartments
               </span>
               <div className="pager-btns">
                 <button className="pager-btn" disabled aria-label="Previous page" type="button">
@@ -313,7 +219,6 @@ export function ListingsClient({ city, eyebrow, properties, totalCount }: Listin
                   <a href="#" className="fcol-link">Help centre</a>
                   <a href="mailto:hello@checkinbliss.com" className="fcol-link">Contact us</a>
                   <a href="policy.html" className="fcol-link">Policy</a>
-                  <span className="fcol-link fcol-link--soon">Reviews<span className="fcol-soon-badge">Soon</span></span>
                 </div>
                 <div className="fcol">
                   <h4 className="fcol-head">CheckinBliss</h4>

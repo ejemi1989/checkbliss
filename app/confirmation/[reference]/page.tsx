@@ -95,8 +95,8 @@ export default async function ConfirmationPage({
     <div className="min-h-screen bg-bone">
       {/* Nav */}
       <nav className="bg-white border-b border-hairline px-8 py-4 flex items-center justify-between max-sm:px-5">
-        <Link href="/" className="font-sans text-xl font-bold tracking-tight text-ink no-underline">
-          checkin<span className="text-brass">Bliss</span>
+        <Link href="/" className="no-underline">
+          <img src="/assets/images/logo/logo-wrd.png" alt="CheckinBliss" className="h-7 w-auto" />
         </Link>
       </nav>
 

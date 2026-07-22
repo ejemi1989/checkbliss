@@ -126,6 +126,16 @@ export async function submitDamageClaim(
       detail: `Operator submitted claim for ${data.propertyId} — £${data.estimatedCostMinor / 100}`,
     });
 
+    // Append-only event log for full state machine audit trail
+    await db.from("damage_claim_events").insert({
+      claim_id: inserted.id,
+      event_type: "submitted",
+      actor_id: operatorId,
+      actor_role: session?.role ?? "operator",
+      new_state: "submitted",
+      notes: `Claim submitted for property ${data.propertyId} — estimated cost £${data.estimatedCostMinor / 100}`,
+    });
+
     notifyBoth(
       "admin", undefined,
       "Damage claim submitted",

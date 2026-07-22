@@ -59,8 +59,8 @@ function statusColor(s: string) {
   }
 }
 
-export function OperatorDashboard({ user }: { user: AuthUser | null }) {
-  const [tab, setTab] = useState("today");
+export function OperatorDashboard({ user, initialTab }: { user: AuthUser | null; initialTab?: string }) {
+  const [tab, setTab] = useState(initialTab ?? "today");
 
   /* structure.md: operators are city-scoped. Pull the assigned cities
      from the session, and filter every data list by them so a Lagos
@@ -209,7 +209,9 @@ export function OperatorDashboard({ user }: { user: AuthUser | null }) {
       {/* Header */}
       <header className="border-b border-hairline bg-white px-8 py-4 flex items-center justify-between max-sm:px-5">
         <div className="flex items-center gap-3">
-          <Link href="/" className="font-sans text-xl font-medium tracking-tight text-ink no-underline">checkin<span className="text-brass">Bliss</span></Link>
+          <Link href="/" className="no-underline">
+            <img src="/assets/images/logo/logo-wrd.png" alt="CheckinBliss" className="h-7 w-auto" />
+          </Link>
           <span className="text-[10px] font-sans font-semibold uppercase tracking-[0.5px] rounded-full bg-lagoon/15 text-lagoon-dark px-2.5 py-0.5">Operator</span>
           {assignedCities.length > 0 && (
             <span className="text-[10px] font-sans font-medium uppercase tracking-[0.5px] rounded-full bg-soft text-ink-secondary px-2.5 py-0.5">

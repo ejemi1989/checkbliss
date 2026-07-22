@@ -31,6 +31,7 @@ export default async function BookPage({
       extendedCheckoutOffered={prop.extended_checkout_offered}
       extendedCheckoutPriceMinor={prop.extended_checkout_price_minor}
       sleeps={prop.sleeps}
+      coverPhotoUrl={prop.cover_photo_url ?? prop.images?.[0] ?? null}
     />
   );
 }

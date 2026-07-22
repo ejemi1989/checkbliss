@@ -184,7 +184,7 @@ export interface UserRecord {
   id: string;
   name: string;
   email: string;
-  type: "Guest" | "Owner";
+  type: "Guest" | "Owner" | "Operator";
   bookings_or_properties: number;
   status: string;
 }

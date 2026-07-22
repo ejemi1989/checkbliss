@@ -62,8 +62,8 @@ const SIDEBAR: { id: OwnerTab; icon: keyof typeof I; label: string }[] = [
   { id: "notifications", icon: "bell", label: "Notifications" },
 ];
 
-export function OwnerDashboard({ user }: { user: AuthUser | null }) {
-  const [tab, setTab] = useState<OwnerTab>("home");
+export function OwnerDashboard({ user, initialTab }: { user: AuthUser | null; initialTab?: OwnerTab }) {
+  const [tab, setTab] = useState<OwnerTab>(initialTab ?? "home");
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [month, setMonth] = useState(new Date().getMonth());
   const [year, setYear] = useState(new Date().getFullYear());
@@ -135,9 +135,8 @@ export function OwnerDashboard({ user }: { user: AuthUser | null }) {
       {/* ---------- sidebar ---------- */}
       <aside className={`fixed lg:static inset-y-0 left-0 z-40 w-64 bg-white border-r border-hairline shrink-0 flex flex-col transition-transform duration-300 lg:translate-x-0 ${sidebarOpen ? "translate-x-0" : "-translate-x-full"}`}>
         <div className="p-5 border-b border-hairline flex items-center justify-between">
-          <Link href="/" className="flex items-center gap-x-2.5 no-underline">
-            <div className="w-8 h-8 rounded-xl bg-primary flex items-center justify-center text-white font-bold text-base">O</div>
-            <span className="text-base font-bold tracking-tight text-primary">CheckinBliss</span>
+          <Link href="/" className="no-underline">
+            <img src="/assets/images/logo/logo-wrd.png" alt="CheckinBliss" className="h-7 w-auto" />
           </Link>
           <button onClick={() => setSidebarOpen(false)} className="lg:hidden w-7 h-7 flex items-center justify-center text-ink-secondary">{I.x}</button>
         </div>

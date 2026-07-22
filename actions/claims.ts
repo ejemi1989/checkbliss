@@ -97,6 +97,16 @@ export async function decideClaim(
       detail: `Claim ${decision}${amountMinor ? ` (amount: ${amountMinor})` : ""}`,
     });
 
+    // Append-only event log — full state machine audit trail
+    await db.from("damage_claim_events").insert({
+      claim_id: claimId,
+      event_type: decision === "reject" ? "rejected" : decision === "approve" ? "approved" : "adjusted",
+      actor_id: actorId,
+      actor_role: actorRole,
+      new_state: decision === "reject" ? "rejected" : decision === "approve" ? "approved" : "adjusted",
+      notes: `Admin decision: ${decision}${amountMinor ? ` (amount: ${amountMinor})` : ""}`,
+    });
+
     // Notify admin and property owner
     const reservation = claimRecord.reservation as Record<string, unknown> | undefined;
     const propertyId = reservation?.property_id as string | undefined;

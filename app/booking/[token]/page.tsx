@@ -133,8 +133,8 @@ export default async function BookingStatusPage({
   return (
     <div className="min-h-screen bg-bone">
       <nav className="bg-white border-b border-hairline px-8 py-4 max-sm:px-5">
-        <Link href="/" className="font-sans text-xl font-bold tracking-tight text-ink no-underline">
-          checkin<span className="text-brass">Bliss</span>
+        <Link href="/" className="no-underline">
+          <img src="/assets/images/logo/logo-wrd.png" alt="CheckinBliss" className="h-7 w-auto" />
         </Link>
       </nav>
 

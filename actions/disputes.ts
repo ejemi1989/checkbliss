@@ -48,6 +48,16 @@ export async function submitDispute(
       detail: `Dispute by ${data.guestName}: ${data.reason}`,
     });
 
+    // Append-only event log for full state machine audit trail
+    await db.from("damage_claim_events").insert({
+      claim_id: data.claimId,
+      event_type: "disputed",
+      actor_id: actorId,
+      actor_role: actorRole,
+      new_state: "disputed",
+      notes: `Guest dispute: ${data.reason}`,
+    });
+
     const ownerId = findOwner(data.claimId);
     notifyBoth(
       "owner", ownerId,

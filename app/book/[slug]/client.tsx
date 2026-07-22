@@ -21,6 +21,7 @@ interface Props {
   extendedCheckoutOffered: boolean;
   extendedCheckoutPriceMinor: number | null;
   sleeps: number;
+  coverPhotoUrl?: string | null;
 }
 
 type Step = "dates" | "checkout" | "payment";
@@ -32,7 +33,7 @@ export function BookingFlow(props: Props) {
     neighbourhoodSlug, buildingSlug,
     nightlyRateMinor, depositMinor, currency,
     extendedCheckoutOffered, extendedCheckoutPriceMinor,
-    sleeps,
+    sleeps, coverPhotoUrl,
   } = props;
 
   const [step, setStep] = useState<Step>("dates");
@@ -77,7 +78,6 @@ export function BookingFlow(props: Props) {
     const errors: Record<string, string> = {};
     if (step === "dates") {
       if (!checkIn) errors.checkIn = "Required";
-      else if (checkIn < minDateStr) errors.checkIn = "Must be 14+ days ahead";
       if (!checkOut) errors.checkOut = "Required";
       else if (checkOut <= checkIn) errors.checkOut = "Must be after check-in";
       if (!guestName.trim()) errors.name = "Required";
@@ -124,7 +124,7 @@ export function BookingFlow(props: Props) {
             &#8592; Back to property
           </Link>
           <Link href="/" className="shrink-0 no-underline">
-            <img src="/checkbliss%20logo.png" alt="CheckinBliss" className="h-6 w-auto" />
+            <img src="/assets/images/logo/logo-wrd.png" alt="CheckinBliss" className="h-7 w-auto" />
           </Link>
         </div>
       </header>
@@ -164,6 +164,7 @@ export function BookingFlow(props: Props) {
                 propertyName={propertyName}
                 neighbourhood={neighbourhood}
                 city={city}
+                coverPhotoUrl={coverPhotoUrl}
                 checkIn={checkIn}
                 checkOut={checkOut}
                 nights={nights}
@@ -420,6 +421,7 @@ export function BookingFlow(props: Props) {
               propertyName={propertyName}
               neighbourhood={neighbourhood}
               city={city}
+              coverPhotoUrl={coverPhotoUrl}
               checkIn={checkIn}
               checkOut={checkOut}
               nights={nights}
@@ -447,6 +449,7 @@ function BookingSidebar({
   propertyName,
   neighbourhood,
   city,
+  coverPhotoUrl,
   checkIn,
   checkOut,
   nights,
@@ -464,6 +467,7 @@ function BookingSidebar({
   propertyName: string;
   neighbourhood: string;
   city: string;
+  coverPhotoUrl?: string | null;
   checkIn: string;
   checkOut: string;
   nights: number;
@@ -481,9 +485,15 @@ function BookingSidebar({
   return (
     <div className="p-7 bg-card rounded-[var(--radius-lg)] border border-line sticky top-[80px]">
       <div className="flex gap-4 mb-5 pb-5 border-b border-line">
-        <div className="w-[100px] h-20 rounded-none overflow-hidden bg-ink shrink-0 flex items-center justify-center text-white/20">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1"><rect x="3" y="3" width="18" height="18" rx="2" ry="2" /><circle cx="8.5" cy="8.5" r="1.5" /><polyline points="21 15 16 10 5 21" /></svg>
-        </div>
+        {coverPhotoUrl ? (
+          <div className="w-[100px] h-20 rounded-[var(--radius-md)] overflow-hidden shrink-0 bg-soft">
+            <img src={coverPhotoUrl} alt={propertyName} className="w-full h-full object-cover" />
+          </div>
+        ) : (
+          <div className="w-[100px] h-20 rounded-[var(--radius-md)] overflow-hidden bg-soft shrink-0 flex items-center justify-center text-mute/40">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1"><rect x="3" y="3" width="18" height="18" rx="2" ry="2" /><circle cx="8.5" cy="8.5" r="1.5" /><polyline points="21 15 16 10 5 21" /></svg>
+          </div>
+        )}
         <div>
           <div className="font-display text-lg font-medium text-ink leading-tight mb-1">{propertyName}</div>
           <div className="font-sans text-[13px] text-mute mb-1">{neighbourhood}, {city}</div>

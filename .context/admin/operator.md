@@ -25,13 +25,13 @@ Each role has distinct responsibilities, permissions, and dashboard needs.
 
 City operators are compensated through revenue share (5–7% of city revenue) and have substantial autonomy within their city. They are the CheckinBliss operational presence on the ground.
 
-### Day-to-day responsibilities
+### Their day-to-day responsibilities
 - Sourcing new property owners for their city
 - Conducting physical property inspections before listing approval
 - Photographing properties (or coordinating photography)
 - Onboarding property owners including WhatsApp channel setup
 - Monthly re-verification of all properties in their city (with photographic documentation)
-- Post-checkout inspections with CLEAN / DAMAGE / NOSHOW / GUESTPRESENT reporting
+- Post-checkout inspections with CLEAN/DAMAGE/NOSHOW/GUESTPRESENT reporting
 - Submitting damage claims with photos and cost estimates
 - First-line issue resolution during guest stays
 - Maintaining quality standards across their city inventory
@@ -66,7 +66,7 @@ City operators are compensated through revenue share (5–7% of city revenue) an
 
 The super admin handles what operators cannot: platform-wide decisions, financial reconciliation, dispute adjudication, and expansion planning.
 
-### Day-to-day responsibilities
+### Their day-to-day responsibilities
 - Platform-wide performance monitoring
 - Damage claim final review and adjudication (approve, adjust, reject)
 - Dispute resolution when guest disputes a damage claim
@@ -106,7 +106,7 @@ The super admin handles what operators cannot: platform-wide decisions, financia
 
 Property owners are not the primary users of the platform. Their interaction is intentionally simple because the city operator handles most operational needs.
 
-### Responsibilities
+### Their responsibilities
 - Providing property for CheckinBliss to list
 - Maintaining property to CheckinBliss standards
 - Blocking dates when property is unavailable (via WhatsApp with operator)

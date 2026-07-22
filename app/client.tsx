@@ -435,7 +435,7 @@ export function HomePageClient({ properties, hasSearch }: { properties: SeedProp
         <div className="max-w-[1240px] mx-auto px-8 max-sm:px-5">
           <p className="font-sans text-xs font-semibold uppercase tracking-[0.14em] text-green-soft mb-6">Our standard</p>
           <h2 className="font-display font-normal text-[clamp(2rem,3.8vw,3.2rem)] leading-[1.22] tracking-[0.005em] text-ink max-w-[24ch] mx-auto">
-            We don&rsquo;t ask you to trust strangers&rsquo; reviews. We ask you to trust <em className="italic text-green-soft">the work we put in</em> before a single guest arrives.
+            We don&rsquo;t take shortcuts. We put <em className="italic text-green-soft">the work in</em> before a single guest arrives.
           </h2>
         </div>
       </section>

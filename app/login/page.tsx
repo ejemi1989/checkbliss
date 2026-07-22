@@ -25,148 +25,159 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex">
+    <div style={{ minHeight: "100vh", display: "flex", fontFamily: 'var(--font-inter), system-ui, sans-serif' }}>
       {/* Image panel */}
-      <div className="hidden lg:block lg:w-5/12 xl:w-1/2 relative overflow-hidden bg-ink">
+      <div
+        style={{
+          display: "none",
+          position: "relative",
+          overflow: "hidden",
+          backgroundColor: "#171915",
+          flex: "0 0 42%",
+        }}
+        className="login-image-panel"
+      >
         <img
-          className="absolute inset-0 h-full w-full object-cover"
           src="https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=1200&q=80"
-          alt="Premium Lagos apartment interior"
+          alt=""
+          style={{ position: "absolute", inset: 0, width: "100%", height: "100%", objectFit: "cover" }}
           onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
         />
-        <div className="absolute inset-0 bg-gradient-to-br from-ink/70 via-ink/30 to-transparent" />
-
-        <div className="relative z-10 flex flex-col justify-between h-full p-12 xl:p-16">
-          <Link href="/" className="no-underline">
-            <img src="/checkbliss%20logo.png" alt="CheckinBliss" className="h-7 w-auto brightness-0 invert" />
+        <div style={{ position: "absolute", inset: 0, background: "linear-gradient(160deg, rgba(23,25,21,0.75) 0%, rgba(23,25,21,0.25) 50%, rgba(23,25,21,0.65) 100%)" }} />
+        <div style={{ position: "relative", zIndex: 10, display: "flex", flexDirection: "column", justifyContent: "space-between", height: "100%", padding: "48px 56px" }}>
+          <Link href="/" style={{ textDecoration: "none" }}>
+            <img src="/assets/images/logo/Logo.png" alt="CheckinBliss" style={{ height: 32, width: "auto" }} />
           </Link>
-
-          <div className="pb-8">
-            <p className="font-display italic text-[clamp(22px,2.4vw,30px)] text-white/85 leading-relaxed mb-4 max-w-[420px]">
+            <div style={{ paddingBottom: 32 }}>
+            <p style={{ fontFamily: 'var(--font-newsreader), Georgia, serif', fontStyle: "italic", fontSize: "clamp(20px, 2.2vw, 28px)", color: "rgba(255,255,255,0.88)", lineHeight: 1.45, marginBottom: 16, maxWidth: 380 }}>
               &ldquo;The premium way to stay in Africa&rdquo;
             </p>
-            <div className="flex items-center gap-3">
-              <div className="flex">
-                {[...Array(5)].map((_, i) => (
-                  <svg key={i} className="w-[18px] h-[18px] text-trustpilot" viewBox="0 0 20 20" fill="currentColor">
-                    <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                  </svg>
-                ))}
-              </div>
-              <span className="font-sans text-sm font-medium text-white/75">4.8 on Trustpilot</span>
-            </div>
           </div>
         </div>
       </div>
 
       {/* Form panel */}
-      <div className="flex-1 flex items-center justify-center bg-bone px-6 py-12 lg:px-12 xl:px-20">
-        <div className="w-full max-w-[400px]">
+      <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", backgroundColor: "#E9ECE2", padding: "40px 24px" }}>
+        <div style={{ width: "100%", maxWidth: 400 }}>
           {/* Mobile logo */}
-          <div className="lg:hidden text-center mb-10">
-            <Link href="/" className="no-underline inline-block">
-              <img src="/checkbliss%20logo.png" alt="CheckinBliss" className="h-7 w-auto" />
+          <div style={{ textAlign: "center", marginBottom: 40 }} className="login-mobile-logo">
+            <Link href="/" style={{ textDecoration: "none" }}>
+              <img src="/assets/images/logo/Logo.png" alt="CheckinBliss" style={{ height: 28, width: "auto", margin: "0 auto" }} />
             </Link>
           </div>
 
-          <div className="mb-8">
-            <p className="font-sans text-xs font-semibold uppercase tracking-[0.14em] text-mute mb-2">Welcome back</p>
-            <h1 className="font-display text-[clamp(1.8rem,3vw,2.4rem)] font-medium leading-tight text-ink">Sign in to your account</h1>
-            <p className="font-sans text-sm text-ink-secondary mt-2">Access your dashboard, bookings, and properties.</p>
+          <div style={{ marginBottom: 32 }}>
+            <p style={{ fontSize: 11, fontWeight: 600, letterSpacing: "0.14em", textTransform: "uppercase" as const, color: "#6A6E63", marginBottom: 8 }}>Welcome back</p>
+            <h1 style={{ fontFamily: 'var(--font-newsreader), Georgia, serif', fontSize: "clamp(26px, 3vw, 34px)", fontWeight: 500, lineHeight: 1.15, color: "#171915", margin: 0 }}>Sign in to your account</h1>
+            <p style={{ fontSize: 14, color: "#44483D", marginTop: 8 }}>Access your dashboard, bookings, and properties.</p>
           </div>
 
-          <form action={handleSubmit} className="space-y-5">
+          <form action={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 20 }}>
             <div>
-              <label className="font-sans text-xs font-semibold uppercase tracking-[0.1em] text-mute block mb-1.5">Email address</label>
+              <label style={{ display: "block", fontSize: 11, fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase" as const, color: "#6A6E63", marginBottom: 6 }}>Email address</label>
               <input
                 type="email"
                 name="email"
                 placeholder="you@email.com"
                 defaultValue={fillEmail}
-                className="w-full border border-line rounded-[var(--radius-md)] px-4 py-3 text-[15px] font-sans text-ink bg-card outline-none focus:border-green-soft transition-colors"
+                style={{ width: "100%", border: "1px solid #D8DBCF", borderRadius: 8, padding: "12px 16px", fontSize: 14, color: "#171915", backgroundColor: "#FCFDFB", outline: "none" }}
                 required
               />
             </div>
             <div>
-              <label className="font-sans text-xs font-semibold uppercase tracking-[0.1em] text-mute block mb-1.5">Password</label>
+              <label style={{ display: "block", fontSize: 11, fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase" as const, color: "#6A6E63", marginBottom: 6 }}>Password</label>
               <input
                 type="password"
                 name="password"
                 placeholder="Enter your password"
-                className="w-full border border-line rounded-[var(--radius-md)] px-4 py-3 text-[15px] font-sans text-ink bg-card outline-none focus:border-green-soft transition-colors"
+                style={{ width: "100%", border: "1px solid #D8DBCF", borderRadius: 8, padding: "12px 16px", fontSize: 14, color: "#171915", backgroundColor: "#FCFDFB", outline: "none" }}
                 required
               />
             </div>
 
             {error && (
-              <div className="p-3 rounded-[var(--radius-md)] bg-danger/5 border border-danger/20">
-                <p className="font-sans text-xs text-danger font-medium">{error}</p>
+              <div style={{ padding: "10px 14px", borderRadius: 8, backgroundColor: "rgba(239,68,68,0.06)", border: "1px solid rgba(239,68,68,0.18)" }}>
+                <p style={{ fontSize: 13, color: "#EF4444", fontWeight: 600 }}>{error}</p>
               </div>
             )}
 
             <button
               type="submit"
               disabled={pending}
-              className="w-full py-3.5 rounded-[var(--radius-sm)] bg-brass text-soft font-sans text-[15px] font-semibold transition-all hover:bg-brass-dark disabled:opacity-50 disabled:cursor-wait cursor-pointer border-none"
+              style={{
+                width: "100%", padding: "14px 0", borderRadius: 6, backgroundColor: pending ? "rgba(47,61,44,0.6)" : "#2F3D2C",
+                color: "#F4F6F0", fontSize: 15, fontWeight: 600, border: "none", cursor: pending ? "wait" : "pointer",
+                transition: "background-color 0.2s",
+              }}
             >
-              {pending ? "Signing in…" : "Sign in"}
+              {pending ? "Signing in\u2026" : "Sign in"}
             </button>
           </form>
 
-          <div className="mt-8">
-            <div className="relative mb-6">
-              <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-line" />
-              </div>
-              <div className="relative flex justify-center text-xs">
-                <span className="bg-bone px-4 font-sans text-mute font-medium uppercase tracking-[0.1em]">Demo access</span>
+          {/* Demo access */}
+          <div style={{ marginTop: 32 }}>
+            <div style={{ position: "relative", marginBottom: 24 }}>
+              <div style={{ position: "absolute", top: "50%", left: 0, right: 0, height: 1, backgroundColor: "#D8DBCF" }} />
+              <div style={{ position: "relative", display: "flex", justifyContent: "center" }}>
+                <span style={{ backgroundColor: "#E9ECE2", padding: "0 16px", fontSize: 10, fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase" as const, color: "#6A6E63" }}>Demo access</span>
               </div>
             </div>
 
-            <div className="space-y-2">
-              {CREDENTIALS.map((c) => (
-                <button
-                  key={c.email}
-                  type="button"
-                  onClick={() => setFillEmail(c.email)}
-                  className={`w-full flex items-center gap-3 px-4 py-3 rounded-[var(--radius-md)] text-sm font-sans cursor-pointer transition-all border ${
-                    fillEmail === c.email
-                      ? "border-brass bg-brass/5 text-ink"
-                      : "border-line bg-card text-ink-secondary hover:border-green-soft hover:text-ink"
-                  }`}
-                >
-                  <span className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold shrink-0 ${
-                    fillEmail === c.email ? "bg-brass text-soft" : "bg-soft text-mute"
-                  }`}>
-                    {c.role[0]}
-                  </span>
-                  <div className="text-left min-w-0">
-                    <div className="font-medium text-[13px]">{c.role}</div>
-                    <div className="text-[11px] opacity-60 truncate">{c.email}</div>
-                    <div className="text-[10px] opacity-50 truncate">{c.sub}</div>
-                  </div>
-                  <span className="ml-auto text-[10px] font-mono opacity-40 shrink-0">checkbliss-demo-2026</span>
-                </button>
-              ))}
+            <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+              {CREDENTIALS.map((c) => {
+                const active = fillEmail === c.email;
+                return (
+                  <button
+                    key={c.email}
+                    type="button"
+                    onClick={() => setFillEmail(c.email)}
+                    style={{
+                      width: "100%", display: "flex", alignItems: "center", gap: 12, padding: "12px 14px",
+                      borderRadius: 8, fontSize: 13, cursor: "pointer", border: `1px solid ${active ? "#2F3D2C" : "#D8DBCF"}`,
+                      backgroundColor: active ? "rgba(47,61,44,0.06)" : "#FCFDFB", color: active ? "#171915" : "#44483D",
+                      textAlign: "left", transition: "border-color 0.15s, background-color 0.15s",
+                    }}
+                  >
+                    <span style={{
+                      width: 32, height: 32, borderRadius: "50%", display: "flex", alignItems: "center", justifyContent: "center",
+                      fontSize: 12, fontWeight: 700, flexShrink: 0,
+                      backgroundColor: active ? "#2F3D2C" : "#F4F6F0", color: active ? "#F4F6F0" : "#6A6E63",
+                    }}>
+                      {c.role[0]}
+                    </span>
+                    <div style={{ minWidth: 0 }}>
+                      <div style={{ fontWeight: 600, fontSize: 13 }}>{c.role}</div>
+                      <div style={{ fontSize: 11, opacity: 0.55, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" as const }}>{c.email}</div>
+                      <div style={{ fontSize: 10, opacity: 0.4, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" as const }}>{c.sub}</div>
+                    </div>
+                    <span style={{ marginLeft: "auto", fontSize: 10, fontFamily: "monospace", opacity: 0.35, flexShrink: 0 }}>checkbliss-demo-2026</span>
+                  </button>
+                );
+              })}
             </div>
-            <p className="font-sans text-[10px] text-mute text-center mt-3">
-              Click a role to pre-fill. Password is <strong className="text-ink-secondary">checkbliss-demo-2026</strong> for all.
+            <p style={{ fontSize: 10, color: "#6A6E63", textAlign: "center", marginTop: 12 }}>
+              Click a role to pre-fill. Password is <span style={{ color: "#44483D", fontWeight: 600 }}>checkbliss-demo-2026</span> for all.
             </p>
           </div>
 
-          <div className="mt-8 text-center space-y-3">
-            <p className="font-sans text-xs text-mute">
+          <div style={{ marginTop: 32, textAlign: "center", display: "flex", flexDirection: "column", gap: 12 }}>
+            <p style={{ fontSize: 12, color: "#6A6E63" }}>
               Don&rsquo;t have an account?{" "}
-              <Link href="/signup" className="text-green-soft hover:text-brass-dark transition-colors font-medium no-underline">
-                Get started
-              </Link>
+              <Link href="/signup" style={{ color: "#5C6B4F", fontWeight: 600, textDecoration: "none" }}>Get started</Link>
             </p>
-            <Link href="/" className="block font-sans text-xs text-green-soft hover:text-brass-dark transition-colors no-underline">
+            <Link href="/" style={{ fontSize: 12, color: "#5C6B4F", textDecoration: "none" }}>
               &larr; Back to home
             </Link>
           </div>
         </div>
       </div>
+
+      <style>{`
+        @media (min-width: 1024px) {
+          .login-image-panel { display: block !important; }
+          .login-mobile-logo { display: none !important; }
+        }
+      `}</style>
     </div>
   );
 }

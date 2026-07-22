@@ -6,7 +6,7 @@ export function Footer() {
       <div className="max-w-[1240px] mx-auto">
         <div className="grid grid-cols-[2fr_1fr_1fr_1fr] gap-10 mb-16 max-md:grid-cols-2 max-sm:grid-cols-1 max-sm:gap-7">
           <div>
-            <img src="/checkbliss%20logo.png" alt="CheckinBliss" className="h-8 w-auto mb-3" />
+            <img src="/assets/images/logo/logo-wrd.png" alt="CheckinBliss" className="h-8 w-auto mb-3" />
             <p className="font-sans text-sm leading-relaxed text-ink-secondary max-w-[32ch]">
               Verified Hospitality. Built on trust, shaped by detail, defined by quality, intention, and care.
             </p>

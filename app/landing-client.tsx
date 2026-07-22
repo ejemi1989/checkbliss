@@ -4,23 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import "./landing.css";
 
-const TRUSTPILOT_REVIEWS = [
-  {
-    quote:
-      "CheckinBliss has completely changed how I travel within Nigeria. Every apartment I\u2019ve booked has been immaculate \u2014 the photos are honest, the hosts are warm, and the booking process is seamless.",
-    by: "Amara O.",
-  },
-  {
-    quote:
-      "Booked the Maitama apartment for a two-week work trip. Everything worked \u2014 WiFi, generator backup, kitchen stocked. The deposit was released within five days of checkout.",
-    by: "David A.",
-  },
-  {
-    quote:
-      "Stayed in three different Lagos apartments over the holidays. Each one was exactly as photographed. The team handled a minor check-in issue within 40 minutes.",
-    by: "Ifeoma K.",
-  },
-];
+
 
 const WORKS_STEPS = [
   {
@@ -65,7 +49,7 @@ const STAYS = [
     slug: "jabi-lake-penthouse",
     name: "Jabi Lake Penthouse",
     kicker: "Abuja \u00B7 Jabi",
-    href: "/abuja/jabi/jabi-lake-towers/jabi-lake-penthouse",
+    href: "/abuja/jabi/jabi-lake-tower/jabi-lake-penthouse",
     img: "https://images.unsplash.com/photo-1564078560-4ef4b9c5e5f0?auto=format&fit=crop&w=800&q=80",
   },
   {
@@ -92,16 +76,11 @@ const STAYS = [
 ];
 
 export function HomePageClient() {
-  const [tpIndex, setTpIndex] = useState(0);
+
   const stepsRef = useRef<HTMLDivElement>(null);
   const [activeStep, setActiveStep] = useState(0);
-
-  useEffect(() => {
-    const id = setInterval(() => {
-      setTpIndex((i) => (i + 1) % TRUSTPILOT_REVIEWS.length);
-    }, 6000);
-    return () => clearInterval(id);
-  }, []);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const steps = stepsRef.current?.querySelectorAll(".wstep");
@@ -121,6 +100,16 @@ export function HomePageClient() {
     steps.forEach((s) => io.observe(s));
     return () => io.disconnect();
   }, [activeStep]);
+
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setMenuOpen(false);
+      }
+    }
+    if (menuOpen) document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [menuOpen]);
 
   return (
     <div>
@@ -143,20 +132,48 @@ export function HomePageClient() {
               </span>
             </div>
             <Link href="/" className="logo">
-              <img src="/assets/images/logo/Logo-DG.png" alt="CheckinBliss" className="logo-img" />
+              <img src="/assets/images/logo/Logo1.png" alt="CheckinBliss" className="logo-img" />
             </Link>
-            <div className="nav-side nav-right">
-              <Link href="/login" className="menu-pill" style={{ textDecoration: "none" }}>
-                <span className="burger" aria-label="Menu">
-                  <span></span><span></span><span></span>
-                </span>
-                <span className="avatar">
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
-                    <circle cx="12" cy="7" r="4"/>
-                  </svg>
-                </span>
-              </Link>
+            <div className="nav-side nav-right" ref={menuRef}>
+              <div className="menu-dropdown-wrap">
+                <button
+                  className="menu-pill"
+                  onClick={() => setMenuOpen((o) => !o)}
+                  aria-label="Menu"
+                  aria-expanded={menuOpen}
+                >
+                  <span className="burger" aria-hidden="true">
+                    <span></span><span></span><span></span>
+                  </span>
+                  <span className="avatar">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                      <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                      <circle cx="12" cy="7" r="4"/>
+                    </svg>
+                  </span>
+                </button>
+                {menuOpen && (
+                  <div className="menu-dropdown">
+                    <Link href="/login" className="menu-dropdown-item" onClick={() => setMenuOpen(false)}>
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/>
+                        <polyline points="10 17 15 12 10 7"/>
+                        <line x1="15" y1="12" x2="3" y2="12"/>
+                      </svg>
+                      Sign in
+                    </Link>
+                    <Link href="/signup" className="menu-dropdown-item" onClick={() => setMenuOpen(false)}>
+                      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                        <path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/>
+                        <circle cx="8.5" cy="7" r="4"/>
+                        <line x1="20" y1="8" x2="20" y2="14"/>
+                        <line x1="23" y1="11" x2="17" y2="11"/>
+                      </svg>
+                      Create account
+                    </Link>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </nav>
@@ -347,54 +364,6 @@ export function HomePageClient() {
         </div>
       </section>
 
-      {/* ── Trustpilot ── */}
-      <section className="testi">
-        <div className="wrap">
-          <div className="testi-head">
-            <div className="tp-mark">
-              <span className="tp-star">&#9733;</span>
-              <span>Trustpilot &middot; 4.8 &middot; 340+ reviews</span>
-            </div>
-            <h2 className="testi-title">What our guests say</h2>
-          </div>
-          <div className="review-stage">
-            <button
-              className="rev-arrow"
-              aria-label="Previous review"
-              onClick={() => setTpIndex((i) => (i - 1 + TRUSTPILOT_REVIEWS.length) % TRUSTPILOT_REVIEWS.length)}
-            >
-              &larr;
-            </button>
-            <div className="review-window">
-              {TRUSTPILOT_REVIEWS.map((r, i) => (
-                <div key={i} className={`review ${i === tpIndex ? "active" : ""}`}>
-                  <div className="stars">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
-                  <p>{r.quote}</p>
-                  <span className="r-by">&mdash; {r.by}</span>
-                </div>
-              ))}
-            </div>
-            <button
-              className="rev-arrow"
-              aria-label="Next review"
-              onClick={() => setTpIndex((i) => (i + 1) % TRUSTPILOT_REVIEWS.length)}
-            >
-              &rarr;
-            </button>
-          </div>
-          <div className="reviews-nav">
-            {TRUSTPILOT_REVIEWS.map((_, i) => (
-              <button
-                key={i}
-                className={`rev-dot ${i === tpIndex ? "active" : ""}`}
-                onClick={() => setTpIndex(i)}
-                aria-label={`Review ${i + 1}`}
-              />
-            ))}
-          </div>
-        </div>
-      </section>
-
       {/* ── Promise ── */}
       <section className="promise">
         <div className="wrap">
@@ -431,8 +400,7 @@ export function HomePageClient() {
       <section className="standard">
         <div className="standard-content">
           <p>
-            We don&rsquo;t ask you to trust <em>strangers&rsquo; reviews</em>. We ask you to trust the work we put in before a single guest arrives.
-          </p>
+            </p>
         </div>
       </section>
 
@@ -440,7 +408,7 @@ export function HomePageClient() {
       <section className="closing">
         <div className="wrap">
           <div className="closing-logo">
-            <img src="/assets/images/logo/logo-wrd.png" alt="CheckinBliss" className="closing-logo-img" />
+            <img src="/assets/images/logo/Logo1.png" alt="CheckinBliss" className="closing-logo-img" />
           </div>
           <h2>
             Built on <span className="fade">trust, shaped by detail, defined by</span> quality, intention, and care.
@@ -484,7 +452,7 @@ export function HomePageClient() {
               <a href="#" className="fcol-link">Help centre</a>
               <a href="mailto:hello@checkinbliss.com" className="fcol-link">Contact us</a>
               <a href="#" className="fcol-link">Policy</a>
-              <span className="fcol-link fcol-link--coming">Reviews</span>
+
             </div>
             <div>
               <p className="fcol-head">CheckinBliss</p>
