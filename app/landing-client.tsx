@@ -32,45 +32,51 @@ const WORKS_STEPS = [
 
 const STAYS = [
   {
-    slug: "lagoon-view-loft",
-    name: "Lagoon View Loft",
-    kicker: "Lagos \u00B7 Victoria Island",
-    href: "/lagos/victoria-island/ocean-parade-towers/lagoon-view-loft",
+    slug: "lagoon-living",
+    kicker: "Lagos",
+    title: "Lagoon Living",
+    href: "/lagos",
+    link: "View apartments in Victoria Island \u2192",
     img: "/assets/images/stays/lagos-lagoon-living.avif",
   },
   {
-    slug: "maitama-garden-studios",
-    name: "Maitama Garden Studios",
-    kicker: "Abuja \u00B7 Maitama",
-    href: "/abuja/maitama/yakubu-gowon-gardens/maitama-garden-studios",
-    img: "/assets/images/stays/abuja-hills-hush.avif",
+    slug: "hills-hush",
+    kicker: "Abuja",
+    title: "Hills & Hush",
+    href: "/abuja",
+    link: "View apartments in Maitama \u2192",
+    img: "/assets/images/stays/abuja-hills-hush.jpg",
   },
   {
-    slug: "jabi-lake-penthouse",
-    name: "Jabi Lake Penthouse",
-    kicker: "Abuja \u00B7 Jabi",
-    href: "/abuja/jabi/jabi-lake-tower/jabi-lake-penthouse",
-    img: "/assets/images/stays/jabi-lake-penthouse.avif",
+    slug: "private-pools",
+    kicker: "By the water",
+    title: "Private Pools",
+    href: "#",
+    link: "View apartments with pools \u2192",
+    img: "/assets/images/stays/private-pools.jpg",
   },
   {
-    slug: "the-palms-maisonette",
-    name: "The Palms Maisonette",
-    kicker: "Lagos \u00B7 Victoria Island",
-    href: "/lagos/victoria-island/ahmadu-bello-mansions/the-palms-maisonette",
+    slug: "maisonettes",
+    kicker: "Space & privacy",
+    title: "Maisonettes",
+    href: "#",
+    link: "View maisonettes in Lagos \u2192",
     img: "/assets/images/stays/maisonettes.avif",
   },
   {
-    slug: "banana-island-villa",
-    name: "Banana Island Villa",
-    kicker: "Lagos \u00B7 Banana Island",
-    href: "/lagos/banana-island/banana-island-estate/banana-island-villa",
+    slug: "banana-island",
+    kicker: "Lagos",
+    title: "Banana Island",
+    href: "/lagos",
+    link: "View apartments on Banana Island \u2192",
     img: "/assets/images/stays/banana-island.avif",
   },
   {
-    slug: "asokoro-state-house-view",
-    name: "Asokoro State House View",
-    kicker: "Abuja \u00B7 Asokoro",
-    href: "/abuja/asokoro/diplomatic-ridge/asokoro-state-house-view",
+    slug: "asokoro-calm",
+    kicker: "Abuja",
+    title: "Asokoro Calm",
+    href: "/abuja",
+    link: "View apartments in Asokoro \u2192",
     img: "/assets/images/stays/asokoro-calm.avif",
   },
 ];
@@ -178,7 +184,7 @@ export function HomePageClient() {
           </div>
         </nav>
         <div className="hero-content">
-          <h1>The Premium way to stay in Africa</h1>
+          <h1>The Premium way to stay in Africa.</h1>
           <p className="hero-sub">Hand-selected luxury apartments in Lagos and Abuja. Book instantly from anywhere.</p>
         </div>
       </section>
@@ -211,10 +217,8 @@ export function HomePageClient() {
       {/* ── Intro band ── */}
       <section className="intro">
         <div className="wrap">
-          <p className="eyebrow">Arrive well. Leave nothing to chance.</p>
-          <h2>
-            We eliminate the guesswork of premium travel. Every apartment is handpicked and verified in person, giving you hotel-grade certainty with the <em>true feeling of home</em>.
-          </h2>
+          <h2>Arrive well. Leave <em>nothing to chance.</em></h2>
+          <p>We eliminate the guesswork of premium travel. Every apartment is handpicked and verified in person, giving you hotel-grade certainty with the true feeling of home.</p>
         </div>
       </section>
 
@@ -232,35 +236,32 @@ export function HomePageClient() {
                   <img src="/assets/images/cats/lagos.avif" alt="Lagos" loading="lazy" />
                 </div>
                 <div className="cat-body">
-                  <p className="cat-kicker">Remarkably Lagos</p>
+                  <p className="cat-kicker">Remarkably</p>
                   <h3 className="cat-title">Lagos</h3>
-                  <p>Island apartments with Atlantic views, from Ikoyi to Victoria Island.</p>
                   <span className="cat-link">View apartments in Lagos &rarr;</span>
                 </div>
               </Link>
             </article>
             <article className="cat">
-              <Link href="/lagos" style={{ textDecoration: "none", color: "inherit", display: "flex", flexDirection: "column", flex: 1 }}>
+              <Link href="#" style={{ textDecoration: "none", color: "inherit", display: "flex", flexDirection: "column", flex: 1 }}>
                 <div className="cat-img">
-                  <img src="/assets/images/stays/maisonettes.avif" alt="Maisonettes" loading="lazy" />
+                  <img src="/assets/images/cats/pool.jpg" alt="Pool" loading="lazy" />
                 </div>
                 <div className="cat-body">
-                  <p className="cat-kicker">Space &amp; Privacy</p>
-                  <h3 className="cat-title">Maisonettes</h3>
-                  <p>Multi-level homes with room to live, work, and entertain.</p>
-                  <span className="cat-link">View maisonettes in Lagos &rarr;</span>
+                  <p className="cat-kicker">Apartments with a</p>
+                  <h3 className="cat-title">Pool</h3>
+                  <span className="cat-link">View apartments with private pools &rarr;</span>
                 </div>
               </Link>
             </article>
             <article className="cat">
               <Link href="/abuja" style={{ textDecoration: "none", color: "inherit", display: "flex", flexDirection: "column", flex: 1 }}>
                 <div className="cat-img">
-                  <img src="/assets/images/cats/abuja-calm.avif" alt="Abuja" loading="lazy" />
+                  <img src="/assets/images/cats/abuja.jpg" alt="Abuja" loading="lazy" />
                 </div>
                 <div className="cat-body">
-                  <p className="cat-kicker">Calmly Abuja</p>
+                  <p className="cat-kicker">Calmly</p>
                   <h3 className="cat-title">Abuja</h3>
-                  <p>Spacious residences in Maitama, Asokoro, and Jabi. Built for longer stays.</p>
                   <span className="cat-link">View apartments in Abuja &rarr;</span>
                 </div>
               </Link>
@@ -268,7 +269,7 @@ export function HomePageClient() {
           </div>
         </div>
         <div className="wrap">
-          <p className="drag-hint">Drag to explore</p>
+          <p className="drag-hint">Drag to explore &rarr;</p>
         </div>
       </section>
 
@@ -292,7 +293,7 @@ export function HomePageClient() {
       <section className="reject">
         <div className="wrap">
           <p className="reject-num">9/10</p>
-          <h2>We reject 9 out of 10 homes.</h2>
+          <h2>We reject 9 out<em> of 10 homes.</em></h2>
           <p>Most platforms list anything. We don&rsquo;t. If quality slips, listings are removed. We list fewer homes so you get a better stay.</p>
         </div>
       </section>
@@ -300,30 +301,23 @@ export function HomePageClient() {
       {/* ── Featured Stays ── */}
       <section className="stays">
         <div className="wrap">
-          <div className="stays-head">
-            <div>
-              <span className="eyebrow">Hand-selected stays</span>
-              <h2>Hand-selected stays</h2>
-            </div>
-            <Link href="/lagos" className="cat-link" style={{ alignSelf: "flex-end" }}>View all stays &rarr;</Link>
-          </div>
           <div className="stays-track">
             {STAYS.map((s) => (
               <Link key={s.slug} href={s.href} className="scard">
                 <div className="cat-img">
-                  <img src={s.img} alt={s.name} loading="lazy" />
+                  <img src={s.img} alt={s.title} loading="lazy" />
                 </div>
                 <div className="cat-body">
                   <p className="cat-kicker">{s.kicker}</p>
-                  <h3 className="cat-title">{s.name}</h3>
-                  <span className="cat-link">View &rarr;</span>
+                  <h3 className="cat-title">{s.title}</h3>
+                  <span className="cat-link">{s.link}</span>
                 </div>
               </Link>
             ))}
           </div>
         </div>
         <div className="wrap">
-          <p className="drag-hint">Drag to explore</p>
+          <p className="drag-hint">Drag to explore &rarr;</p>
         </div>
       </section>
 
@@ -332,8 +326,8 @@ export function HomePageClient() {
         <div className="wrap">
           <div className="works-grid">
             <aside className="works-aside">
-              <p className="eyebrow">How it works</p>
-              <h2>Three steps to bliss.</h2>
+              <p className="eyebrow">The process</p>
+              <h2>How CheckinBliss works</h2>
               <div className="works-counter">
                 <span className="wc-num">0{activeStep + 1}</span>
                 <span className="wc-sep">/</span>
@@ -351,7 +345,7 @@ export function HomePageClient() {
                       <img src={step.img} alt={step.title} loading="lazy" />
                     </div>
                     <div className="wstep-body">
-                      <span className="wstep-n">Step {step.n}</span>
+                      <span className="wstep-n">{step.n}</span>
                       <h3>{step.title}</h3>
                       <p>{step.body}</p>
                     </div>
@@ -366,30 +360,37 @@ export function HomePageClient() {
       {/* ── Promise ── */}
       <section className="promise">
         <div className="wrap">
-          <p className="eyebrow" style={{ textAlign: "center", display: "block" }}>The Standard, Upheld</p>
           <h2>The standard, upheld.</h2>
           <div className="promise-grid">
             <div className="promise-card">
-              <svg className="promise-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-                <path d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
-              </svg>
-              <h3>Always Inspected</h3>
-              <p>Zero remote approvals. Zero owner submissions. Physically vetted before launch and re-checked monthly.</p>
+              <div className="cat-img">
+                <img src="/assets/images/promise/inspected.jpg" alt="" loading="lazy" />
+              </div>
+              <div className="cat-body">
+                <p className="cat-kicker">Always</p>
+                <h3 className="cat-title">Inspected</h3>
+                <p className="cat-text">Zero remote approvals. Zero owner submissions. Physically vetted before launch and re-checked monthly.</p>
+              </div>
             </div>
             <div className="promise-card">
-              <svg className="promise-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-                <path d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
-                <circle cx="12" cy="13" r="3" />
-              </svg>
-              <h3>Truth in&nbsp;Presentation</h3>
-              <p>No user-generated content. Every photograph and description is produced by our team. You see reality.</p>
+              <div className="cat-img">
+                <img src="/assets/images/promise/ours-to-present.avif" alt="" loading="lazy" />
+              </div>
+              <div className="cat-body">
+                <p className="cat-kicker">Truth</p>
+                <h3 className="cat-title">in Presentation</h3>
+                <p className="cat-text">No user-generated content. Every photograph and description is produced by our team. You see reality.</p>
+              </div>
             </div>
             <div className="promise-card">
-              <svg className="promise-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-                <path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-              <h3>Personally Mediated</h3>
-              <p>No distant hosts. No arguments. Our local teams step in and resolve issues directly on the ground.</p>
+              <div className="cat-img">
+                <img src="/assets/images/promise/mediated.jpg" alt="" loading="lazy" />
+              </div>
+              <div className="cat-body">
+                <p className="cat-kicker">Personally</p>
+                <h3 className="cat-title">Mediated</h3>
+                <p className="cat-text">No distant hosts. No arguments. Our local teams step in and resolve issues directly on the ground.</p>
+              </div>
             </div>
           </div>
         </div>
@@ -411,7 +412,7 @@ export function HomePageClient() {
             <img src="/assets/images/logo/Logo-DG.png" alt="CheckinBliss" className="closing-logo-img" />
           </div>
           <h2>
-            Built on <span className="fade">trust, shaped by detail, defined by</span> quality, intention, and care.
+            Built on trust, shaped by detail, defined by <span className="fade">quality, intention, and care.</span>
           </h2>
         </div>
       </section>
@@ -424,10 +425,10 @@ export function HomePageClient() {
           <div className="nl-text">
             <p className="nl-eyebrow">The Insider List</p>
             <h2>New homes, exclusive offers, and early access.</h2>
-            <p className="nl-legal">No spam. Unsubscribe anytime. <a href="#">Privacy Policy</a></p>
+            <p className="nl-legal">No spam. Unsubscribe anytime. <a href="#">Privacy Policy</a>.</p>
           </div>
           <form className="nl-form" onSubmit={(e) => e.preventDefault()}>
-            <input type="email" placeholder="Your email" aria-label="Email" required />
+            <input type="email" placeholder="Enter your email address" aria-label="Email address" required />
             <button type="submit" className="nl-btn">Subscribe</button>
           </form>
         </div>
@@ -439,11 +440,11 @@ export function HomePageClient() {
           <div className="foot-nav">
             <div>
               <p className="fcol-head">Explore</p>
-              <span className="fcol-link--soon">
-                <span>List your property</span>
-              </span>
+              <a href="#" className="fcol-link">List your property</a>
               <span className="fcol-link fcol-link--coming">Partnerships</span>
-              <span className="fcol-link fcol-link--coming">Affiliate programme</span>
+              <span className="fcol-link fcol-link--soon">
+                Affiliate programme<span className="fcol-soon-badge">Soon</span>
+              </span>
               <span className="fcol-link fcol-link--coming">Journal</span>
               <span className="fcol-link fcol-link--coming">CheckinBliss vs Airbnb</span>
             </div>
@@ -452,7 +453,9 @@ export function HomePageClient() {
               <a href="#" className="fcol-link">Help centre</a>
               <a href="mailto:hello@checkinbliss.com" className="fcol-link">Contact us</a>
               <a href="#" className="fcol-link">Policy</a>
-
+              <span className="fcol-link fcol-link--soon">
+                Reviews<span className="fcol-soon-badge">Soon</span>
+              </span>
             </div>
             <div>
               <p className="fcol-head">CheckinBliss</p>
@@ -468,7 +471,9 @@ export function HomePageClient() {
                 <Link href="/lagos" className="foot-dest-link">Lagos</Link>
                 <span className="foot-sep">&middot;</span>
                 <Link href="/abuja" className="foot-dest-link">Abuja</Link>
-                <span className="foot-dest-soon">Coming soon: Port Harcourt, Accra, Nairobi</span>
+                <span className="foot-sep">&middot;</span>
+                <span className="foot-dest-soon">Coming soon:</span>
+                <span className="foot-dest-muted">Port Harcourt, Accra, Nairobi</span>
               </div>
               <div className="foot-socials">
                 <a href="#" className="foot-social-link" aria-label="Instagram">

@@ -715,32 +715,29 @@ a { color: inherit; text-decoration: none; }
 }
 .promise-card:first-child { padding-left: 0; }
 .promise-card:last-child { padding-right: 0; }
-.promise-icon {
-  width: 48px; height: 48px;
-  margin: 0 auto var(--s5);
-  color: var(--green-soft);
+.promise-card .cat-img {
+  aspect-ratio: 3 / 4;
+  margin-bottom: 18px;
 }
-.promise-card h3 {
-  font-family: var(--display);
-  font-size: clamp(18px, 1.6vw, 24px);
-  font-weight: 500;
-  color: var(--ink);
-  margin-bottom: var(--s2);
-  line-height: 1.2;
+.promise-card .cat-body {
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
-.promise-card p {
+.promise-card .cat-kicker {
+  font-size: 26px;
+}
+.promise-card .cat-title {
+  font-size: 26px;
+  margin-bottom: 10px;
+}
+.promise-card .cat-text {
   font-size: 14px;
   line-height: 1.55;
   color: var(--body-c);
   max-width: 36ch;
   margin: 0 auto;
-}
-.cat-text {
-  font-family: var(--body);
-  font-size: 16px;
-  color: var(--body-c);
-  line-height: 1.6;
-  margin-top: 2px;
 }
 
 /* ── Our Standard (the creed) ── */
