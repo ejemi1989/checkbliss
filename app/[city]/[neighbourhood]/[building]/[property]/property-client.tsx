@@ -290,7 +290,7 @@ export function PropertyClient({ property: prop, formattedNightly, formattedDepo
                   <span className="bc-label">Guests</span>
                   <select id="guests" value={guests} onChange={(e) => setGuests(parseInt(e.target.value))} aria-label="Number of guests">
                     {Array.from({ length: prop.sleeps }, (_, i) => i + 1).map((n) => (
-                      <option key={n} value={n} selected={n === guests}>{n} guest{n > 1 ? "s" : ""}</option>
+                      <option key={n} value={n}>{n} guest{n > 1 ? "s" : ""}</option>
                     ))}
                   </select>
                 </label>
