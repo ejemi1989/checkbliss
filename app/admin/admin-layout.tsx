@@ -3,7 +3,6 @@
 import { useState, useCallback, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { logoutAction } from "@/actions/auth";
 import { NotificationBell } from "@/components/notification-bell";
 import type { AuthUser } from "@/lib/auth";
 
@@ -90,11 +89,9 @@ export function AdminLayout({ user, children }: { user: AuthUser | null; childre
             <Link href="/admin/settings" className={`w-full flex items-center gap-x-3 px-4 py-2.5 rounded-xl text-sm font-medium cursor-pointer border-none text-left transition-colors no-underline ${active === "settings" ? "bg-primary text-white" : "text-ink-secondary hover:bg-primary-bg hover:text-primary bg-transparent"}`}>
               <span className="w-4 shrink-0 flex items-center justify-center">{I.settings}</span><span>Settings</span>
             </Link>
-            <form action={logoutAction}>
-              <button className="w-full flex items-center gap-x-3 px-4 py-2.5 rounded-xl text-sm font-medium text-ink-secondary hover:bg-primary-bg hover:text-primary cursor-pointer border-none text-left bg-transparent font-sans">
-                <span className="w-4 shrink-0 flex items-center justify-center">{I.logOut}</span><span>Logout</span>
-              </button>
-            </form>
+            <Link href="/logout" className="w-full flex items-center gap-x-3 px-4 py-2.5 rounded-xl text-sm font-medium text-ink-secondary hover:bg-primary-bg hover:text-primary no-underline">
+              <span className="w-4 shrink-0 flex items-center justify-center">{I.logOut}</span><span>Logout</span>
+            </Link>
           </nav>
         </div>
 

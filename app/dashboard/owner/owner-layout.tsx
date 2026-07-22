@@ -3,7 +3,6 @@
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { logoutAction } from "@/actions/auth";
 import { NotificationBell } from "@/components/notification-bell";
 import type { AuthUser } from "@/lib/auth";
 
@@ -61,9 +60,7 @@ export function OwnerLayout({ user, children }: { user: AuthUser | null; childre
         </div>
         <div className="flex items-center gap-x-3">
           <NotificationBell role="owner" userId={user?.id} />
-          <form action={logoutAction}>
-            <button className="text-xs font-sans font-medium text-ink-secondary hover:text-ink transition-colors cursor-pointer bg-transparent border-none">Sign out</button>
-          </form>
+          <Link href="/logout" className="text-xs font-sans font-medium text-ink-secondary hover:text-ink transition-colors bg-transparent border-none no-underline">Sign out</Link>
           <div className="hidden sm:flex items-center gap-2 ml-2 pl-2 border-l border-hairline">
             <div className="w-7 h-7 rounded-full bg-primary text-white text-[11px] font-sans font-semibold flex items-center justify-center">{initials}</div>
             <span className="text-xs font-sans font-medium text-ink-secondary">{displayName}</span>

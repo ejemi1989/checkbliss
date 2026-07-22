@@ -3,7 +3,6 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getSession } from "@/actions/auth";
 import { checkAdminGate } from "@/lib/admin-gate";
-import { logoutAction } from "@/actions/auth";
 
 const NAV = [
   { href: "/admin/crm/inbox", label: "Inbox", icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14" /><polyline points="22 4 12 14.01 9 11.01" /></svg> },
@@ -46,9 +45,7 @@ export default async function CrmLayout({ children }: { children: React.ReactNod
         </div>
         <div className="flex items-center gap-x-3">
           <Link href="/admin?view=notifications" className="text-xs font-sans font-medium text-ink-secondary hover:text-ink transition-colors no-underline">Notifications</Link>
-          <form action={logoutAction}>
-            <button className="text-xs font-sans font-medium text-ink-secondary hover:text-ink transition-colors cursor-pointer bg-transparent border-none">Sign out</button>
-          </form>
+          <Link href="/logout" className="text-xs font-sans font-medium text-ink-secondary hover:text-ink transition-colors no-underline">Sign out</Link>
         </div>
       </header>
 
