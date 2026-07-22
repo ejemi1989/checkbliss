@@ -101,10 +101,33 @@ export async function loginAction(_prev: unknown, formData: FormData) {
     .single();
 
   if (!profile) {
-    await supabase.auth.signOut();
-    return {
-      error: "Account exists but no profile is configured. Contact an administrator.",
-    };
+    const meta = data.user.user_metadata as Record<string, unknown> | undefined;
+    const metaRole = (meta?.role as string | undefined) ?? "";
+    const autoRole = (metaRole === "operator" || metaRole === "owner")
+      ? metaRole
+      : "guest";
+    const { error: insertErr } = await admin.from("profiles").upsert(
+      {
+        id: data.user.id,
+        role: autoRole,
+        full_name: (meta?.full_name as string) ?? data.user.email ?? "User",
+        email: data.user.email,
+        whatsapp_e164: (meta?.phone as string) ?? null,
+        country_of_residence: (meta?.country as string) ?? null,
+        whatsapp_opt_in: false,
+      },
+      { onConflict: "id" },
+    );
+
+    if (insertErr) {
+      await supabase.auth.signOut();
+      return {
+        error: "Account exists but no profile is configured. Contact an administrator.",
+      };
+    }
+
+    const redirectPath = roleRoutes[autoRole as Role] ?? "/search";
+    redirect(redirectPath);
   }
 
   redirect(roleRoutes[profile.role as Role] ?? "/login");
@@ -202,7 +225,32 @@ export async function getSession(): Promise<AuthUser | null> {
     .eq("id", user.id)
     .single();
 
-  if (!profile) return null;
+  if (!profile) {
+    const meta = user.user_metadata as Record<string, unknown> | undefined;
+    const metaRole = (meta?.role as string | undefined) ?? "";
+    const autoRole = (metaRole === "operator" || metaRole === "owner")
+      ? metaRole
+      : "guest";
+    await admin.from("profiles").upsert(
+      {
+        id: user.id,
+        role: autoRole,
+        full_name: (meta?.full_name as string) ?? user.email ?? "User",
+        email: user.email,
+        whatsapp_e164: (meta?.phone as string) ?? null,
+        country_of_residence: (meta?.country as string) ?? null,
+        whatsapp_opt_in: false,
+      },
+      { onConflict: "id" },
+    );
+
+    return {
+      id: user.id,
+      email: user.email ?? "",
+      role: autoRole as Role,
+      name: (meta?.full_name as string) ?? user.email ?? "User",
+    };
+  }
 
   // structure.md: operators are scoped to assigned cities. In Supabase
   // mode we read the assigned_cities array from the operators table.
