@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { formatMinor, type CurrencyCode } from "@/lib/currency";
@@ -47,6 +47,9 @@ export function BookingFlow(props: Props) {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => { setMounted(true); }, []);
 
   const steps: Step[] = ["dates", "checkout", "payment"];
   const currentIndex = steps.indexOf(step);
@@ -116,6 +119,24 @@ export function BookingFlow(props: Props) {
       setError("Network error. Please try again.");
       setSubmitting(false);
     }
+  }
+
+  if (!mounted) {
+    return (
+      <div className="min-h-screen bg-bone">
+        <div className="max-w-[1240px] mx-auto px-8 py-10">
+          <div className="animate-pulse space-y-6">
+            <div className="h-8 w-48 bg-hairline rounded-lg" />
+            <div className="grid grid-cols-[1fr_400px] gap-16 max-lg:grid-cols-1">
+              <div className="space-y-4">
+                <div className="h-96 bg-hairline rounded-xl" />
+              </div>
+              <div className="h-64 bg-hairline rounded-xl max-lg:hidden" />
+            </div>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   return (
