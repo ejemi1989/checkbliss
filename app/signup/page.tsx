@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { DIASPORA_COUNTRIES } from "@/lib/countries";
+import { signupAction } from "@/actions/auth";
 
 type Role = "operator" | "owner";
 
@@ -10,6 +11,7 @@ interface FormErrors {
   name?: string;
   email?: string;
   phone?: string;
+  password?: string;
   city?: string;
   property?: string;
   country?: string;
@@ -28,6 +30,9 @@ export default function SignupPage() {
     if (!fd.get("name")) e.name = "Required";
     if (!fd.get("email")) e.email = "Required";
     if (!fd.get("phone")) e.phone = "Required";
+    const pw = fd.get("password") as string;
+    if (!pw) e.password = "Required";
+    else if (pw.length < 8) e.password = "At least 8 characters";
     if (!fd.get("country")) e.country = "Required";
     if (role === "operator" && !fd.get("city")) e.city = "Required";
     if (role === "owner" && !fd.get("property")) e.property = "Required";
@@ -41,10 +46,18 @@ export default function SignupPage() {
     if (!validate(fd)) return;
     setPending(true);
     setServerState(null);
-    await new Promise((r) => setTimeout(r, 800));
-    setServerState({ success: true, role, message: "Account created (demo mode)." });
+    try {
+      const result = await signupAction(null, fd);
+      if (result?.error) {
+        setServerState({ error: result.error });
+      } else {
+        setServerState({ success: true, role, message: result?.message || "Account created." });
+        setSubmitted(true);
+      }
+    } catch {
+      setServerState({ error: "Something went wrong. Please try again." });
+    }
     setPending(false);
-    setSubmitted(true);
   }
 
   const inputStyle = (hasError?: boolean): React.CSSProperties => ({
@@ -202,6 +215,12 @@ export default function SignupPage() {
                     <input type="tel" name="phone" placeholder="+234 800 000 0000" style={inputStyle(!!errors.phone)} required />
                     {errors.phone && <p style={{ fontSize: 10, color: "#EF4444", marginTop: 4 }}>{errors.phone}</p>}
                   </div>
+                </div>
+
+                <div>
+                  <label style={labelStyle}>Password</label>
+                  <input type="password" name="password" placeholder="At least 8 characters" style={inputStyle(!!errors.password)} required minLength={8} />
+                  {errors.password && <p style={{ fontSize: 10, color: "#EF4444", marginTop: 4 }}>{errors.password}</p>}
                 </div>
 
                 <div>

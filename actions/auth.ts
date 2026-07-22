@@ -106,20 +106,29 @@ export async function loginAction(_prev: unknown, formData: FormData) {
     const autoRole = (metaRole === "operator" || metaRole === "owner")
       ? metaRole
       : "guest";
-    const { error: insertErr } = await admin.from("profiles").upsert(
-      {
-        id: data.user.id,
-        role: autoRole,
-        full_name: (meta?.full_name as string) ?? data.user.email ?? "User",
-        email: data.user.email,
-        whatsapp_e164: (meta?.phone as string) ?? null,
-        country_of_residence: (meta?.country as string) ?? null,
-        whatsapp_opt_in: false,
-      },
-      { onConflict: "id" },
-    );
+    try {
+      const { error: insertErr } = await admin.from("profiles").upsert(
+        {
+          id: data.user.id,
+          role: autoRole,
+          full_name: (meta?.full_name as string) ?? data.user.email ?? "User",
+          email: data.user.email,
+          whatsapp_e164: (meta?.phone as string) ?? null,
+          country_of_residence: (meta?.country as string) ?? null,
+          whatsapp_opt_in: false,
+        },
+        { onConflict: "id" },
+      );
 
-    if (insertErr) {
+      if (insertErr) {
+        console.error("Profile auto-create failed:", JSON.stringify(insertErr));
+        await supabase.auth.signOut();
+        return {
+          error: "Account exists but no profile is configured. Contact an administrator.",
+        };
+      }
+    } catch (err) {
+      console.error("Profile auto-create exception:", err);
       await supabase.auth.signOut();
       return {
         error: "Account exists but no profile is configured. Contact an administrator.",
