@@ -26,7 +26,7 @@ const WORKS_STEPS = [
     title: "Arrive with Confidence",
     body:
       "Our local teams handle the logistics. If anything isn\u2019t right, we fix it on the spot.",
-    img: "https://images.unsplash.com/photo-1522708323-2a93d582dbab?auto=format&fit=crop&w=1200&q=80",
+    img: "/assets/images/works/step-3-arrive.avif",
   },
 ];
 
@@ -43,14 +43,14 @@ const STAYS = [
     name: "Maitama Garden Studios",
     kicker: "Abuja \u00B7 Maitama",
     href: "/abuja/maitama/yakubu-gowon-gardens/maitama-garden-studios",
-    img: "https://images.unsplash.com/photo-1600573472591-ee6b68d14c68?auto=format&fit=crop&w=800&q=80",
+    img: "/assets/images/stays/abuja-hills-hush.avif",
   },
   {
     slug: "jabi-lake-penthouse",
     name: "Jabi Lake Penthouse",
     kicker: "Abuja \u00B7 Jabi",
     href: "/abuja/jabi/jabi-lake-tower/jabi-lake-penthouse",
-    img: "https://images.unsplash.com/photo-1564078560-4ef4b9c5e5f0?auto=format&fit=crop&w=800&q=80",
+    img: "/assets/images/stays/jabi-lake-penthouse.avif",
   },
   {
     slug: "the-palms-maisonette",
@@ -64,14 +64,14 @@ const STAYS = [
     name: "Banana Island Villa",
     kicker: "Lagos \u00B7 Banana Island",
     href: "/lagos/banana-island/banana-island-estate/banana-island-villa",
-    img: "https://images.unsplash.com/photo-1564013799919-ab600027f3ae?auto=format&fit=crop&w=800&q=80",
+    img: "/assets/images/stays/banana-island.avif",
   },
   {
     slug: "asokoro-state-house-view",
     name: "Asokoro State House View",
     kicker: "Abuja \u00B7 Asokoro",
     href: "/abuja/asokoro/diplomatic-ridge/asokoro-state-house-view",
-    img: "https://images.unsplash.com/photo-1600585154526-990a2a80f3e7?auto=format&fit=crop&w=800&q=80",
+    img: "/assets/images/stays/asokoro-calm.avif",
   },
 ];
 
@@ -256,7 +256,7 @@ export function HomePageClient() {
             <article className="cat">
               <Link href="/abuja" style={{ textDecoration: "none", color: "inherit", display: "flex", flexDirection: "column", flex: 1 }}>
                 <div className="cat-img">
-                  <img src="https://images.unsplash.com/photo-1600210492486-724fe5c67fb0?auto=format&fit=crop&w=800&q=80" alt="Abuja" loading="lazy" />
+                  <img src="/assets/images/cats/abuja-calm.avif" alt="Abuja" loading="lazy" />
                 </div>
                 <div className="cat-body">
                   <p className="cat-kicker">Calmly Abuja</p>
