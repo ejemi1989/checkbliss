@@ -214,72 +214,76 @@ export async function logoutAction() {
 }
 
 export async function getSession(): Promise<AuthUser | null> {
-  if (!supabaseServerConfigured) {
-    const cookieStore = await cookies();
-    const mockEmail = cookieStore.get(MOCK_SESSION_COOKIE)?.value;
-    if (!mockEmail) return null;
-    return mockUserFromEmail(mockEmail);
-  }
+  try {
+    if (!supabaseServerConfigured) {
+      const cookieStore = await cookies();
+      const mockEmail = cookieStore.get(MOCK_SESSION_COOKIE)?.value;
+      if (!mockEmail) return null;
+      return mockUserFromEmail(mockEmail);
+    }
 
-  const supabase = await createClient();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return null;
+    const supabase = await createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    if (!user) return null;
 
-  const admin = createAdmin();
-  const { data: profile } = await admin
-    .from("profiles")
-    .select("role, full_name, email")
-    .eq("id", user.id)
-    .single();
+    const admin = createAdmin();
+    const { data: profile } = await admin
+      .from("profiles")
+      .select("role, full_name, email")
+      .eq("id", user.id)
+      .single();
 
-  if (!profile) {
-    const meta = user.user_metadata as Record<string, unknown> | undefined;
-    const metaRole = (meta?.role as string | undefined) ?? "";
-    const autoRole = (metaRole === "operator" || metaRole === "owner")
-      ? metaRole
-      : "guest";
-    await admin.from("profiles").upsert(
-      {
+    if (!profile) {
+      const meta = user.user_metadata as Record<string, unknown> | undefined;
+      const metaRole = (meta?.role as string | undefined) ?? "";
+      const autoRole = (metaRole === "operator" || metaRole === "owner")
+        ? metaRole
+        : "guest";
+      await admin.from("profiles").upsert(
+        {
+          id: user.id,
+          role: autoRole,
+          full_name: (meta?.full_name as string) ?? user.email ?? "User",
+          email: user.email,
+          whatsapp_e164: (meta?.phone as string) ?? null,
+          country_of_residence: (meta?.country as string) ?? null,
+          whatsapp_opt_in: false,
+        },
+        { onConflict: "id" },
+      );
+
+      return {
         id: user.id,
-        role: autoRole,
-        full_name: (meta?.full_name as string) ?? user.email ?? "User",
-        email: user.email,
-        whatsapp_e164: (meta?.phone as string) ?? null,
-        country_of_residence: (meta?.country as string) ?? null,
-        whatsapp_opt_in: false,
-      },
-      { onConflict: "id" },
-    );
+        email: user.email ?? "",
+        role: autoRole as Role,
+        name: (meta?.full_name as string) ?? user.email ?? "User",
+      };
+    }
+
+    // structure.md: operators are scoped to assigned cities. In Supabase
+    // mode we read the assigned_cities array from the operators table.
+    let assignedCities: string[] | undefined;
+    if (profile.role === "operator") {
+      const { data: opRow } = await admin
+        .from("operators")
+        .select("assigned_cities")
+        .eq("profile_id", user.id)
+        .maybeSingle();
+      if (opRow?.assigned_cities) {
+        assignedCities = opRow.assigned_cities as string[];
+      }
+    }
 
     return {
       id: user.id,
-      email: user.email ?? "",
-      role: autoRole as Role,
-      name: (meta?.full_name as string) ?? user.email ?? "User",
+      email: profile.email ?? user.email ?? "",
+      role: profile.role as Role,
+      name: profile.full_name ?? user.email ?? "User",
+      assignedCities,
     };
+  } catch {
+    return null;
   }
-
-  // structure.md: operators are scoped to assigned cities. In Supabase
-  // mode we read the assigned_cities array from the operators table.
-  let assignedCities: string[] | undefined;
-  if (profile.role === "operator") {
-    const { data: opRow } = await admin
-      .from("operators")
-      .select("assigned_cities")
-      .eq("profile_id", user.id)
-      .maybeSingle();
-    if (opRow?.assigned_cities) {
-      assignedCities = opRow.assigned_cities as string[];
-    }
-  }
-
-  return {
-    id: user.id,
-    email: profile.email ?? user.email ?? "",
-    role: profile.role as Role,
-    name: profile.full_name ?? user.email ?? "User",
-    assignedCities,
-  };
 }
