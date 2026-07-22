@@ -10,6 +10,7 @@ import { logVerification } from "@/actions/verification";
 import { updateProperty } from "@/actions/properties";
 import { suspendProperty } from "@/actions/operators";
 import { submitDamageClaim } from "@/actions/claims-operator";
+import { createOnboardingRecord } from "@/lib/airtable";
 import type { AuthUser } from "@/lib/auth";
 import type { PropertyPhoto } from "@/lib/media";
 import { getSeedProperties } from "@/lib/seed-data";
@@ -1270,6 +1271,21 @@ export function OperatorDashboard({ user, initialTab }: { user: AuthUser | null;
                     status: "pending" as const,
                   };
                   setCuration((prev) => [newProp, ...prev]);
+
+                  // Track in Airtable for cross-functional visibility
+                  createOnboardingRecord({
+                    propertyName: onboardForm.name,
+                    city: onboardForm.city as "Lagos" | "Abuja",
+                    address: onboardForm.address,
+                    bedrooms: onboardForm.bedrooms,
+                    ownerName: onboardForm.ownerName,
+                    ownerPhone: onboardForm.ownerPhone,
+                    ownerEmail: onboardForm.ownerEmail,
+                    status: "pending_inspection",
+                    submittedAt: new Date().toISOString().slice(0, 10),
+                    operatorName: user?.name ?? undefined,
+                  });
+
                   notify(`Property "${onboardForm.name}" added to your curation queue. Schedule a physical inspection to proceed.`, "success");
                   setOnboardModalOpen(false);
                 })}

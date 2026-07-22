@@ -25,6 +25,7 @@ export function Footer() {
             <Link href="/search" className="block font-sans text-[14.5px] text-ink font-medium mb-[10px] no-underline hover:text-green-soft transition-colors">How it works</Link>
             <Link href="/search" className="block font-sans text-[14.5px] text-ink font-medium mb-[10px] no-underline hover:text-green-soft transition-colors">Selection process</Link>
             <Link href="/search" className="block font-sans text-[14.5px] text-ink font-medium mb-[10px] no-underline hover:text-green-soft transition-colors">Hospitality</Link>
+            <Link href="/list-property" className="block font-sans text-[14.5px] text-ink font-medium mb-[10px] no-underline hover:text-green-soft transition-colors">List your property</Link>
           </div>
 
           {/* Support */}
