@@ -63,6 +63,9 @@ export function ListingsClient({ city, eyebrow, properties }: ListingsPageProps)
   const [activeFilter, setActiveFilter] = useState<FilterValue>("all");
   const [activeSort, setActiveSort] = useState<SortValue>("featured");
   const [filterOpen, setFilterOpen] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => { setMounted(true); }, []);
 
   useEffect(() => {
     document.body.classList.toggle("map-open", mapOpen);
@@ -86,6 +89,33 @@ export function ListingsClient({ city, eyebrow, properties }: ListingsPageProps)
   }, [properties, activeFilter, activeSort]);
 
   const visibleCount = filteredProperties.length;
+
+  if (!mounted) {
+    return (
+      <div className="animate-pulse min-h-screen bg-bone">
+        <div className="h-16 bg-card border-b border-hairline" />
+        <div className="h-[72px] bg-card border-b border-hairline" />
+        <div className="flex gap-0">
+          <div className="flex-1 px-8 py-8 space-y-6">
+            <div className="h-6 w-32 bg-hairline rounded" />
+            <div className="h-8 w-48 bg-hairline rounded" />
+            {[1, 2, 3, 4].map((i) => (
+              <div key={i} className="flex gap-4 rounded-xl border border-hairline bg-card p-4">
+                <div className="w-[240px] aspect-[5/4] bg-hairline rounded-lg shrink-0" />
+                <div className="flex-1 space-y-3 py-2">
+                  <div className="h-3 w-24 bg-hairline rounded" />
+                  <div className="h-5 w-56 bg-hairline rounded" />
+                  <div className="h-3 w-32 bg-hairline rounded" />
+                  <div className="h-6 w-20 bg-hairline rounded" />
+                </div>
+              </div>
+            ))}
+          </div>
+          <div className="w-[380px] bg-hairline hidden lg:block" />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <>

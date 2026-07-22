@@ -31,8 +31,10 @@ export function SearchResultsClient({
   const defaultCurrency: CurrencyCode = displayCurrency !== "GBP" ? displayCurrency : "GBP";
   const [currency, setCurrency] = useState<CurrencyCode>(defaultCurrency);
   const [hydrated, setHydrated] = useState(false);
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
+    setMounted(true);
     try {
       const v = localStorage.getItem("checkbliss_currency");
       if (v === "USD" || v === "EUR") setCurrency(v);
@@ -93,6 +95,36 @@ export function SearchResultsClient({
   const sortLabel = sort
     ? { "price-asc": "Price ↑", "price-desc": "Price ↓", "beds-asc": "Beds ↑", "beds-desc": "Beds ↓", "name": "Name" }[sort]
     : "Sort";
+
+  if (!mounted) {
+    return (
+      <div className="animate-pulse min-h-screen bg-canvas">
+        <div className="h-[73px] bg-card border-b border-hairline" />
+        <div className="h-[100px] bg-card border-b border-hairline" />
+        <div className="max-w-[1240px] mx-auto px-8 py-10">
+          <div className="grid grid-cols-[1fr_380px] gap-10 max-lg:grid-cols-1">
+            <div className="space-y-8">
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="flex gap-6 rounded-xl border border-hairline bg-card overflow-hidden">
+                  <div className="w-[280px] aspect-[5/4] bg-hairline shrink-0" />
+                  <div className="flex-1 py-6 pr-5 space-y-3">
+                    <div className="h-3 w-24 bg-hairline rounded" />
+                    <div className="h-6 w-56 bg-hairline rounded" />
+                    <div className="h-3 w-32 bg-hairline rounded" />
+                    <div className="h-7 w-20 bg-hairline rounded" />
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div className="sticky top-[80px] space-y-6 max-lg:hidden">
+              <div className="aspect-[4/3] bg-hairline rounded-xl" />
+              <div className="h-24 bg-hairline rounded-xl" />
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-canvas">

@@ -99,11 +99,14 @@ const STAYS = [
 
 export function HomePageClient() {
 
+  const [mounted, setMounted] = useState(false);
   const stepsRef = useRef<HTMLDivElement>(null);
   const [activeStep, setActiveStep] = useState(0);
   const [menuOpen, setMenuOpen] = useState(false);
   const [revIdx, setRevIdx] = useState(0);
   const menuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => { setMounted(true); }, []);
 
   useEffect(() => {
     const steps = stepsRef.current?.querySelectorAll(".wstep");
@@ -178,6 +181,28 @@ export function HomePageClient() {
     }, 6000);
     return () => clearInterval(interval);
   }, []);
+
+  if (!mounted) {
+    return (
+      <div className="animate-pulse">
+        <div className="h-screen bg-hairline" />
+        <div className="max-w-[1240px] mx-auto px-8 py-16 space-y-10">
+          <div className="h-8 w-48 bg-hairline rounded" />
+          <div className="grid grid-cols-3 gap-6">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="aspect-[4/3] bg-hairline rounded-xl" />
+            ))}
+          </div>
+          <div className="h-64 bg-hairline rounded-xl" />
+          <div className="grid grid-cols-2 gap-6">
+            {[1, 2].map((i) => (
+              <div key={i} className="h-48 bg-hairline rounded-xl" />
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div>

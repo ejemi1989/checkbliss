@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { formatMinor } from "@/lib/currency";
 import { getOwnerBookings } from "@/lib/data";
@@ -17,6 +17,9 @@ export function GuestDashboard({ user, initialTab }: { user: AuthUser | null; in
   const displayUser = { name: user?.name ?? "Guest", email: user?.email ?? "" };
   const [tab, setTab] = useState<GuestTab>(initialTab ?? "overview");
   const [bookingDetail, setBookingDetail] = useState<typeof bookings[0] | null>(null);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => { setMounted(true); }, []);
 
   const upcoming = bookings.filter(b => b.status === "confirmed");
   const past = bookings.filter(b => b.status === "completed");
@@ -49,6 +52,40 @@ export function GuestDashboard({ user, initialTab }: { user: AuthUser | null; in
       </nav>
     </div>
   );
+
+  if (!mounted) {
+    return (
+      <div className="animate-pulse min-h-screen bg-bone">
+        <div className="max-w-[1100px] mx-auto px-6 py-8 flex gap-8 max-lg:flex-col">
+          <div className="w-56 shrink-0 max-lg:hidden space-y-4">
+            <div className="space-y-2 p-4">
+              <div className="h-5 w-28 bg-hairline rounded" />
+              <div className="h-3 w-36 bg-hairline rounded" />
+            </div>
+            <div className="space-y-1.5 px-2">
+              {[1, 2, 3, 4, 5, 6].map((i) => (
+                <div key={i} className="h-10 bg-hairline rounded-lg" />
+              ))}
+            </div>
+          </div>
+          <div className="flex-1 space-y-5">
+            <div className="h-7 w-48 bg-hairline rounded" />
+            <div className="grid grid-cols-3 gap-4 max-sm:grid-cols-1">
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="h-28 bg-card border border-hairline rounded-xl" />
+              ))}
+            </div>
+            <div className="h-5 w-32 bg-hairline rounded" />
+            <div className="space-y-2">
+              {[1, 2].map((i) => (
+                <div key={i} className="h-20 bg-card border border-hairline rounded-xl" />
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-bone">
