@@ -152,7 +152,7 @@ export function OperatorVerification({ user }: { user: AuthUser | null }) {
       )}
 
       <div className="mb-8">
-        <h1 className="font-sans text-[clamp(1.5rem,2.4vw,2rem)] font-medium leading-tight text-ink">Verification</h1>
+        <h1 className="font-display text-2xl font-medium text-ink">Verification</h1>
         <p className="text-sm mt-1 text-ink-secondary">30-day re-verification cycle — check property condition and compare against last audit</p>
       </div>
 
@@ -276,14 +276,14 @@ export function OperatorVerification({ user }: { user: AuthUser | null }) {
                 </div>
                 <button
                   onClick={() => startVerification(v)}
-                  className={`px-4 py-2 rounded-lg text-xs font-sans font-medium cursor-pointer transition-colors shrink-0 ${
+                  className={`flex items-center gap-2 px-6 py-3 rounded-xl text-sm font-sans font-semibold cursor-pointer transition-all shrink-0 shadow-sm hover:shadow-md ${
                     needsReVerification
-                      ? "bg-warning text-white hover:bg-warning/80"
+                      ? "bg-warning text-white hover:brightness-95"
                       : "bg-primary text-white hover:bg-lagoon"
                   }`}
                 >
                   {I.refresh}
-                  <span className="ml-1.5">{needsReVerification ? "Re-verify now" : "Verify"}</span>
+                  <span>{needsReVerification ? "Re-verify now" : "Start verification"}</span>
                 </button>
               </div>
             );

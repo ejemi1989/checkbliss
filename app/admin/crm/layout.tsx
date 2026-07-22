@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { getSession } from "@/actions/auth";
-import { checkAdminGate } from "@/lib/admin-gate";
 
 const NAV = [
   { href: "/admin/crm/inbox", label: "Inbox" },
@@ -17,18 +16,6 @@ export default async function CrmLayout({ children }: { children: React.ReactNod
   const user = await getSession();
   if (!user || user.role !== "admin") {
     redirect("/login");
-  }
-
-  const gate = await checkAdminGate();
-  if (!gate.ok) {
-    return (
-      <div className="flex items-center justify-center px-6 py-20">
-        <div className="max-w-md w-full bg-card border border-line rounded-[var(--radius-lg)] p-8 text-center">
-          <h1 className="font-sans text-2xl text-ink mb-2">Admin access required</h1>
-          <p className="text-sm text-ink-secondary mb-4">{gate.reason}</p>
-        </div>
-      </div>
-    );
   }
 
   return (

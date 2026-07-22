@@ -144,13 +144,13 @@ export function OwnerDashboard({ user, initialTab }: { user: AuthUser | null; in
           {tab === "home" && (
             <div className="space-y-6">
               <div>
-                <h1 className="text-xl font-bold text-ink mb-1">{greet}, {firstName}</h1>
+                <h1 className="font-display text-2xl font-medium text-ink mb-1">{greet}, {firstName}</h1>
                 <p className="text-sm text-ink-secondary">Here&rsquo;s your portfolio overview.</p>
               </div>
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 {/* Recent Bookings */}
                 <div className="bg-white rounded-xl border border-hairline p-5">
-                  <h2 className="text-base font-bold text-ink mb-4">Upcoming Bookings</h2>
+                  <h2 className="font-display text-lg font-medium text-ink mb-4">Upcoming Bookings</h2>
                   <div className="space-y-2">
                     {bookings.slice(0, 4).map((b) => (
                       <div key={b.id} onClick={() => setBookingModal(b)} className="flex items-center justify-between p-3 rounded-xl border border-hairline hover:bg-primary-bg cursor-pointer transition-colors">
@@ -170,7 +170,7 @@ export function OwnerDashboard({ user, initialTab }: { user: AuthUser | null; in
 
                 {/* Damage Claims */}
                 <div className="bg-white rounded-xl border border-hairline p-5">
-                  <h2 className="text-base font-bold text-ink mb-4">Recent Damage Claims</h2>
+                  <h2 className="font-display text-lg font-medium text-ink mb-4">Recent Damage Claims</h2>
                   {damageClaims.length === 0 ? (
                     <p className="text-sm text-ink-secondary py-4">No open claims across your properties.</p>
                   ) : (
@@ -195,7 +195,7 @@ export function OwnerDashboard({ user, initialTab }: { user: AuthUser | null; in
 
               {/* Properties Overview */}
               <div className="bg-white rounded-xl border border-hairline p-5">
-                <h2 className="text-base font-bold text-ink mb-4">Your Properties</h2>
+                <h2 className="font-display text-lg font-medium text-ink mb-4">Your Properties</h2>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   {properties.map((p) => (
                     <div key={p.unit} className="p-4 rounded-xl border border-hairline hover:bg-primary-bg transition-colors cursor-default">
@@ -282,7 +282,7 @@ export function OwnerDashboard({ user, initialTab }: { user: AuthUser | null; in
               {/* Calendar */}
               <div className="bg-white rounded-xl border border-hairline p-5">
                 <div className="flex items-center justify-between mb-5">
-                  <div><h2 className="text-base font-bold text-ink">Availability Calendar</h2><p className="text-xs mt-0.5 text-ink-secondary">Bookings across all your units</p></div>
+                  <div><h2 className="font-display text-lg font-medium text-ink">Availability Calendar</h2><p className="text-xs mt-0.5 text-ink-secondary">Bookings across all your units</p></div>
                   <div className="flex items-center gap-x-2">
                     <button onClick={() => { setMonth((m) => { if (m <= 0) { setYear((y) => y - 1); return 11; } return m - 1; }); }} className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-primary-bg border border-hairline text-ink-secondary cursor-pointer">{I.chevronLeft}</button>
                     <span className="text-sm font-semibold text-ink w-28 text-center">{monthLabel()}</span>
@@ -348,7 +348,7 @@ export function OwnerDashboard({ user, initialTab }: { user: AuthUser | null; in
               {/* Upcoming bookings */}
               <div className="bg-white rounded-xl border border-hairline p-5">
                 <div className="flex items-center justify-between mb-4">
-                  <h2 className="text-base font-bold text-ink">Upcoming Bookings</h2>
+                  <h2 className="font-display text-lg font-medium text-ink">Upcoming Bookings</h2>
                   <span className="text-xs px-2 py-0.5 rounded-full font-semibold bg-primary-bg text-primary">{bookings.length} upcoming</span>
                 </div>
                 <div className="space-y-3">
@@ -381,7 +381,7 @@ export function OwnerDashboard({ user, initialTab }: { user: AuthUser | null; in
               <div className="bg-white rounded-xl border border-hairline p-5">
                 <div className="flex items-center justify-between mb-5">
                   <div>
-                    <h2 className="text-base font-bold text-ink">Damage Claims</h2>
+                    <h2 className="font-display text-lg font-medium text-ink">Damage Claims</h2>
                     <p className="text-xs text-ink-secondary mt-0.5">Claims filed against your properties</p>
                   </div>
                 </div>
@@ -418,7 +418,7 @@ export function OwnerDashboard({ user, initialTab }: { user: AuthUser | null; in
               <div className="bg-white rounded-xl border border-hairline p-5">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-5">
                   <div>
-                    <h2 className="text-base font-bold text-ink">Earnings Statement</h2>
+                    <h2 className="font-display text-lg font-medium text-ink">Earnings Statement</h2>
                     <p className="text-xs mt-0.5 text-ink-secondary">Consolidated payouts — all units combined</p>
                   </div>
                   <span className="text-2xl font-bold tabular-nums text-primary">{fmt(payouts[0]?.amount_minor ?? 0)}</span>
@@ -445,7 +445,7 @@ export function OwnerDashboard({ user, initialTab }: { user: AuthUser | null; in
           {tab === "calendar" && (
             <div className="space-y-6">
               <div className="bg-white rounded-xl border border-hairline p-5">
-                <h2 className="text-base font-bold text-ink mb-2">Sync with your calendar</h2>
+                <h2 className="font-display text-lg font-medium text-ink mb-2">Sync with your calendar</h2>
                 <p className="text-sm text-ink-secondary mb-5">
                   Subscribe to your CheckinBliss booking calendar. Updates automatically — one-way sync from our system to yours.
                 </p>
@@ -477,7 +477,7 @@ export function OwnerDashboard({ user, initialTab }: { user: AuthUser | null; in
                 <p className="text-xs text-ink-tertiary mt-4">Updates every 15 minutes. Your calendar app checks for changes automatically.</p>
               </div>
               <div className="bg-white rounded-xl border border-hairline p-5">
-                <h3 className="text-sm font-semibold text-ink mb-3">Your upcoming bookings</h3>
+                <h3 className="font-display text-base font-medium text-ink mb-3">Your upcoming bookings</h3>
                 <div className="space-y-2">
                   {bookings.map((b) => (
                     <div key={b.id} className="flex items-center justify-between p-3 rounded-lg border border-hairline">
