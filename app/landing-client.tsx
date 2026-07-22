@@ -46,21 +46,21 @@ const STAYS = [
     title: "Hills & Hush",
     href: "/abuja",
     link: "View apartments in Maitama \u2192",
-    img: "/assets/images/stays/abuja-hills-hush.jpg",
+    img: "/assets/images/stays/abuja-hills-hush.avif",
   },
   {
     slug: "private-pools",
     kicker: "By the water",
     title: "Private Pools",
-    href: "#",
+    href: "/search?where=Lagos",
     link: "View apartments with pools \u2192",
-    img: "/assets/images/stays/private-pools.jpg",
+    img: "/assets/images/stays/private-pools.avif",
   },
   {
     slug: "maisonettes",
     kicker: "Space & privacy",
     title: "Maisonettes",
-    href: "#",
+    href: "/search?where=Lagos",
     link: "View maisonettes in Lagos \u2192",
     img: "/assets/images/stays/maisonettes.avif",
   },
@@ -224,9 +224,9 @@ export function HomePageClient() {
               </Link>
             </article>
             <article className="cat">
-              <Link href="#" style={{ textDecoration: "none", color: "inherit", display: "flex", flexDirection: "column", flex: 1 }}>
+              <Link href="/search?where=Lagos" style={{ textDecoration: "none", color: "inherit", display: "flex", flexDirection: "column", flex: 1 }}>
                 <div className="cat-img">
-                  <img src="/assets/images/cats/pool.jpg" alt="Pool" loading="lazy" />
+                  <img src="/assets/images/cats/pool.avif" alt="Pool" loading="lazy" />
                 </div>
                 <div className="cat-body">
                   <p className="cat-kicker">Apartments with a</p>
@@ -406,7 +406,7 @@ export function HomePageClient() {
           <div className="nl-text">
             <p className="nl-eyebrow">The Insider List</p>
             <h2>New homes, exclusive offers, and early access.</h2>
-            <p className="nl-legal">No spam. Unsubscribe anytime. <a href="#">Privacy Policy</a>.</p>
+            <p className="nl-legal">No spam. Unsubscribe anytime. <a href="/policy">Privacy Policy</a>.</p>
           </div>
           <form className="nl-form" onSubmit={(e) => e.preventDefault()}>
             <input type="email" placeholder="Enter your email address" aria-label="Email address" required />
@@ -421,7 +421,7 @@ export function HomePageClient() {
           <div className="foot-nav">
             <div>
               <p className="fcol-head">Explore</p>
-              <a href="#" className="fcol-link">List your property</a>
+              <a href="/list-property" className="fcol-link">List your property</a>
               <span className="fcol-link fcol-link--coming">Partnerships</span>
               <span className="fcol-link fcol-link--soon">
                 Affiliate programme<span className="fcol-soon-badge">Soon</span>
@@ -433,7 +433,7 @@ export function HomePageClient() {
               <p className="fcol-head">Support</p>
               <a href="#" className="fcol-link">Help centre</a>
               <a href="mailto:hello@checkinbliss.com" className="fcol-link">Contact us</a>
-              <a href="#" className="fcol-link">Policy</a>
+              <a href="/policy" className="fcol-link">Policy</a>
               <span className="fcol-link fcol-link--soon">
                 Reviews<span className="fcol-soon-badge">Soon</span>
               </span>
