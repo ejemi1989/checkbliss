@@ -277,68 +277,107 @@ export function OperatorDashboard({ user, initialTab }: { user: AuthUser | null;
             </div>
           )}
 
-          {/* ---------- CURATION (structure.md: onboarding workflow for new properties) ---------- */}
+          {/* ---------- PROPERTIES ---------- */}
           {tab === "curation" && (
-            <div className="space-y-4">
-              <div className="flex items-center justify-between flex-wrap gap-3">
-                <p className="font-sans text-lg font-medium text-ink">{curation.length} properties in queue</p>
-                <p className="text-xs text-ink-secondary -mt-2 mb-2">Review and edit listings before submitting to admin for final approval.</p>
-                <div className="flex items-center gap-x-2">
-                  <button
-                    onClick={() => { setOnboardForm({ name: "", city: assignedCities[0] ?? "Lagos", address: "", bedrooms: 1, maxGuests: 2, ownerName: "", ownerPhone: "", ownerEmail: "" }); setOnboardModalOpen(true); }}
-                    className="text-sm font-medium px-4 py-2 rounded-xl bg-primary text-white hover:bg-primary-dark transition-colors cursor-pointer flex items-center gap-x-1.5"
-                  >
-                    <span className="w-3.5 h-3.5">{I.plus}</span>
-                    Onboard new property
-                  </button>
-                  <select value={curationFilter} onChange={(e) => setCurationFilter(e.target.value)} className="text-xs border border-hairline rounded-lg px-3 py-1.5 outline-none text-ink">
-                    <option value="all">All</option>
-                    <option value="new">New submissions</option>
-                    <option value="resubmit">Resubmitted</option>
-                  </select>
-                </div>
+            <div className="space-y-5">
+              <div>
+                <h2 className="font-display text-xl font-medium text-ink mb-1">Your properties</h2>
+                <p className="text-xs text-ink-secondary">Review, edit, and submit onboarded listings to admin for final approval. Track approved properties below.</p>
               </div>
-              <div className="space-y-3">
-                {filteredCuration.map((p) => (
-                  <div key={p.id} className="bg-white border border-hairline rounded-xl p-6">
-                    <div className="flex items-start justify-between">
-                      <div className="flex-1">
-                        <div className="flex items-center gap-x-2">
-                          <h3 className="font-sans text-lg font-medium text-ink">{p.name}</h3>
-                          <span className="text-[11px] font-semibold text-primary">{p.type === "new" ? "New submission" : "Resubmitted"}</span>
-                        </div>
-                        <p className="text-xs mt-1 text-ink-secondary">{p.city} · Submitted {p.submitted_at}</p>
-                        <div className="flex items-center gap-x-4 mt-2 text-xs text-ink-secondary">
-                          <span>{p.bedrooms} bed</span><span>{p.bathrooms} bath</span><span>Up to {p.max_guests} guests</span>
-                          <span className="font-semibold tabular-nums text-primary">{fmt(p.price_minor)}/night</span>
+
+              {/* Awaiting approval */}
+              <div>
+                <div className="flex items-center justify-between flex-wrap gap-3 mb-3">
+                  <div className="flex items-center gap-2">
+                    <p className="font-sans text-base font-semibold text-ink">{curation.length} awaiting approval</p>
+                    <span className="text-[10px] px-2 py-0.5 rounded-full font-semibold bg-warning/10 text-warning">Submitted to admin</span>
+                  </div>
+                  <div className="flex items-center gap-x-2">
+                    <button
+                      onClick={() => { setOnboardForm({ name: "", city: assignedCities[0] ?? "Lagos", address: "", bedrooms: 1, maxGuests: 2, ownerName: "", ownerPhone: "", ownerEmail: "" }); setOnboardModalOpen(true); }}
+                      className="text-sm font-medium px-4 py-2 rounded-xl bg-primary text-white hover:bg-primary-dark transition-colors cursor-pointer flex items-center gap-x-1.5"
+                    >
+                      <span className="w-3.5 h-3.5">{I.plus}</span>
+                      Onboard new property
+                    </button>
+                    <select value={curationFilter} onChange={(e) => setCurationFilter(e.target.value)} className="text-xs border border-hairline rounded-lg px-3 py-1.5 outline-none text-ink">
+                      <option value="all">All</option>
+                      <option value="new">New submissions</option>
+                      <option value="resubmit">Resubmitted</option>
+                    </select>
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  {filteredCuration.map((p) => (
+                    <div key={p.id} className="bg-white border border-hairline rounded-xl p-5">
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-x-2">
+                            <h3 className="font-sans text-base font-medium text-ink">{p.name}</h3>
+                            <span className="text-[10px] font-semibold bg-warning/10 text-warning px-2 py-0.5 rounded-full">Awaiting admin</span>
+                          </div>
+                          <p className="text-xs mt-1 text-ink-secondary">{p.city} · Submitted {p.submitted_at}</p>
+                          <div className="flex items-center gap-x-4 mt-2 text-xs text-ink-secondary">
+                            <span>{p.bedrooms} bed</span><span>{p.bathrooms} bath</span><span>Up to {p.max_guests} guests</span>
+                            <span className="font-semibold tabular-nums text-primary">{fmt(p.price_minor)}/night</span>
+                          </div>
                         </div>
                       </div>
+                      <div className="flex gap-x-2 mt-3">
+                        <button
+                          onClick={() => {
+                            setEditModal(p);
+                            setEditForm({ name: p.name, description: "", rate: p.price_minor, beds: p.bedrooms, baths: p.bathrooms, guests: p.max_guests, extended: false, extendedPrice: 0 });
+                          }}
+                          className="px-3 py-1.5 rounded-lg text-xs font-medium border border-hairline text-ink-secondary hover:bg-primary-bg transition-colors cursor-pointer"
+                        >Edit Details</button>
+                        <button
+                          disabled={pendingAction === `remove-${p.id}`}
+                          onClick={() => setDialog({ type: "remove", property: p })}
+                          className="px-3 py-1.5 rounded-lg text-xs font-medium border border-hairline text-danger hover:bg-red-50 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-wait"
+                        >{pendingAction === `remove-${p.id}` ? "Removing..." : "Remove"}</button>
+                      </div>
                     </div>
-                    <div className="flex gap-x-2 mt-4">
-                      <button
-                        disabled={pendingAction === `submit-${p.id}`}
-                        onClick={() => action(`submit-${p.id}`, async () => {
-                          notify(`"${p.name}" submitted for admin review.`, "success");
-                          setCuration((prev) => prev.filter((x) => x.id !== p.id));
-                        })}
-                        className="px-4 py-2 rounded-xl text-sm font-semibold border border-primary text-primary hover:bg-primary-bg transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-wait"
-                      >{pendingAction === `submit-${p.id}` ? "Submitting..." : "Submit for Review"}</button>
-                      <button
-                        onClick={() => {
-                          setEditModal(p);
-                          setEditForm({ name: p.name, description: "", rate: p.price_minor, beds: p.bedrooms, baths: p.bathrooms, guests: p.max_guests, extended: false, extendedPrice: 0 });
-                        }}
-                        className="px-4 py-2 rounded-xl text-sm font-medium border border-hairline text-ink-secondary hover:bg-primary-bg transition-colors cursor-pointer"
-                      >Edit Details</button>
-                      <button
-                        disabled={pendingAction === `remove-${p.id}`}
-                        onClick={() => setDialog({ type: "remove", property: p })}
-                        className="px-4 py-2 rounded-xl text-sm font-medium border border-hairline text-danger hover:bg-red-50 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-wait"
-                      >{pendingAction === `remove-${p.id}` ? "Removing..." : "Remove"}</button>
+                  ))}
+                  {filteredCuration.length === 0 && <p className="text-center text-sm text-ink-secondary py-8">No properties awaiting approval.</p>}
+                </div>
+              </div>
+
+              {/* Approved & Live */}
+              <div className="pt-4 border-t border-hairline">
+                <div className="flex items-center gap-2 mb-3">
+                  <p className="font-sans text-base font-semibold text-ink">{pipeline.filter((p) => p.status === "approved").length} approved &amp; live</p>
+                  <span className="text-[10px] px-2 py-0.5 rounded-full font-semibold bg-success/10 text-success">Performing</span>
+                </div>
+                <div className="space-y-2">
+                  {pipeline.filter((p) => p.status === "approved").map((p) => (
+                    <div key={p.id} className="bg-white border border-hairline rounded-xl p-5">
+                      <div className="flex items-start justify-between">
+                        <div>
+                          <h3 className="font-sans text-base font-medium text-ink">{p.name}</h3>
+                          <p className="text-xs text-ink-secondary mt-0.5">Updated {p.updated_at}</p>
+                        </div>
+                        <span className="text-[10px] font-semibold bg-success/10 text-success px-2 py-0.5 rounded-full">Live</span>
+                      </div>
+                      <div className="grid grid-cols-4 gap-3 mt-3 text-center">
+                        {[
+                          { label: "Bookings", value: "—" },
+                          { label: "Revenue (MTD)", value: "—" },
+                          { label: "Occupancy", value: "—" },
+                          { label: "Status", value: "Approved" },
+                        ].map((m) => (
+                          <div key={m.label} className="p-2 rounded-lg bg-primary-bg">
+                            <p className="text-sm font-semibold text-ink">{m.value}</p>
+                            <p className="text-[10px] text-ink-secondary mt-0.5">{m.label}</p>
+                          </div>
+                        ))}
+                      </div>
                     </div>
-                  </div>
-                ))}
-                {filteredCuration.length === 0 && <p className="text-center text-sm text-ink-secondary py-8">No properties match this filter.</p>}
+                  ))}
+                  {pipeline.filter((p) => p.status === "approved").length === 0 && (
+                    <p className="text-center text-sm text-ink-secondary py-8">No live properties yet. Submit onboarded properties to admin for approval.</p>
+                  )}
+                </div>
               </div>
             </div>
           )}
