@@ -84,35 +84,7 @@ export function PropertyClient({ property: prop, formattedNightly, formattedDepo
   }, [prop.neighbourhood, prop.city, prop.branded_name]);
 
   if (!mounted) {
-    return (
-      <div className="animate-pulse min-h-screen bg-bone">
-        <div className="h-16 bg-card border-b border-hairline" />
-        <div className="max-w-[1240px] mx-auto px-8 py-10 space-y-10">
-          <div className="grid grid-cols-2 gap-3">
-            <div className="aspect-[16/9] bg-hairline rounded-xl" />
-            <div className="aspect-[16/9] bg-hairline rounded-xl" />
-          </div>
-          <div className="flex gap-10">
-            <div className="flex-1 space-y-8">
-              <div className="space-y-3">
-                <div className="h-4 w-32 bg-hairline rounded" />
-                <div className="h-9 w-72 bg-hairline rounded" />
-                <div className="h-4 w-48 bg-hairline rounded" />
-                <div className="h-20 bg-hairline rounded-lg" />
-              </div>
-              <div className="space-y-3">
-                {[1, 2, 3].map((i) => (
-                  <div key={i} className="h-16 bg-hairline rounded-lg" />
-                ))}
-              </div>
-            </div>
-            <div className="w-[340px] shrink-0">
-              <div className="sticky top-24 h-[420px] bg-card border border-hairline rounded-xl" />
-            </div>
-          </div>
-        </div>
-      </div>
-    );
+    return <div className="min-h-screen bg-bone" />;
   }
 
   return (

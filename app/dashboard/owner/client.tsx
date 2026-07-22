@@ -102,17 +102,7 @@ export function OwnerDashboard({ user, initialTab }: { user: AuthUser | null; in
   const occupancyPct = "68%";
 
   if (!mounted) {
-    return (
-      <div className="space-y-6 animate-pulse">
-        <div className="grid grid-cols-4 gap-4">
-          {[1,2,3,4].map(i => <div key={i} className="h-24 bg-hairline rounded-xl" />)}
-        </div>
-        <div className="grid grid-cols-2 gap-6">
-          <div className="h-80 bg-hairline rounded-xl" />
-          <div className="h-80 bg-hairline rounded-xl" />
-        </div>
-      </div>
-    );
+    return <div className="min-h-screen bg-bone" />;
   }
 
   return (
