@@ -44,28 +44,9 @@ export function SearchResultsClient({
 
   const [sort, setSort] = useState<SortKey>(null);
   const [sortOpen, setSortOpen] = useState(false);
-  const [filters, setFilters] = useState<Record<string, boolean>>({});
-  const [bedFilter, setBedFilter] = useState<number | null>(null);
-
-  const allAmenities = useMemo(() => {
-    const set = new Set<string>();
-    properties.forEach((p) => p.amenities?.forEach((a) => set.add(a)));
-    return Array.from(set).sort();
-  }, [properties]);
 
   const filtered = useMemo(() => {
     let result = [...properties];
-
-    const activeFilters = Object.entries(filters).filter(([, v]) => v).map(([k]) => k);
-    if (activeFilters.length > 0) {
-      result = result.filter((p) =>
-        activeFilters.every((f) => p.amenities?.includes(f))
-      );
-    }
-
-    if (bedFilter) {
-      result = result.filter((p) => p.bedrooms === bedFilter);
-    }
 
     if (sort === "price-asc") result.sort((a, b) => a.nightly_rate_minor - b.nightly_rate_minor);
     else if (sort === "price-desc") result.sort((a, b) => b.nightly_rate_minor - a.nightly_rate_minor);
@@ -78,11 +59,7 @@ export function SearchResultsClient({
     }
 
     return result;
-  }, [properties, filters, bedFilter, sort, hasSearch, displayWhere]);
-
-  const toggleFilter = (amenity: string) => {
-    setFilters((prev) => ({ ...prev, [amenity]: !prev[amenity] }));
-  };
+  }, [properties, sort, hasSearch, displayWhere]);
 
   const cycleSort = (key: SortKey) => {
     setSort((prev) => (prev === key ? null : key));
@@ -92,11 +69,6 @@ export function SearchResultsClient({
   const sortLabel = sort
     ? { "price-asc": "Price ↑", "price-desc": "Price ↓", "beds-asc": "Beds ↑", "beds-desc": "Beds ↓", "name": "Name" }[sort]
     : "Sort";
-
-  const bedOptions = useMemo(() => {
-    const counts = new Set(properties.map((p) => p.bedrooms));
-    return Array.from(counts).sort((a, b) => a - b);
-  }, [properties]);
 
   return (
     <div className="min-h-screen bg-bone">
@@ -145,14 +117,10 @@ export function SearchResultsClient({
       </div>
 
       {/* Filters */}
-      <div className="px-8 py-4 bg-bone border-b border-line max-sm:px-5">
-        <div className="max-w-[1240px] mx-auto flex items-center gap-2 flex-wrap">
-          <span className="font-sans text-[13px] text-mute mr-auto">
-            <strong className="text-ink">{filtered.length}</strong> {filtered.length === 1 ? "stay" : "stays"} in {displayWhere}
-          </span>
-
+      <div className="px-8 py-3 bg-bone border-b border-line max-sm:px-5">
+        <div className="max-w-[1240px] mx-auto flex items-center gap-2">
           {/* Sort dropdown */}
-          <div className="relative">
+          <div className="relative ml-auto">
             <button
               onClick={() => setSortOpen(!sortOpen)}
               className={`inline-flex items-center gap-1 px-3 py-1 rounded-full border text-[13px] font-medium cursor-pointer whitespace-nowrap transition-all ${
@@ -186,40 +154,6 @@ export function SearchResultsClient({
               </div>
             )}
           </div>
-
-          {/* Amenity filters */}
-          {allAmenities.slice(0, 4).map((amenity) => (
-            <button
-              key={amenity}
-              onClick={() => toggleFilter(amenity)}
-              className={`inline-flex items-center gap-1 px-3 py-1 rounded-full border text-[13px] font-medium cursor-pointer whitespace-nowrap transition-all ${
-                filters[amenity]
-                  ? "border-green-soft bg-green-soft/5 text-ink"
-                  : "border-line text-ink-secondary bg-card hover:border-green-soft hover:text-ink"
-              }`}
-            >
-              {amenity}
-            </button>
-          ))}
-
-          {/* Bed filter */}
-          {bedOptions.map((n) => (
-            <button
-              key={n}
-              onClick={() => setBedFilter(bedFilter === n ? null : n)}
-              className={`inline-flex items-center gap-1 px-3 py-1 rounded-full border text-[13px] font-medium cursor-pointer whitespace-nowrap transition-all ${
-                bedFilter === n
-                  ? "border-green-soft bg-green-soft/5 text-ink"
-                  : "border-line text-ink-secondary bg-card hover:border-green-soft hover:text-ink"
-              }`}
-            >
-              {n} bed{n > 1 ? "s" : ""}
-            </button>
-          ))}
-
-          <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full border border-brass bg-brass text-bone text-[13px] font-medium whitespace-nowrap">
-            &#10003; Verified only
-          </span>
         </div>
       </div>
 
@@ -230,12 +164,9 @@ export function SearchResultsClient({
             <div className="text-center py-16">
               <h1 className="font-display text-2xl font-medium text-ink mb-3">No stays found</h1>
               <p className="font-sans text-sm text-ink-secondary mb-8 max-w-[480px] mx-auto">
-                No stays match those filters. Try a different combination or clear some filters.
+                No stays match your search. Try a different city or date range.
               </p>
               <div className="flex items-center justify-center gap-x-3 flex-wrap">
-                {Object.keys(filters).length > 0 && (
-                  <button onClick={() => setFilters({})} className="rounded-full border border-line px-5 py-2.5 text-xs font-medium text-ink-secondary hover:bg-card transition-colors cursor-pointer bg-transparent">Clear filters</button>
-                )}
                 <Link href="/search?where=Lagos" className="rounded-full border border-line px-5 py-2.5 text-xs font-medium text-ink-secondary hover:bg-card transition-colors no-underline">Browse Lagos</Link>
                 <Link href="/search?where=Abuja" className="rounded-full border border-line px-5 py-2.5 text-xs font-medium text-ink-secondary hover:bg-card transition-colors no-underline">Browse Abuja</Link>
                 <Link href="/search" className="rounded-[var(--radius-sm)] bg-brass px-5 py-2.5 text-xs font-semibold text-bone hover:bg-brass-dark transition-colors no-underline">Clear search</Link>
@@ -248,14 +179,26 @@ export function SearchResultsClient({
             </div>
           ) : (
             <>
-              <h1 className="font-display text-[clamp(1.6rem,2.5vw,2rem)] font-medium text-ink mb-1">
-                {filtered.length} {filtered.length === 1 ? "stay" : "stays"} in {displayWhere}
-              </h1>
               <p className="font-sans text-sm text-mute mb-8">Every apartment inspected in person. Instant booking — no host approval needed.</p>
-              <div className="grid grid-cols-3 gap-7 max-lg:grid-cols-2 max-sm:grid-cols-1 max-sm:gap-10">
-                {filtered.map((p) => (
-                  <PropertyCard key={p.id} p={p} currency={displayCurrency} />
-                ))}
+              <div className="grid grid-cols-[1fr_380px] gap-8 items-start max-lg:grid-cols-1">
+                <div className="flex flex-col gap-6 max-sm:gap-10">
+                  {filtered.map((p) => (
+                    <PropertyCard key={p.id} p={p} currency={displayCurrency} />
+                  ))}
+                </div>
+                <div className="sticky top-[80px] max-lg:hidden">
+                  <div className="bg-card border border-line rounded-[var(--radius-lg)] overflow-hidden">
+                    <div className="relative w-full aspect-[4/3] bg-ink flex items-center justify-center">
+                      <div className="text-center px-6">
+                        <svg className="w-10 h-10 text-white/30 mx-auto mb-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
+                        <p className="font-sans text-sm text-white/40">{displayWhere} map view</p>
+                      </div>
+                    </div>
+                    <div className="p-4">
+                      <p className="font-sans text-xs text-mute">All properties are within {displayWhere}&rsquo;s most desirable neighbourhoods.</p>
+                    </div>
+                  </div>
+                </div>
               </div>
             </>
           )}
@@ -272,34 +215,31 @@ function PropertyCard({ p, currency = "GBP" }: { p: SeedProperty; currency?: Cur
   return (
     <Link
       href={propertyHref(p)}
-      className="block no-underline text-inherit group"
+      className="flex gap-5 no-underline text-inherit group bg-card border border-line rounded-[var(--radius-lg)] overflow-hidden hover:border-green-soft/40 transition-all max-sm:flex-col"
     >
-      <div className="mb-4 overflow-hidden relative aspect-[4/3]">
+      <div className="w-[260px] shrink-0 relative aspect-[5/4] overflow-hidden max-sm:w-full max-sm:aspect-[16/9]">
         <img src={p.cover_photo_url ?? undefined} alt={p.name} className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" loading="lazy" />
       </div>
-      <p className="font-display italic text-base text-green-soft mb-1">{p.neighbourhood}</p>
-      <h2 className="font-display text-[clamp(18px,1.6vw,24px)] font-medium text-ink leading-tight mb-1">{p.name}</h2>
-      <p className="font-sans text-sm text-mute mb-2">{p.city}, Nigeria</p>
-      <div className="flex items-center gap-2 font-sans text-[13px] text-ink-secondary flex-wrap">
-        <span>{p.bedrooms} bed{p.bedrooms > 1 ? "s" : ""}</span><span>&middot;</span>
-        <span>{p.sleeps} guest{p.sleeps > 1 ? "s" : ""}</span>
-      </div>
-      <div className="flex items-center gap-2 mt-2 font-sans text-[13px]">
-        <span className="text-trustpilot">★★★★★</span>
-        <span className="text-ink-secondary">4.8</span>
-        <span>&middot;</span>
-        <span className="text-[11px] font-semibold text-green-soft uppercase tracking-[0.06em]">&#10003; Verified</span>
-      </div>
-      <div className="mt-2 font-sans font-semibold text-ink">
-        {formatMinor(displayMinor, currency)} <span className="font-normal text-ink-secondary">/ night</span>
-      </div>
-      {p.amenities && p.amenities.length > 0 && (
-        <div className="flex items-center gap-1.5 mt-2 flex-wrap">
-          {p.amenities.slice(0, 3).map((a) => (
-            <span key={a} className="text-[11px] text-mute bg-soft px-2 py-0.5 rounded-full">{a}</span>
-          ))}
+      <div className="flex flex-col justify-center py-5 pr-5 max-sm:py-3 max-sm:px-4">
+        <p className="font-display italic text-sm text-green-soft mb-1">{p.neighbourhood}</p>
+        <h2 className="font-display text-[clamp(18px,1.6vw,22px)] font-medium text-ink leading-tight mb-1">{p.name}</h2>
+        <p className="font-sans text-[13px] text-mute mb-2">{p.city}, Nigeria</p>
+        <div className="flex items-center gap-2 font-sans text-[13px] text-ink-secondary flex-wrap">
+          <span>{p.bedrooms} bed{p.bedrooms > 1 ? "s" : ""}</span><span>&middot;</span>
+          <span>{p.sleeps} guest{p.sleeps > 1 ? "s" : ""}</span>
         </div>
-      )}
+        <div className="flex items-center gap-2 mt-2 font-sans text-[13px]">
+          <span className="font-semibold text-ink">{formatMinor(displayMinor, currency)}</span>
+          <span className="font-normal text-ink-secondary">/ night</span>
+        </div>
+        {p.amenities && p.amenities.length > 0 && (
+          <div className="flex items-center gap-1.5 mt-2 flex-wrap">
+            {p.amenities.slice(0, 3).map((a) => (
+              <span key={a} className="text-[11px] text-mute bg-soft px-2 py-0.5 rounded-full">{a}</span>
+            ))}
+          </div>
+        )}
+      </div>
     </Link>
   );
 }

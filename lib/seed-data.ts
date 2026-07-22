@@ -15,6 +15,7 @@ export interface SeedProperty {
   amenities: string[];
   route_note: string;
   bedrooms: number;
+  bathrooms?: number;
   sleeps: number;
   nightly_rate_minor: number;
   deposit_minor: number;

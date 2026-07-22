@@ -248,8 +248,7 @@ export function BookingFlow(props: Props) {
 
                 <hr className="border-none border-t border-line my-6" />
 
-                <h2 className="font-display text-[22px] font-medium text-ink mb-4">Choose your dates</h2>
-                <p className="font-sans text-xs text-ink-secondary mb-5">Bookings open 14+ days ahead.</p>
+                <h2 className="font-display text-[22px] font-medium text-ink mb-5">Choose your dates</h2>
                 <div className="grid grid-cols-2 gap-4 mb-5 max-sm:grid-cols-1">
                   <div className="flex flex-col gap-1">
                     <label className="font-sans text-xs font-medium text-mute">Check-in</label>
@@ -488,7 +487,6 @@ function BookingSidebar({
         <div>
           <div className="font-display text-lg font-medium text-ink leading-tight mb-1">{propertyName}</div>
           <div className="font-sans text-[13px] text-mute mb-1">{neighbourhood}, {city}</div>
-          <div className="font-sans text-[13px] text-ink-secondary">&#9733; 4.9 · &#10003; Verified</div>
         </div>
       </div>
 

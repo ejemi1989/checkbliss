@@ -1,0 +1,482 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>CheckinBliss — The premium way to stay in Africa.</title>
+<meta name="description" content="The premium way to stay in Africa, built for diaspora travellers. Hand-selected luxury apartments in Lagos and Abuja — every home inspected in person, photographed editorially, and verified monthly." />
+<meta property="og:type" content="website" />
+<meta property="og:title" content="CheckinBliss — The premium way to stay in Africa." />
+<meta property="og:description" content="The premium way to stay in Africa, built for diaspora travellers. Hand-selected luxury apartments in Lagos and Abuja, verified monthly." />
+<meta property="og:image" content="https://www.checkinbliss.com/assets/images/hero/hero-01.jpg" />
+<meta property="og:url" content="https://www.checkinbliss.com/" />
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content="CheckinBliss — The premium way to stay in Africa." />
+<meta name="twitter:description" content="The premium way to stay in Africa, built for diaspora travellers. Hand-selected luxury apartments in Lagos and Abuja, verified monthly." />
+<link rel="icon" type="image/png" href="assets/images/logo/favicon.png" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400&family=Playfair+Display:ital,wght@0,400;1,400&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="css/main.css" />
+</head>
+<body>
+
+<!-- HERO (nav now lives inside it, floating on the image) -->
+<header class="hero">
+  <!-- NAV -->
+  <nav>
+    <div class="wrap nav-inner">
+      <div class="nav-side nav-left"></div>
+      <a href="index.html" class="logo" aria-label="CheckinBliss home">
+        <img src="assets/images/logo/Logo1.png" alt="CheckinBliss" class="logo-img" />
+      </a>
+      <div class="nav-side nav-right">
+        <button class="lang-pill" aria-label="Language and currency">EN <span class="divider">|</span> USD</button>
+        <button class="menu-pill" aria-label="Menu and account">
+          <span class="burger"><span></span><span></span><span></span></span>
+          <span class="avatar">
+            <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="9" r="3.2"/><path d="M5.5 19c.6-3.2 3.2-5 6.5-5s5.9 1.8 6.5 5"/><circle cx="12" cy="12" r="10.2"/></svg>
+          </span>
+        </button>
+      </div>
+    </div>
+  </nav>
+  <div class="ph ph-filled" data-image="assets/images/hero/hero-01.jpg" style="background-image:url('assets/images/hero/hero-01.jpg')"></div>
+  <div class="hero-shade"></div>
+  <div class="hero-content">
+    <h1>The Premium way to stay in Africa.</h1>
+    <p class="hero-sub">Hand-selected luxury apartments in Lagos and Abuja. Book instantly from anywhere.</p>
+    <div class="search" data-advance-days="14" data-min-nights="2">
+      <div class="field field--dest">
+        <label for="searchDest">Destination</label>
+        <div class="field-select-wrap">
+          <select id="searchDest" class="field-select">
+            <option value="">Where to?</option>
+            <option value="lagos">Lagos</option>
+            <option value="abuja">Abuja</option>
+          </select>
+          <svg class="field-select-arrow" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+        </div>
+      </div>
+      <div class="field field--dates">
+        <label>Dates</label>
+        <button class="field-dates-btn" id="datesBtn" type="button" aria-expanded="false" aria-haspopup="true">
+          <span id="datesBtnText">Add dates</span>
+        </button>
+      </div>
+      <div class="field field--guests">
+        <label for="searchGuests">Guests</label>
+        <div class="field-select-wrap">
+          <select id="searchGuests" class="field-select">
+            <option value="">Add guests</option>
+            <option value="1">1 guest</option>
+            <option value="2">2 guests</option>
+            <option value="3">3 guests</option>
+            <option value="4">4 guests</option>
+            <option value="5">5 guests</option>
+            <option value="6">6+ guests</option>
+          </select>
+          <svg class="field-select-arrow" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>
+        </div>
+      </div>
+      <button class="search-btn" id="searchBtn">Search</button>
+    </div>
+  </div>
+</header>
+
+<!-- CALENDAR PANEL — outside .hero to escape overflow:hidden -->
+<div class="cal-panel" id="calPanel" hidden role="dialog" aria-modal="true" aria-label="Select dates">
+  <div class="cal-mobile-head">
+    <span class="cal-mobile-title">Select dates</span>
+    <button class="cal-close" id="calClose" type="button" aria-label="Close">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+    </button>
+  </div>
+  <div class="cal-top">
+    <button class="cal-nav cal-nav--prev" id="calPrev" type="button" aria-label="Previous month">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+    </button>
+    <div class="cal-months" id="calMonths"></div>
+    <button class="cal-nav cal-nav--next" id="calNext" type="button" aria-label="Next month">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+    </button>
+  </div>
+  <div class="cal-foot">
+    <span class="cal-hint" id="calHint">Select check-in date</span>
+    <div class="cal-foot-actions">
+      <button class="cal-clear" id="calClear" type="button" hidden>Clear</button>
+      <button class="cal-apply" id="calApply" type="button" disabled>Apply</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- INTRO -->
+<section class="intro">
+  <div class="wrap intro-grid">
+    <h2>Arrive well. Leave <em>nothing to chance.</em></h2>
+    <p>We eliminate the guesswork of premium travel. Every apartment is handpicked and verified in person, giving you hotel-grade certainty with the true feeling of home.</p>
+  </div>
+</section>
+
+<!-- EDITORIAL CATEGORY CARDS -->
+<section class="cats">
+  <div class="wrap">
+    <div class="cats-grid">
+      <a class="cat" href="lagos.html">
+        <div class="cat-img"><div class="ph ph-filled" data-image="assets/images/cats/lagos.avif" style="background-image:url('assets/images/cats/lagos.avif')"></div></div>
+        <div class="cat-body">
+          <div class="cat-kicker">Remarkably</div>
+          <h3 class="cat-title">Lagos</h3>
+          <span class="cat-link">View apartments in Lagos →</span>
+        </div>
+      </a>
+      <a class="cat" href="#">
+        <div class="cat-img"><div class="ph" data-image="assets/images/cats/pool.jpg" ></div></div>
+        <div class="cat-body">
+          <div class="cat-kicker">Apartments with a</div>
+          <h3 class="cat-title">Pool</h3>
+          <span class="cat-link">View apartments with private pools →</span>
+        </div>
+      </a>
+      <a class="cat" href="abuja.html">
+        <div class="cat-img"><div class="ph" data-image="assets/images/cats/abuja.jpg" ></div></div>
+        <div class="cat-body">
+          <div class="cat-kicker">Calmly</div>
+          <h3 class="cat-title">Abuja</h3>
+          <span class="cat-link">View apartments in Abuja →</span>
+        </div>
+      </a>
+    </div>
+  </div>
+</section>
+
+<!-- BIG QUOTE -->
+<section class="bigquote">
+  <div class="ph ph-filled" data-image="assets/images/quotes/bigquote-bg.avif" style="background-image:url('assets/images/quotes/bigquote-bg.avif')"></div>
+  <div class="bigquote-shade"></div>
+  <div class="bigquote-content">
+    <span class="mark">&ldquo;</span>
+    <p>You'll <em>never</em> settle for an ordinary stay again.</p>
+    <div class="attr">— Pulse </div>
+  </div>
+</section>
+
+<!-- HOW WE CHOOSE -->
+<section class="intro">
+  <div class="wrap intro-grid">
+    <h2>We reject 9 out<em> of 10 homes.</em></h2>
+    <p>Most platforms list anything. We don’t. If quality slips, listings are removed. We list fewer homes so you get a better stay.</p>
+  </div>
+</section>
+
+<!-- STAYS — drag-to-slide editorial carousel -->
+<section class="stays">
+  <div class="wrap">
+    <div class="stays-track" id="staysTrack">
+      <a class="scard" href="lagos.html">
+        <div class="cat-img"><div class="ph ph-filled" data-image="assets/images/stays/lagos-lagoon-living.avif" style="background-image:url('assets/images/stays/lagos-lagoon-living.avif')"></div></div>
+        <div class="cat-body">
+          <div class="cat-kicker">Lagos</div>
+          <h3 class="cat-title">Lagoon Living</h3>
+          <span class="cat-link">View apartments in Victoria Island →</span>
+        </div>
+      </a>
+      <a class="scard" href="abuja.html">
+        <div class="cat-img"><div class="ph" data-image="assets/images/stays/abuja-hills-hush.jpg"></div></div>
+        <div class="cat-body">
+          <div class="cat-kicker">Abuja</div>
+          <h3 class="cat-title">Hills &amp; Hush</h3>
+          <span class="cat-link">View apartments in Maitama →</span>
+        </div>
+      </a>
+      <a class="scard" href="#">
+        <div class="cat-img"><div class="ph" data-image="assets/images/stays/private-pools.jpg"></div></div>
+        <div class="cat-body">
+          <div class="cat-kicker">By the water</div>
+          <h3 class="cat-title">Private Pools</h3>
+          <span class="cat-link">View apartments with pools →</span>
+        </div>
+      </a>
+      <a class="scard" href="#">
+        <div class="cat-img"><div class="ph ph-filled" data-image="assets/images/stays/maisonettes.avif" style="background-image:url('assets/images/stays/maisonettes.avif')"></div></div>
+        <div class="cat-body">
+          <div class="cat-kicker">Space & privacy</div>
+          <h3 class="cat-title">Maisonettes</h3>
+          <span class="cat-link">View maisonettes in Lagos →</span>
+        </div>
+      </a>
+      <a class="scard" href="lagos.html">
+        <div class="cat-img"><div class="ph" data-image="assets/images/stays/banana-island.avif"></div></div>
+        <div class="cat-body">
+          <div class="cat-kicker">Lagos</div>
+          <h3 class="cat-title">Banana Island</h3>
+          <span class="cat-link">View apartments on Banana Island →</span>
+        </div>
+      </a>
+      <a class="scard" href="abuja.html">
+        <div class="cat-img"><div class="ph" data-image="assets/images/stays/asokoro-calm.avif"></div></div>
+        <div class="cat-body">
+          <div class="cat-kicker">Abuja</div>
+          <h3 class="cat-title">Asokoro Calm</h3>
+          <span class="cat-link">View apartments in Asokoro →</span>
+        </div>
+      </a>
+    </div>
+    <div class="drag-hint">Drag to explore →</div>
+  </div>
+</section>
+
+<!-- HOW CHECKINBLISS WORKS — sticky scroll-stack -->
+<section class="works" id="works">
+  <div class="wrap works-grid">
+    <div class="works-aside">
+      <div class="eyebrow">The process</div>
+      <h2>How CheckinBliss works</h2>
+      <div class="works-track">
+        <div class="works-counter">
+          <span class="wc-num" id="wcNum">01</span>
+          <span class="wc-sep">/</span>
+          <span class="wc-total">03</span>
+        </div>
+        <div class="works-progress"><span id="wcBar"></span></div>
+      </div>
+    </div>
+
+    <div class="works-steps">
+      <article class="wstep" data-step="1">
+        <div class="wstep-inner">
+          <div class="wstep-img"><div class="ph ph-filled" data-image="assets/images/works/step-1-browse.avif" style="background-image:url('assets/images/works/step-1-browse.avif')"></div></div>
+          <div class="wstep-body">
+            <span class="wstep-n">01</span>
+            <h3>Browse Vetted Homes</h3>
+            <p>Curated apartments inspected in person, photographed editorially, and verified monthly.</p>
+          </div>
+        </div>
+      </article>
+      <article class="wstep" data-step="2">
+        <div class="wstep-inner">
+          <div class="wstep-img"><div class="ph ph-filled" data-image="assets/images/works/step-2-book.avif" style="background-image:url('assets/images/works/step-2-book.avif')"></div></div>
+          <div class="wstep-body">
+            <span class="wstep-n">02</span>
+            <h3>Book Securely</h3>
+            <p>Pay instantly in GBP, USD, or EUR. Security deposits are held, never charged upfront.</p>
+          </div>
+        </div>
+      </article>
+      <article class="wstep" data-step="3">
+        <div class="wstep-inner">
+          <div class="wstep-img"><div class="ph" data-image="assets/images/works/step-3-arrive.jpg"></div></div>
+          <div class="wstep-body">
+            <span class="wstep-n">03</span>
+            <h3>Arrive with Confidence</h3>
+            <p>Our local teams handle the logistics. If anything isn't right, we fix it on the spot.</p>
+          </div>
+        </div>
+      </article>
+    </div>
+  </div>
+</section>
+
+<!-- THREE PILLARS -->
+<section class="promise">
+  <div class="wrap">
+    <h2>The standard, upheld.</h2>
+    <div class="cats-grid promise-grid">
+      <div class="cat">
+        <div class="cat-img"><div class="ph" data-image="assets/images/promise/inspected.jpg"></div></div>
+        <div class="cat-body">
+          <div class="cat-kicker">Always</div>
+          <h3 class="cat-title">Inspected</h3>
+          <p class="cat-text">Zero remote approvals. Zero owner submissions. Physically vetted before launch and re-checked monthly.</p>
+        </div>
+      </div>
+      <div class="cat">
+        <div class="cat-img"><div class="ph ph-filled" data-image="assets/images/promise/ours-to-present.avif" style="background-image:url('assets/images/promise/ours-to-present.avif')"></div></div>
+        <div class="cat-body">
+          <div class="cat-kicker">Truth</div>
+          <h3 class="cat-title">in Presentation</h3>
+          <p class="cat-text">No user-generated content. Every photograph and description is produced by our team. You see reality.</p>
+        </div>
+      </div>
+      <div class="cat">
+        <div class="cat-img"><div class="ph" data-image="assets/images/promise/mediated.jpg"></div></div>
+        <div class="cat-body">
+          <div class="cat-kicker">Personally</div>
+          <h3 class="cat-title">Mediated</h3>
+          <p class="cat-text">No distant hosts. No arguments. Our local teams step in and resolve issues directly on the ground.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- OUR STANDARD — moves to full-bleed panel position below (replaces second quote) -->
+
+<!-- ============================================================
+     TRUSTPILOT REVIEWS — HIDDEN UNTIL REAL REVIEWS EXIST (~month 3)
+     TO ENABLE: delete this opening comment line and the closing
+     comment line marked "END TRUSTPILOT", and remove the
+     "OUR STANDARD" section above. The review JS is already wired.
+     ============================================================
+<section class="testi">
+  <div class="wrap">
+    <div class="testi-head">
+      <div class="tp-mark"><span class="tp-star">★</span> Trustpilot</div>
+      <h2 class="testi-title">Loved by guests</h2>
+    </div>
+    <div class="review-stage">
+      <button class="rev-arrow" id="revPrev" aria-label="Previous review">
+        <svg viewBox="0 0 24 24" width="34" height="34" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 5l-7 7 7 7"/></svg>
+      </button>
+      <div class="review-window">
+        <article class="review active"><div class="stars">★★★★★</div><p>A sensational stay — larger and more elegant than we ever expected.</p><div class="r-by">Adaeze · London</div><a class="r-link" href="#" target="_blank" rel="noopener">View on Trustpilot →</a></article>
+        <article class="review"><div class="stars">★★★★★</div><p>Verified, spotless, and exactly as shown. Booking from abroad felt effortless.</p><div class="r-by">Tunde · Houston</div><a class="r-link" href="#" target="_blank" rel="noopener">View on Trustpilot →</a></article>
+        <article class="review"><div class="stars">★★★★★</div><p>The lifestyle add-ons made the trip. Dinner and nightlife sorted before we landed.</p><div class="r-by">Chioma · Toronto</div><a class="r-link" href="#" target="_blank" rel="noopener">View on Trustpilot →</a></article>
+        <article class="review"><div class="stars">★★★★★</div><p>Finally a platform that understands the diaspora. Everything just worked.</p><div class="r-by">Emeka · Atlanta</div><a class="r-link" href="#" target="_blank" rel="noopener">View on Trustpilot →</a></article>
+        <article class="review"><div class="stars">★★★★★</div><p>Premium without the pretence. The apartment in Abuja was stunning.</p><div class="r-by">Aisha · Manchester</div><a class="r-link" href="#" target="_blank" rel="noopener">View on Trustpilot →</a></article>
+        <article class="review"><div class="stars">★★★★★</div><p>Trust was the difference. No surprises, no stress, just a beautiful home.</p><div class="r-by">Kelechi · Dubai</div><a class="r-link" href="#" target="_blank" rel="noopener">View on Trustpilot →</a></article>
+      </div>
+      <button class="rev-arrow" id="revNext" aria-label="Next review">
+        <svg viewBox="0 0 24 24" width="34" height="34" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5l7 7-7 7"/></svg>
+      </button>
+    </div>
+    <div class="reviews-nav" id="revDots"></div>
+  </div>
+</section>
+     END TRUSTPILOT — un-hide marker ============================ -->
+
+<!-- OUR STANDARD — full-bleed dark panel -->
+<section class="standard">
+  <div class="standard-content">
+    <p>We don't ask you to trust strangers' reviews. We ask you to trust <em>the work we put in</em> before a single guest arrives.</p>
+  </div>
+</section>
+
+<!-- CLOSING -->
+<section class="closing">
+  <div class="wrap">
+    <div class="closing-logo"><img src="assets/images/logo/Logo-DG.png" alt="CheckinBliss" class="closing-logo-img" /></div>
+    
+    <h2>Built on trust, shaped by detail, defined by <span class="fade">quality, intention, and care.</span></h2>
+  </div>
+</section>
+
+<!-- NEWSLETTER -->
+<section class="nl">
+  <div class="ph ph-filled nl-img" style="background-image:url('assets/images/newsletter-bg.jpg')"></div>
+  <div class="nl-shade"></div>
+  <div class="wrap nl-content">
+    <div class="nl-text">
+      <div class="eyebrow nl-eyebrow">The Insider List</div>
+      <h2>New homes, exclusive offers,<br>and early access.</h2>
+      <p class="nl-legal">No spam. Unsubscribe anytime. <a href="policy.html">Privacy Policy</a>.</p>
+    </div>
+    <form class="nl-form" onsubmit="return false;" aria-label="Newsletter sign-up">
+      <input type="email" placeholder="Enter your email address" aria-label="Email address" />
+      <button type="submit" class="nl-btn">Subscribe</button>
+    </form>
+  </div>
+</section>
+
+<!-- FOOTER -->
+<footer class="site-footer" role="contentinfo">
+  <div class="wrap">
+
+    <!-- 3-column navigation -->
+    <nav class="foot-nav" aria-label="Footer navigation">
+
+      <!-- Column 1: Explore -->
+      <div class="fcol">
+        <h4 class="fcol-head">Explore</h4>
+        <a href="#" class="fcol-link">List your property</a>
+        <!-- POST-LAUNCH (Weeks 1–8): Activate when B2B / partnerships page is live; replace href -->
+        <a href="#" class="fcol-link fcol-link--coming" tabindex="-1" aria-label="Partnerships — coming soon">Partnerships</a>
+        <!-- END POST-LAUNCH -->
+        <!-- POST-LAUNCH (Weeks 1–8): Activate affiliate programme signup page; convert span to <a> -->
+        <span class="fcol-link fcol-link--soon">Affiliate programme<span class="fcol-soon-badge">Soon</span></span>
+        <!-- END POST-LAUNCH -->
+        <!-- POST-LAUNCH (Weeks 1–8): Activate when Journal has 3–5 published pieces; replace href -->
+        <a href="#" class="fcol-link fcol-link--coming" tabindex="-1" aria-label="Journal — coming soon">Journal</a>
+        <!-- END POST-LAUNCH -->
+        <!-- POST-LAUNCH (Weeks 1–8): Activate when comparison page is live; replace href -->
+        <a href="#" class="fcol-link fcol-link--coming" tabindex="-1" aria-label="CheckinBliss vs Airbnb — coming soon">CheckinBliss vs Airbnb</a>
+        <!-- END POST-LAUNCH -->
+      </div>
+
+      <!-- Column 2: Support -->
+      <div class="fcol">
+        <h4 class="fcol-head">Support</h4>
+        <a href="#" class="fcol-link">Help centre</a>
+        <a href="mailto:hello@checkinbliss.com" class="fcol-link">Contact us</a>
+        <a href="policy.html" class="fcol-link">Policy</a>
+        <!-- ACTIVATE LATER (~Month 3): Enable when Trustpilot has real reviews; convert span to <a href="/reviews"> -->
+        <span class="fcol-link fcol-link--soon">Reviews<span class="fcol-soon-badge">Soon</span></span>
+        <!-- END ACTIVATE LATER -->
+      </div>
+
+      <!-- Column 3: CheckinBliss -->
+      <div class="fcol">
+        <h4 class="fcol-head">CheckinBliss</h4>
+        <a href="#" class="fcol-link">Our story</a>
+        <a href="#" class="fcol-link">The CheckinBliss standard</a>
+        <a href="#" class="fcol-link">CheckinBliss for business</a>
+        <a href="#" class="fcol-link">Press</a>
+        <!-- POST-LAUNCH: Add Careers link only when specific roles are open -->
+        <!-- <a href="/careers" class="fcol-link">Careers</a> -->
+      </div>
+
+    </nav>
+
+    <!-- Bottom bar -->
+    <div class="foot-bottom">
+
+      <!-- Destinations -->
+      <div class="foot-row">
+        <a href="lagos.html" class="foot-dest-link">Lagos</a>
+        <span class="foot-sep" aria-hidden="true">·</span>
+        <a href="abuja.html" class="foot-dest-link">Abuja</a>
+        <span class="foot-sep" aria-hidden="true">·</span>
+        <span class="foot-dest-soon">Coming soon:</span>
+        <span class="foot-dest-muted">Port Harcourt, Accra, Nairobi</span>
+      </div>
+
+      <!-- Legal links -->
+      <div class="foot-row">
+        <a href="#" class="foot-legal-link">Privacy</a>
+        <span class="foot-sep" aria-hidden="true">·</span>
+        <a href="#" class="foot-legal-link">Terms</a>
+        <span class="foot-sep" aria-hidden="true">·</span>
+        <a href="#" class="foot-legal-link">Cookies</a>
+        <span class="foot-sep" aria-hidden="true">·</span>
+        <a href="#" class="foot-legal-link">Accessibility</a>
+        <!-- POST-LAUNCH (Weeks 1–8): Append these once policies are finalised -->
+        <!-- · <a href="/guest-policies" class="foot-legal-link">Guest policies</a> -->
+        <!-- · <a href="/owner-policies" class="foot-legal-link">Owner policies</a> -->
+        <!-- · <a href="/modern-slavery" class="foot-legal-link">Modern Slavery</a> -->
+        <!-- · <a href="/aml-policy" class="foot-legal-link">AML policy</a> -->
+      </div>
+
+      <!-- Company statement + social icons -->
+      <div class="foot-row foot-row--statement">
+        <p class="foot-legal">CheckinBliss is operated by Lyxio Curtis Ltd, a UK-registered company. Company number SC863027. &copy;&nbsp;2026</p>
+        <div class="foot-socials">
+          <a href="#" class="foot-social-link" aria-label="CheckinBliss on Instagram" target="_blank" rel="noopener noreferrer">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="2" width="20" height="20" rx="5.5" ry="5.5"/><circle cx="12" cy="12" r="4"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/></svg>
+          </a>
+          <a href="#" class="foot-social-link" aria-label="CheckinBliss on TikTok" target="_blank" rel="noopener noreferrer">
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" aria-hidden="true"><path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-2.88 2.5 2.89 2.89 0 0 1-2.89-2.89 2.89 2.89 0 0 1 2.89-2.89c.28 0 .54.04.79.1V9.01a6.34 6.34 0 0 0-.79-.05 6.34 6.34 0 0 0-6.34 6.34 6.34 6.34 0 0 0 6.34 6.34 6.34 6.34 0 0 0 6.33-6.34V8.69a8.28 8.28 0 0 0 4.84 1.55V6.79a4.85 4.85 0 0 1-1.07-.1z"/></svg>
+          </a>
+        </div>
+      </div>
+
+    </div>
+
+  </div>
+</footer>
+
+<script src="js/interactions.js"></script>
+<script src="js/parallax.js"></script>
+<script src="js/search.js"></script>
+</body>
+</html>

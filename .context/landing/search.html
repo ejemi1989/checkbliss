@@ -1,0 +1,474 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Search — CheckinBliss</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&family=Newsreader:ital,opsz,wght@0,6..72,300;0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400;1,6..72,500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #E9ECE2;
+  --soft: #F4F6F0;
+  --card: #FCFDFB;
+  --ink: #171915;
+  --body-c: #44483D;
+  --mute: #6A6E63;
+  --line: #D8DBCF;
+  --green: #2F3D2C;
+  --green-d: #232E22;
+  --green-soft: #5C6B4F;
+  --trustpilot: #00B67A;
+
+  --font-display: 'Newsreader', 'Gallient', Georgia, serif;
+  --font-body: 'Hanken Grotesk', system-ui, -apple-system, sans-serif;
+
+  --s1: 4px; --s2: 8px; --s3: 12px; --s4: 16px; --s5: 20px; --s6: 24px;
+  --s7: 28px; --s8: 32px; --s9: 40px; --s10: 48px; --s11: 64px; --s12: 80px;
+
+  --r-0: 0px; --r-3: 3px; --r-10: 10px; --r-18: 18px; --r-28: 28px; --r-pill: 999px;
+
+  --sh1: 0 1px 2px rgba(0,0,0,0.07);
+  --sh2: 0 8px 24px rgba(0,0,0,0.10);
+  --sh3: 0 14px 40px rgba(0,0,0,0.14);
+  --sh4: 0 24px 60px rgba(0,0,0,0.20);
+
+  --mw: 1240px;
+  --gutter: 32px;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { -webkit-font-smoothing: antialiased; }
+body {
+  font-family: var(--font-body);
+  font-size: 16px;
+  font-weight: 400;
+  line-height: 1.55;
+  color: var(--body-c);
+  background: var(--bg);
+}
+img { display: block; max-width: 100%; }
+a { color: var(--green-soft); text-decoration: none; }
+a:hover { color: var(--green-d); }
+
+.container { max-width: var(--mw); margin: 0 auto; padding: 0 var(--gutter); }
+
+/* ── Header ── */
+.search-header {
+  background: var(--card);
+  border-bottom: 1px solid var(--line);
+  position: sticky;
+  top: 0;
+  z-index: 50;
+}
+.header-inner {
+  max-width: var(--mw);
+  margin: 0 auto;
+  padding: var(--s4) var(--gutter);
+  display: flex;
+  align-items: center;
+  gap: var(--s5);
+}
+.header-back {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--body-c);
+  display: flex;
+  align-items: center;
+  gap: var(--s1);
+  text-decoration: none;
+  flex-shrink: 0;
+}
+.header-back:hover { color: var(--green-soft); }
+.header-logo {
+  font-family: var(--font-display);
+  font-size: 20px;
+  font-weight: 500;
+  color: var(--ink);
+  letter-spacing: -0.01em;
+  flex-shrink: 0;
+}
+
+/* ── Search Bar ── */
+.search-bar-area {
+  background: var(--card);
+  padding: var(--s4) var(--gutter) var(--s5);
+  border-bottom: 1px solid var(--line);
+}
+.search-bar-row {
+  max-width: var(--mw);
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  gap: 0;
+  background: var(--soft);
+  border-radius: var(--r-3);
+  border: 1px solid var(--line);
+  overflow: hidden;
+}
+.search-bar-row .search-field {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+  padding: var(--s3) var(--s4);
+  min-width: 0;
+}
+.search-bar-row .search-field:not(:last-of-type) {
+  border-right: 1px solid var(--line);
+}
+.search-field-icon {
+  width: 16px; height: 16px;
+  color: var(--mute);
+  flex-shrink: 0;
+}
+.search-field-content { min-width: 0; }
+.search-field-label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--mute);
+}
+.search-field-value {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--ink);
+}
+.search-bar-btn {
+  padding: var(--s3) var(--s6);
+  background: var(--green);
+  color: #F4F6F0;
+  font-family: var(--font-body);
+  font-size: 14px;
+  font-weight: 600;
+  border: none;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.2s;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+}
+.search-bar-btn:hover { background: var(--green-d); }
+
+/* ── Filters ── */
+.filters-bar {
+  padding: var(--s4) var(--gutter);
+  background: var(--bg);
+  border-bottom: 1px solid var(--line);
+}
+.filters-inner {
+  max-width: var(--mw);
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  gap: var(--s3);
+  flex-wrap: wrap;
+}
+.filter-count {
+  font-size: 13px;
+  color: var(--mute);
+  margin-right: auto;
+}
+.filter-count strong { color: var(--ink); }
+.filter-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s1);
+  padding: var(--s1) var(--s3);
+  border-radius: var(--r-pill);
+  border: 1px solid var(--line);
+  background: var(--card);
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--body-c);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.15s;
+}
+.filter-chip:hover { border-color: var(--green-soft); color: var(--ink); }
+.filter-chip.active {
+  background: var(--green);
+  color: #F4F6F0;
+  border-color: var(--green);
+}
+
+/* ── Results Grid ── */
+.results-section {
+  padding: var(--s8) 0 var(--s12);
+}
+.results-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--s7);
+}
+.property-card {
+  text-decoration: none;
+  color: inherit;
+  display: block;
+}
+.property-card:hover .property-card-img img { transform: scale(1.04); }
+.property-card-img {
+  aspect-ratio: 3 / 4;
+  border-radius: var(--r-0);
+  overflow: hidden;
+  margin-bottom: var(--s4);
+}
+.property-card-img img {
+  width: 100%; height: 100%;
+  object-fit: cover;
+  transition: transform 0.5s ease;
+}
+.property-card-kicker {
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: 16px;
+  color: var(--green-soft);
+  margin-bottom: var(--s1);
+}
+.property-card-name {
+  font-family: var(--font-display);
+  font-size: clamp(18px, 1.6vw, 24px);
+  font-weight: 500;
+  color: var(--ink);
+  line-height: 1.15;
+  margin-bottom: var(--s1);
+}
+.property-card-location {
+  font-size: 14px;
+  color: var(--mute);
+  margin-bottom: var(--s2);
+}
+.property-card-meta {
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+  font-size: 13px;
+  color: var(--body-c);
+  flex-wrap: wrap;
+}
+.property-card-price {
+  font-weight: 600;
+  color: var(--ink);
+  margin-top: var(--s2);
+}
+.property-card-stars { color: var(--trustpilot); }
+.property-card-verified {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--green-soft);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+/* ── Responsive ── */
+@media (max-width: 980px) {
+  .results-grid { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 760px) {
+  .results-grid { grid-template-columns: 1fr; gap: var(--s9); }
+  .property-card-img { aspect-ratio: 16 / 10; }
+  :root { --gutter: 20px; }
+}
+@media (max-width: 560px) {
+  .search-bar-row { flex-wrap: wrap; }
+  .search-bar-row .search-field { flex: 1 1 50%; }
+  .search-bar-btn { flex: 1 1 100%; justify-content: center; }
+  .search-bar-row .search-field:nth-child(2) { border-right: none; }
+}
+@media (max-width: 390px) {
+  .search-bar-row .search-field { flex: 1 1 100%; }
+  .search-bar-row .search-field:not(:last-of-type) {
+    border-right: none;
+    border-bottom: 1px solid var(--line);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .property-card-img img { transition: none; }
+}
+</style>
+</head>
+<body>
+
+<header class="search-header">
+  <div class="header-inner">
+    <a href="index.html" class="header-back">&#8592; Home</a>
+    <span class="header-logo">CheckinBliss</span>
+  </div>
+</header>
+
+<div class="search-bar-area">
+  <div class="search-bar-row">
+    <div class="search-field">
+      <svg class="search-field-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+      <div class="search-field-content">
+        <div class="search-field-label">Where</div>
+        <div class="search-field-value">Lagos, Nigeria</div>
+      </div>
+    </div>
+    <div class="search-field">
+      <svg class="search-field-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+      <div class="search-field-content">
+        <div class="search-field-label">Check-in</div>
+        <div class="search-field-value">22 Jun 2026</div>
+      </div>
+    </div>
+    <div class="search-field">
+      <svg class="search-field-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+      <div class="search-field-content">
+        <div class="search-field-label">Check-out</div>
+        <div class="search-field-value">26 Jun 2026</div>
+      </div>
+    </div>
+    <div class="search-field">
+      <svg class="search-field-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+      <div class="search-field-content">
+        <div class="search-field-label">Guests</div>
+        <div class="search-field-value">2 guests</div>
+      </div>
+    </div>
+    <button class="search-bar-btn">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+      Search
+    </button>
+  </div>
+</div>
+
+<div class="filters-bar">
+  <div class="filters-inner">
+    <span class="filter-count"><strong>14</strong> stays in Lagos</span>
+    <span class="filter-chip">Price &#x25BE;</span>
+    <span class="filter-chip">Bedrooms &#x25BE;</span>
+    <span class="filter-chip active">&#10003; Verified only</span>
+    <span class="filter-chip">Wi-Fi</span>
+    <span class="filter-chip">Pool</span>
+    <span class="filter-chip">More filters</span>
+  </div>
+</div>
+
+<section class="results-section">
+  <div class="container">
+    <div class="results-grid">
+      <a href="detail.html" class="property-card">
+        <div class="property-card-img">
+          <img src="https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=800&q=80" alt="" loading="lazy">
+        </div>
+        <p class="property-card-kicker">Ikoyi</p>
+        <h2 class="property-card-name">The Ikoyi Residence</h2>
+        <p class="property-card-location">Lagos, Nigeria</p>
+        <div class="property-card-meta">
+          <span>2 bedrooms</span><span>&middot;</span><span>2 baths</span><span>&middot;</span><span>4 guests</span>
+        </div>
+        <div class="property-card-meta">
+          <span class="property-card-stars">&#9733;&#9733;&#9733;&#9733;&#9733;</span>
+          <span>4.9</span>
+          <span>&middot;</span>
+          <span class="property-card-verified">&#10003; Verified</span>
+        </div>
+        <div class="property-card-price">$180 / night</div>
+      </a>
+
+      <a href="detail.html" class="property-card">
+        <div class="property-card-img">
+          <img src="https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?auto=format&fit=crop&w=800&q=80" alt="" loading="lazy">
+        </div>
+        <p class="property-card-kicker">Lekki</p>
+        <h2 class="property-card-name">Lekki Sky Suite</h2>
+        <p class="property-card-location">Lagos, Nigeria</p>
+        <div class="property-card-meta">
+          <span>1 bedroom</span><span>&middot;</span><span>1 bath</span><span>&middot;</span><span>2 guests</span>
+        </div>
+        <div class="property-card-meta">
+          <span class="property-card-stars">&#9733;&#9733;&#9733;&#9733;&#9733;</span>
+          <span>4.7</span>
+          <span>&middot;</span>
+          <span class="property-card-verified">&#10003; Verified</span>
+        </div>
+        <div class="property-card-price">$145 / night</div>
+      </a>
+
+      <a href="detail.html" class="property-card">
+        <div class="property-card-img">
+          <img src="https://images.unsplash.com/photo-1600585154526-990a2a80f3e7?auto=format&fit=crop&w=800&q=80" alt="" loading="lazy">
+        </div>
+        <p class="property-card-kicker">Victoria Island</p>
+        <h2 class="property-card-name">Victoria Island Loft</h2>
+        <p class="property-card-location">Lagos, Nigeria</p>
+        <div class="property-card-meta">
+          <span>2 bedrooms</span><span>&middot;</span><span>2 baths</span><span>&middot;</span><span>6 guests</span>
+        </div>
+        <div class="property-card-meta">
+          <span class="property-card-stars">&#9733;&#9733;&#9733;&#9733;&#9733;</span>
+          <span>4.6</span>
+          <span>&middot;</span>
+          <span class="property-card-verified">&#10003; Verified</span>
+        </div>
+        <div class="property-card-price">$260 / night</div>
+      </a>
+
+      <a href="detail.html" class="property-card">
+        <div class="property-card-img">
+          <img src="https://images.unsplash.com/photo-1600210492486-724fe5c67fb0?auto=format&fit=crop&w=800&q=80" alt="" loading="lazy">
+        </div>
+        <p class="property-card-kicker">Ikoyi</p>
+        <h2 class="property-card-name">Bourdillon House</h2>
+        <p class="property-card-location">Lagos, Nigeria</p>
+        <div class="property-card-meta">
+          <span>3 bedrooms</span><span>&middot;</span><span>3 baths</span><span>&middot;</span><span>8 guests</span>
+        </div>
+        <div class="property-card-meta">
+          <span class="property-card-stars">&#9733;&#9733;&#9733;&#9733;&#9733;</span>
+          <span>5.0</span>
+          <span>&middot;</span>
+          <span class="property-card-verified">&#10003; Verified</span>
+        </div>
+        <div class="property-card-price">$340 / night</div>
+      </a>
+
+      <a href="detail.html" class="property-card">
+        <div class="property-card-img">
+          <img src="https://images.unsplash.com/photo-1564013799919-ab600027f3ae?auto=format&fit=crop&w=800&q=80" alt="" loading="lazy">
+        </div>
+        <p class="property-card-kicker">Lekki Phase 1</p>
+        <h2 class="property-card-name">The Peninsula Suite</h2>
+        <p class="property-card-location">Lagos, Nigeria</p>
+        <div class="property-card-meta">
+          <span>2 bedrooms</span><span>&middot;</span><span>2 baths</span><span>&middot;</span><span>4 guests</span>
+        </div>
+        <div class="property-card-meta">
+          <span class="property-card-stars">&#9733;&#9733;&#9733;&#9733;&#9734;</span>
+          <span>4.5</span>
+          <span>&middot;</span>
+          <span class="property-card-verified">&#10003; Verified</span>
+        </div>
+        <div class="property-card-price">$210 / night</div>
+      </a>
+
+      <a href="detail.html" class="property-card">
+        <div class="property-card-img">
+          <img src="https://images.unsplash.com/photo-1600573472591-ee6b68d14c68?auto=format&fit=crop&w=800&q=80" alt="" loading="lazy">
+        </div>
+        <p class="property-card-kicker">Victoria Island</p>
+        <h2 class="property-card-name">Eko Atlantic View</h2>
+        <p class="property-card-location">Lagos, Nigeria</p>
+        <div class="property-card-meta">
+          <span>1 bedroom</span><span>&middot;</span><span>1 bath</span><span>&middot;</span><span>2 guests</span>
+        </div>
+        <div class="property-card-meta">
+          <span class="property-card-stars">&#9733;&#9733;&#9733;&#9733;&#9733;</span>
+          <span>4.8</span>
+          <span>&middot;</span>
+          <span class="property-card-verified">&#10003; Verified</span>
+        </div>
+        <div class="property-card-price">$195 / night</div>
+      </a>
+    </div>
+  </div>
+</section>
+
+</body>
+</html>

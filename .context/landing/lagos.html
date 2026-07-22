@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Lagos Apartments — CheckinBliss</title>
+<meta name="description" content="Verified premium apartments in Victoria Island, Ikoyi, Lekki and across Lagos, built for diaspora travellers. Hand-selected, inspected in person, and re-verified monthly." />
+<meta property="og:type" content="website" />
+<meta property="og:title" content="Lagos Apartments — CheckinBliss" />
+<meta property="og:description" content="Verified premium apartments across Lagos, built for diaspora travellers. Victoria Island, Ikoyi, Lekki and more — hand-selected and re-verified monthly." />
+<meta property="og:image" content="https://www.checkinbliss.com/assets/images/stays/lagos-lagoon-living.avif" />
+<meta property="og:url" content="https://www.checkinbliss.com/lagos.html" />
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content="Lagos Apartments — CheckinBliss" />
+<meta name="twitter:description" content="Verified premium apartments across Lagos, built for diaspora travellers. Victoria Island, Ikoyi, Lekki and more — hand-selected and re-verified monthly." />
+<link rel="icon" type="image/png" href="assets/images/logo/favicon.png" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,400&family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;1,6..72,400&family=Playfair+Display:ital,wght@0,400;1,400&display=swap" rel="stylesheet" />
+<link href="https://api.mapbox.com/mapbox-gl-js/v3.6.0/mapbox-gl.css" rel="stylesheet" />
+<link rel="stylesheet" href="css/main.css" />
+<link rel="stylesheet" href="css/listings.css" />
+</head>
+<body class="lst-body">
+
+<header class="lst-header">
+  <nav>
+    <div class="wrap nav-inner">
+      <div class="nav-side nav-left"></div>
+      <a href="index.html" class="logo" aria-label="CheckinBliss home">
+        <img src="assets/images/logo/logo-wrd.png" alt="CheckinBliss" class="logo-img" />
+      </a>
+      <div class="nav-side nav-right">
+        <button class="lang-pill" aria-label="Language and currency">EN <span class="divider">|</span> USD</button>
+        <button class="menu-pill" aria-label="Menu and account">
+          <span class="burger"><span></span><span></span><span></span></span>
+          <span class="avatar">
+            <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="9" r="3.2"/><path d="M5.5 19c.6-3.2 3.2-5 6.5-5s5.9 1.8 6.5 5"/><circle cx="12" cy="12" r="10.2"/></svg>
+          </span>
+        </button>
+      </div>
+    </div>
+  </nav>
+</header>
+
+<!-- Search / filter band -->
+<div class="searchband" id="searchBand">
+  <div class="searchband-inner">
+    <form class="sbar" role="search" onsubmit="return false;">
+      <label class="sbar-field">
+        <span class="sbar-label">Where</span>
+        <input type="text" value="Lagos" aria-label="Destination" />
+      </label>
+      <label class="sbar-field">
+        <span class="sbar-label">When</span>
+        <input type="text" placeholder="Add dates" aria-label="Dates" />
+      </label>
+      <label class="sbar-field sbar-field-last">
+        <span class="sbar-label">Who</span>
+        <input type="text" placeholder="Add guests" aria-label="Guests" />
+        <button class="sbar-go" aria-label="Search stays">
+          <svg viewBox="0 0 20 20" width="16" height="16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="8.5" cy="8.5" r="5.5"/><path d="M12.8 12.8 17 17"/></svg>
+        </button>
+      </label>
+    </form>
+    <button class="filter-btn" id="filterBtn" aria-expanded="false" aria-controls="filterPanel">
+      <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><path d="M2 4h12M4 8h8M6 12h4"/></svg>
+      Filter &amp; sort
+    </button>
+  </div>
+
+  <!-- Collapsible filter panel -->
+  <div class="filter-panel" id="filterPanel" hidden>
+    <div class="filter-panel-inner">
+      <div class="fgroup">
+        <span class="fgroup-label">Bedrooms</span>
+        <div class="filter-chips">
+          <button class="fchip active" data-filter="all">All</button>
+          <button class="fchip" data-filter="1-2-beds">1–2</button>
+          <button class="fchip" data-filter="3-4-beds">3–4</button>
+          <button class="fchip" data-filter="5-plus">5+</button>
+        </div>
+      </div>
+      <div class="fgroup">
+        <span class="fgroup-label">Features</span>
+        <div class="filter-chips">
+          <button class="fchip" data-filter="pool">Pool</button>
+          <button class="fchip" data-filter="gym">Gym</button>
+          <button class="fchip" data-filter="workspace">Workspace</button>
+        </div>
+      </div>
+      <div class="fgroup">
+        <span class="fgroup-label">Sort by</span>
+        <div class="filter-chips">
+          <button class="schip active" data-sort="featured">Featured</button>
+          <button class="schip" data-sort="price-asc">Price low to high</button>
+          <button class="schip" data-sort="price-desc">Price high to low</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<main class="split">
+  <!-- LEFT: results rail -->
+  <section class="results" id="resultsPane" aria-label="Lagos apartments">
+    <div class="results-inner">
+
+      <header class="results-head">
+        <nav class="lst-breadcrumb" aria-label="Breadcrumb">
+          <a href="index.html">Home</a><span class="sep">/</span><span>Lagos</span>
+        </nav>
+        <div class="lst-eyebrow">Remarkably</div>
+        <h1 class="lst-city">Lagos</h1>
+        <p class="results-count" id="filterTotal"></p>
+      </header>
+
+      <div class="results-list" id="listingsGrid">
+
+        <a class="pcard" href="property.html" data-beds="3" data-price="450" data-tags="pool gym" data-lat="6.4295" data-lng="3.4219" data-id="p1">
+          <div class="pcard-img"><div class="ph ph-filled" style="background-image:url('assets/images/stays/lagos-lagoon-living.avif')"></div></div>
+          <div class="pcard-body">
+            <div class="pcard-kicker">Victoria Island</div>
+            <h2 class="pcard-title">The Lagoon Penthouse</h2>
+            <div class="pcard-meta">3 bed · 3 bath · up to 6 guests</div>
+            <div class="pcard-tags"><span class="pcard-tag">Free cancellation</span><span class="pcard-tag">Late checkout</span></div>
+            <div class="pcard-footer"><span class="pcard-price">$450</span><span class="pcard-per">/ night</span></div>
+          </div>
+        </a>
+
+        <a class="pcard" href="property.html" data-beds="2" data-price="320" data-tags="workspace" data-lat="6.4310" data-lng="3.4155" data-id="p2">
+          <div class="pcard-img"><div class="ph"></div></div>
+          <div class="pcard-body">
+            <div class="pcard-kicker">Victoria Island</div>
+            <h2 class="pcard-title">Eko Heights</h2>
+            <div class="pcard-meta">2 bed · 2 bath · up to 4 guests</div>
+            <div class="pcard-tags"><span class="pcard-tag">Free cancellation</span></div>
+            <div class="pcard-footer"><span class="pcard-price">$320</span><span class="pcard-per">/ night</span></div>
+          </div>
+        </a>
+
+        <a class="pcard" href="property.html" data-beds="1" data-price="185" data-tags="" data-lat="6.4258" data-lng="3.4489" data-id="p3">
+          <div class="pcard-img"><div class="ph"></div></div>
+          <div class="pcard-body">
+            <div class="pcard-kicker">Oniru Estate</div>
+            <h2 class="pcard-title">Waterside Studio</h2>
+            <div class="pcard-meta">Studio · 1 bath · up to 2 guests</div>
+            <div class="pcard-tags"><span class="pcard-tag">Late checkout</span></div>
+            <div class="pcard-footer"><span class="pcard-price">$185</span><span class="pcard-per">/ night</span></div>
+          </div>
+        </a>
+
+        <a class="pcard" href="property.html" data-beds="5" data-price="890" data-tags="pool gym" data-lat="6.4483" data-lng="3.4444" data-id="p4">
+          <div class="pcard-img"><div class="ph ph-filled" style="background-image:url('assets/images/stays/banana-island.avif')"></div></div>
+          <div class="pcard-body">
+            <div class="pcard-kicker">Banana Island</div>
+            <h2 class="pcard-title">The Banana Island Villa</h2>
+            <div class="pcard-meta">5 bed · 5 bath · up to 10 guests</div>
+            <div class="pcard-tags"><span class="pcard-tag">Free cancellation</span><span class="pcard-tag">Late checkout</span></div>
+            <div class="pcard-footer"><span class="pcard-price">$890</span><span class="pcard-per">/ night</span></div>
+          </div>
+        </a>
+
+        <a class="pcard" href="property.html" data-beds="2" data-price="240" data-tags="workspace" data-lat="6.4415" data-lng="3.4736" data-id="p5">
+          <div class="pcard-img"><div class="ph"></div></div>
+          <div class="pcard-body">
+            <div class="pcard-kicker">Lekki Phase 1</div>
+            <h2 class="pcard-title">Lekki Phase 1 Loft</h2>
+            <div class="pcard-meta">2 bed · 2 bath · up to 4 guests</div>
+            <div class="pcard-tags"><span class="pcard-tag">Free cancellation</span></div>
+            <div class="pcard-footer"><span class="pcard-price">$240</span><span class="pcard-per">/ night</span></div>
+          </div>
+        </a>
+
+        <a class="pcard" href="property.html" data-beds="3" data-price="380" data-tags="pool" data-lat="6.4531" data-lng="3.4324" data-id="p6">
+          <div class="pcard-img"><div class="ph"></div></div>
+          <div class="pcard-body">
+            <div class="pcard-kicker">Ikoyi</div>
+            <h2 class="pcard-title">The Garden Apartment</h2>
+            <div class="pcard-meta">3 bed · 3 bath · up to 6 guests</div>
+            <div class="pcard-tags"><span class="pcard-tag">Late checkout</span></div>
+            <div class="pcard-footer"><span class="pcard-price">$380</span><span class="pcard-per">/ night</span></div>
+          </div>
+        </a>
+
+        <a class="pcard" href="property.html" data-beds="4" data-price="560" data-tags="pool gym" data-lat="6.4271" data-lng="3.4098" data-id="p7">
+          <div class="pcard-img"><div class="ph"></div></div>
+          <div class="pcard-body">
+            <div class="pcard-kicker">Victoria Island</div>
+            <h2 class="pcard-title">Lagoon View</h2>
+            <div class="pcard-meta">4 bed · 4 bath · up to 8 guests</div>
+            <div class="pcard-tags"><span class="pcard-tag">Free cancellation</span></div>
+            <div class="pcard-footer"><span class="pcard-price">$560</span><span class="pcard-per">/ night</span></div>
+          </div>
+        </a>
+
+        <a class="pcard" href="property.html" data-beds="1" data-price="195" data-tags="workspace" data-lat="6.4566" data-lng="3.4288" data-id="p8">
+          <div class="pcard-img"><div class="ph"></div></div>
+          <div class="pcard-body">
+            <div class="pcard-kicker">Ikoyi</div>
+            <h2 class="pcard-title">The Creative Loft</h2>
+            <div class="pcard-meta">1 bed · 1 bath · up to 2 guests</div>
+            <div class="pcard-tags"><span class="pcard-tag">Late checkout</span></div>
+            <div class="pcard-footer"><span class="pcard-price">$195</span><span class="pcard-per">/ night</span></div>
+          </div>
+        </a>
+
+        <a class="pcard" href="property.html" data-beds="3" data-price="295" data-tags="" data-lat="6.4362" data-lng="3.5124" data-id="p9">
+          <div class="pcard-img"><div class="ph ph-filled" style="background-image:url('assets/images/stays/maisonettes.avif')"></div></div>
+          <div class="pcard-body">
+            <div class="pcard-kicker">Lekki Phase 2</div>
+            <h2 class="pcard-title">Palmgrove Maisonette</h2>
+            <div class="pcard-meta">3 bed · 3 bath · up to 6 guests</div>
+            <div class="pcard-tags"><span class="pcard-tag">Free cancellation</span><span class="pcard-tag">Late checkout</span></div>
+            <div class="pcard-footer"><span class="pcard-price">$295</span><span class="pcard-per">/ night</span></div>
+          </div>
+        </a>
+
+        <a class="pcard" href="property.html" data-beds="4" data-price="420" data-tags="pool" data-lat="6.4498" data-lng="3.4381" data-id="p10">
+          <div class="pcard-img"><div class="ph"></div></div>
+          <div class="pcard-body">
+            <div class="pcard-kicker">Ikoyi</div>
+            <h2 class="pcard-title">The Ambassador Suite</h2>
+            <div class="pcard-meta">4 bed · 3 bath · up to 8 guests</div>
+            <div class="pcard-tags"><span class="pcard-tag">Free cancellation</span></div>
+            <div class="pcard-footer"><span class="pcard-price">$420</span><span class="pcard-per">/ night</span></div>
+          </div>
+        </a>
+
+        <a class="pcard" href="property.html" data-beds="1" data-price="165" data-tags="" data-lat="6.4288" data-lng="3.4267" data-id="p11">
+          <div class="pcard-img"><div class="ph"></div></div>
+          <div class="pcard-body">
+            <div class="pcard-kicker">Victoria Island</div>
+            <h2 class="pcard-title">The VI Studio</h2>
+            <div class="pcard-meta">Studio · 1 bath · up to 2 guests</div>
+            <div class="pcard-tags"><span class="pcard-tag">Late checkout</span></div>
+            <div class="pcard-footer"><span class="pcard-price">$165</span><span class="pcard-per">/ night</span></div>
+          </div>
+        </a>
+
+        <a class="pcard" href="property.html" data-beds="4" data-price="525" data-tags="pool" data-lat="6.4241" data-lng="3.4527" data-id="p12">
+          <div class="pcard-img"><div class="ph ph-filled" style="background-image:url('assets/images/stays/private-pools.jpg')"></div></div>
+          <div class="pcard-body">
+            <div class="pcard-kicker">Oniru Estate</div>
+            <h2 class="pcard-title">Sunset Pool House</h2>
+            <div class="pcard-meta">4 bed · 4 bath · up to 8 guests</div>
+            <div class="pcard-tags"><span class="pcard-tag">Free cancellation</span><span class="pcard-tag">Late checkout</span></div>
+            <div class="pcard-footer"><span class="pcard-price">$525</span><span class="pcard-per">/ night</span></div>
+          </div>
+        </a>
+
+        <a class="pcard" href="property.html" data-beds="2" data-price="275" data-tags="gym workspace" data-lat="6.4602" data-lng="3.4210" data-id="p13">
+          <div class="pcard-img"><div class="ph"></div></div>
+          <div class="pcard-body">
+            <div class="pcard-kicker">Ikoyi</div>
+            <h2 class="pcard-title">Bourdillon Residence</h2>
+            <div class="pcard-meta">2 bed · 2 bath · up to 4 guests</div>
+            <div class="pcard-tags"><span class="pcard-tag">Free cancellation</span></div>
+            <div class="pcard-footer"><span class="pcard-price">$275</span><span class="pcard-per">/ night</span></div>
+          </div>
+        </a>
+
+        <a class="pcard" href="property.html" data-beds="3" data-price="345" data-tags="pool workspace" data-lat="6.4448" data-lng="3.4802" data-id="p14">
+          <div class="pcard-img"><div class="ph"></div></div>
+          <div class="pcard-body">
+            <div class="pcard-kicker">Lekki Phase 1</div>
+            <h2 class="pcard-title">Admiralty Terrace</h2>
+            <div class="pcard-meta">3 bed · 3 bath · up to 6 guests</div>
+            <div class="pcard-tags"><span class="pcard-tag">Late checkout</span></div>
+            <div class="pcard-footer"><span class="pcard-price">$345</span><span class="pcard-per">/ night</span></div>
+          </div>
+        </a>
+
+        <a class="pcard" href="property.html" data-beds="5" data-price="760" data-tags="pool gym" data-lat="6.4467" data-lng="3.4515" data-id="p15">
+          <div class="pcard-img"><div class="ph"></div></div>
+          <div class="pcard-body">
+            <div class="pcard-kicker">Banana Island</div>
+            <h2 class="pcard-title">The Palm Court House</h2>
+            <div class="pcard-meta">5 bed · 5 bath · up to 10 guests</div>
+            <div class="pcard-tags"><span class="pcard-tag">Free cancellation</span></div>
+            <div class="pcard-footer"><span class="pcard-price">$760</span><span class="pcard-per">/ night</span></div>
+          </div>
+        </a>
+
+        <a class="pcard" href="property.html" data-beds="1" data-price="210" data-tags="workspace" data-lat="6.4325" data-lng="3.4341" data-id="p16">
+          <div class="pcard-img"><div class="ph"></div></div>
+          <div class="pcard-body">
+            <div class="pcard-kicker">Victoria Island</div>
+            <h2 class="pcard-title">Adeola Studio</h2>
+            <div class="pcard-meta">1 bed · 1 bath · up to 2 guests</div>
+            <div class="pcard-tags"><span class="pcard-tag">Late checkout</span></div>
+            <div class="pcard-footer"><span class="pcard-price">$210</span><span class="pcard-per">/ night</span></div>
+          </div>
+        </a>
+
+        <a class="pcard" href="property.html" data-beds="4" data-price="480" data-tags="pool gym" data-lat="6.4389" data-lng="3.5011" data-id="p17">
+          <div class="pcard-img"><div class="ph"></div></div>
+          <div class="pcard-body">
+            <div class="pcard-kicker">Lekki Phase 2</div>
+            <h2 class="pcard-title">Chevron Courtyard</h2>
+            <div class="pcard-meta">4 bed · 4 bath · up to 8 guests</div>
+            <div class="pcard-tags"><span class="pcard-tag">Free cancellation</span></div>
+            <div class="pcard-footer"><span class="pcard-price">$480</span><span class="pcard-per">/ night</span></div>
+          </div>
+        </a>
+
+        <a class="pcard" href="property.html" data-beds="2" data-price="230" data-tags="" data-lat="6.4213" data-lng="3.4436" data-id="p18">
+          <div class="pcard-img"><div class="ph"></div></div>
+          <div class="pcard-body">
+            <div class="pcard-kicker">Oniru Estate</div>
+            <h2 class="pcard-title">The Dune Apartment</h2>
+            <div class="pcard-meta">2 bed · 2 bath · up to 4 guests</div>
+            <div class="pcard-tags"><span class="pcard-tag">Late checkout</span></div>
+            <div class="pcard-footer"><span class="pcard-price">$230</span><span class="pcard-per">/ night</span></div>
+          </div>
+        </a>
+
+        <a class="pcard" href="property.html" data-beds="3" data-price="410" data-tags="gym" data-lat="6.4540" data-lng="3.4189" data-id="p19">
+          <div class="pcard-img"><div class="ph"></div></div>
+          <div class="pcard-body">
+            <div class="pcard-kicker">Ikoyi</div>
+            <h2 class="pcard-title">Glover Road House</h2>
+            <div class="pcard-meta">3 bed · 3 bath · up to 6 guests</div>
+            <div class="pcard-tags"><span class="pcard-tag">Free cancellation</span></div>
+            <div class="pcard-footer"><span class="pcard-price">$410</span><span class="pcard-per">/ night</span></div>
+          </div>
+        </a>
+
+        <a class="pcard" href="property.html" data-beds="5" data-price="640" data-tags="pool workspace" data-lat="6.4426" data-lng="3.4655" data-id="p20">
+          <div class="pcard-img"><div class="ph"></div></div>
+          <div class="pcard-body">
+            <div class="pcard-kicker">Lekki Phase 1</div>
+            <h2 class="pcard-title">The Freedom Villa</h2>
+            <div class="pcard-meta">5 bed · 4 bath · up to 10 guests</div>
+            <div class="pcard-tags"><span class="pcard-tag">Late checkout</span></div>
+            <div class="pcard-footer"><span class="pcard-price">$640</span><span class="pcard-per">/ night</span></div>
+          </div>
+        </a>
+
+        <p class="no-results" id="noResults">No apartments match this filter. Clear a filter to see more of Lagos.</p>
+      </div>
+
+      <nav class="pager" aria-label="Pagination">
+        <span class="pager-range"><strong>1–20</strong> of 20 apartments</span>
+        <div class="pager-btns">
+          <button class="pager-btn" disabled aria-label="Previous page">
+            <svg viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M10 3 5 8l5 5"/></svg>
+            Prev
+          </button>
+          <button class="pager-btn" disabled aria-label="Next page">
+            Next
+            <svg viewBox="0 0 16 16" width="13" height="13" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3l5 5-5 5"/></svg>
+          </button>
+        </div>
+      </nav>
+
+      <footer class="rail-foot" role="contentinfo">
+
+        <nav class="foot-nav" aria-label="Footer navigation">
+
+          <div class="fcol">
+            <h4 class="fcol-head">Explore</h4>
+            <a href="#" class="fcol-link">List your property</a>
+            <a href="#" class="fcol-link fcol-link--coming" tabindex="-1" aria-label="Partnerships — coming soon">Partnerships</a>
+            <span class="fcol-link fcol-link--soon">Affiliate programme<span class="fcol-soon-badge">Soon</span></span>
+            <a href="#" class="fcol-link fcol-link--coming" tabindex="-1" aria-label="Journal — coming soon">Journal</a>
+            <a href="#" class="fcol-link fcol-link--coming" tabindex="-1" aria-label="CheckinBliss vs Airbnb — coming soon">CheckinBliss vs Airbnb</a>
+          </div>
+
+          <div class="fcol">
+            <h4 class="fcol-head">Support</h4>
+            <a href="#" class="fcol-link">Help centre</a>
+            <a href="mailto:hello@checkinbliss.com" class="fcol-link">Contact us</a>
+            <a href="policy.html" class="fcol-link">Policy</a>
+            <span class="fcol-link fcol-link--soon">Reviews<span class="fcol-soon-badge">Soon</span></span>
+          </div>
+
+          <div class="fcol">
+            <h4 class="fcol-head">CheckinBliss</h4>
+            <a href="#" class="fcol-link">Our story</a>
+            <a href="#" class="fcol-link">The CheckinBliss standard</a>
+            <a href="#" class="fcol-link">CheckinBliss for business</a>
+            <a href="#" class="fcol-link">Press</a>
+          </div>
+
+        </nav>
+
+        <div class="foot-bottom">
+          <div class="foot-row">
+            <a href="lagos.html" class="foot-dest-link">Lagos</a>
+            <span class="foot-sep" aria-hidden="true">·</span>
+            <a href="abuja.html" class="foot-dest-link">Abuja</a>
+            <span class="foot-sep" aria-hidden="true">·</span>
+            <span class="foot-dest-soon">Coming soon:</span>
+            <span class="foot-dest-muted">Port Harcourt, Accra, Nairobi</span>
+          </div>
+          <div class="foot-row">
+            <a href="#" class="foot-legal-link">Privacy</a>
+            <span class="foot-sep" aria-hidden="true">·</span>
+            <a href="#" class="foot-legal-link">Terms</a>
+            <span class="foot-sep" aria-hidden="true">·</span>
+            <a href="#" class="foot-legal-link">Cookies</a>
+            <span class="foot-sep" aria-hidden="true">·</span>
+            <a href="#" class="foot-legal-link">Accessibility</a>
+          </div>
+          <div class="foot-row foot-row--statement">
+            <p class="foot-legal">CheckinBliss is operated by Lyxio Curtis Ltd, a UK-registered company. Company number SC863027. &copy;&nbsp;2026</p>
+            <div class="foot-socials">
+              <a href="#" class="foot-social-link" aria-label="CheckinBliss on Instagram" target="_blank" rel="noopener noreferrer">
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="2" width="20" height="20" rx="5.5" ry="5.5"/><circle cx="12" cy="12" r="4"/><line x1="17.5" y1="6.5" x2="17.51" y2="6.5"/></svg>
+              </a>
+              <a href="#" class="foot-social-link" aria-label="CheckinBliss on TikTok" target="_blank" rel="noopener noreferrer">
+                <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor" aria-hidden="true"><path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-2.88 2.5 2.89 2.89 0 0 1-2.89-2.89 2.89 2.89 0 0 1 2.89-2.89c.28 0 .54.04.79.1V9.01a6.34 6.34 0 0 0-.79-.05 6.34 6.34 0 0 0-6.34 6.34 6.34 6.34 0 0 0 6.34 6.34 6.34 6.34 0 0 0 6.33-6.34V8.69a8.28 8.28 0 0 0 4.84 1.55V6.79a4.85 4.85 0 0 1-1.07-.1z"/></svg>
+              </a>
+            </div>
+          </div>
+        </div>
+
+      </footer>
+
+    </div>
+  </section>
+
+  <!-- RIGHT: map -->
+  <aside class="mappane" aria-label="Map of Lagos apartments">
+    <div id="map" class="map-canvas"></div>
+    <div class="map-fallback" id="mapFallback" hidden>
+      <p>Map unavailable. Add your Mapbox token in <code>js/listings.js</code> to enable it.</p>
+    </div>
+  </aside>
+</main>
+
+<button class="map-toggle" id="mapToggle" aria-pressed="false">
+  <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"><path d="M1.5 3.5 5.5 2l5 1.5 4-1.5v10l-4 1.5-5-1.5-4 1.5z"/><path d="M5.5 2v10.5M10.5 3.5V14"/></svg>
+  <span id="mapToggleLabel">Show map</span>
+</button>
+
+<script src="https://api.mapbox.com/mapbox-gl-js/v3.6.0/mapbox-gl.js"></script>
+<script src="js/interactions.js"></script>
+<script src="js/listings.js"></script>
+</body>
+</html>

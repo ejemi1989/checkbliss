@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { DIASPORA_COUNTRIES } from "@/lib/countries";
 
 type Role = "operator" | "owner";
 
@@ -11,6 +12,7 @@ interface FormErrors {
   phone?: string;
   city?: string;
   property?: string;
+  country?: string;
 }
 
 export default function SignupPage() {
@@ -25,6 +27,7 @@ export default function SignupPage() {
     if (!formData.get("name")) errs.name = "Required";
     if (!formData.get("email")) errs.email = "Required";
     if (!formData.get("phone")) errs.phone = "Required";
+    if (!formData.get("country")) errs.country = "Required";
     if (role === "operator" && !formData.get("city")) errs.city = "Required";
     if (role === "owner" && !formData.get("property")) errs.property = "Required";
     setErrors(errs);
@@ -221,6 +224,31 @@ export default function SignupPage() {
                     />
                     {errors.phone && <p className="font-sans text-[10px] text-danger mt-1">{errors.phone}</p>}
                   </div>
+                </div>
+
+                <div>
+                  <label className="font-sans text-xs font-semibold uppercase tracking-[0.1em] text-mute block mb-1.5">Country of residence</label>
+                  <select
+                    name="country"
+                    defaultValue=""
+                    className={`w-full border rounded-[var(--radius-md)] px-4 py-3 text-[15px] font-sans text-ink bg-card outline-none appearance-none cursor-pointer transition-colors ${
+                      errors.country ? "border-danger" : "border-line focus:border-green-soft"
+                    }`}
+                    required
+                  >
+                    <option value="" disabled>Select your country</option>
+                    {DIASPORA_COUNTRIES.map((c) => (
+                      <option key={c.code} value={c.code}>{c.name}</option>
+                    ))}
+                  </select>
+                  {errors.country && <p className="font-sans text-[10px] text-danger mt-1">{errors.country}</p>}
+                </div>
+
+                {/* Verification notice */}
+                <div className="p-4 rounded-[var(--radius-md)] bg-lagoon/5 border border-lagoon/15">
+                  <p className="font-sans text-[13px] text-ink-secondary leading-relaxed">
+                    <strong className="text-ink">Diaspora verification required.</strong> We verify your phone number via text message to confirm you are booking from abroad. Flight ticket or government ID may be required for first-time guests.
+                  </p>
                 </div>
 
                 {/* Role-specific fields */}

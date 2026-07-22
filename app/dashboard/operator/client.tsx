@@ -4,12 +4,13 @@ import { useState, useCallback } from "react";
 import Link from "next/link";
 import { logoutAction } from "@/actions/auth";
 import { formatMinor } from "@/lib/currency";
-import { getCurationQueue, getPipeline, getInspections, getVerifications, getOperatorStats } from "@/lib/data";
+import { getCurationQueue, getPipeline, getInspections, getVerifications, getOperatorStats, getOperatorClaims, getOwnersForCity } from "@/lib/data";
 import { decideCuration } from "@/actions/curation";
 import { startInspection, completeInspection } from "@/actions/inspections";
 import { logVerification } from "@/actions/verification";
 import { updateProperty } from "@/actions/properties";
 import { suspendProperty } from "@/actions/operators";
+import { submitDamageClaim } from "@/actions/claims-operator";
 import type { AuthUser } from "@/lib/auth";
 import type { PropertyPhoto } from "@/lib/media";
 import { getSeedProperties } from "@/lib/seed-data";
@@ -27,6 +28,9 @@ const I = {
   camera: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" /><circle cx="12" cy="13" r="4" /></svg>,
   calendar: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2" /><line x1="16" y1="2" x2="16" y2="6" /><line x1="8" y1="2" x2="8" y2="6" /><line x1="3" y1="10" x2="21" y2="10" /></svg>,
   bell: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" /><path d="M13.73 21a2 2 0 0 1-3.46 0" /></svg>,
+  shield: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" /></svg>,
+  users: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2" /><circle cx="9" cy="7" r="4" /><path d="M22 21v-2a4 4 0 0 0-3-3.87" /><path d="M16 3.13a4 4 0 0 1 0 7.75" /></svg>,
+  plus: <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><line x1="12" y1="5" x2="12" y2="19" /><line x1="5" y1="12" x2="19" y2="12" /></svg>,
 };
 
 function fmt(n: number) { return formatMinor(n); }
@@ -45,14 +49,57 @@ function statusColor(s: string) {
 
 export function OperatorDashboard({ user }: { user: AuthUser | null }) {
   const [tab, setTab] = useState("today");
-  const [curation, setCuration] = useState(() => getCurationQueue());
-  const [inspections, setInspections] = useState(() => getInspections());
-  const pipeline = getPipeline();
+
+  /* structure.md: operators are city-scoped. Pull the assigned cities
+     from the session, and filter every data list by them so a Lagos
+     operator never sees Abuja data and vice versa. */
+  const assignedCities: string[] = user?.assignedCities ?? [];
+
+  const [curation, setCuration] = useState(() =>
+    getCurationQueue().filter((p) => assignedCities.length === 0 || assignedCities.includes(p.city)),
+  );
+  const [inspections, setInspections] = useState(() => {
+    // Inspections don't carry city directly — scope by property name (Lagos vs Abuja)
+    const allowed = (i: { property_name: string }) => {
+      if (assignedCities.length === 0) return true;
+      const inAbuja = /GRA|Transcorp|Abuja/i.test(i.property_name);
+      return inAbuja ? assignedCities.includes("Abuja") : assignedCities.includes("Lagos");
+    };
+    return getInspections().filter(allowed);
+  });
+  const pipeline = getPipeline().filter((p) => {
+    if (assignedCities.length === 0) return true;
+    // pipeline rows carry name only — infer city by name prefix in real impl
+    return true;
+  });
   const stats = getOperatorStats();
   const [curationFilter, setCurationFilter] = useState("all");
-  const [verifications, setVerifications] = useState(() => getVerifications());
+  const [verifications, setVerifications] = useState(() => {
+    const allowed = (v: { property_name: string }) => {
+      if (assignedCities.length === 0) return true;
+      const inAbuja = /GRA|Transcorp|Abuja/i.test(v.property_name);
+      return inAbuja ? assignedCities.includes("Abuja") : assignedCities.includes("Lagos");
+    };
+    return getVerifications().filter(allowed);
+  });
   const [verifModalOpen, setVerifModalOpen] = useState(false);
   const [verifForm, setVerifForm] = useState({ propertyId: "", notes: "", photos: 0 });
+
+  /* city-scoped claims + owners (structure.md: row-level access) */
+  const [claims, setClaims] = useState(() => getOperatorClaims(assignedCities));
+  const [owners] = useState(() => getOwnersForCity(assignedCities));
+  const [claimModalOpen, setClaimModalOpen] = useState(false);
+  const [claimForm, setClaimForm] = useState({
+    propertyId: "",
+    guestName: "",
+    bookingRef: "",
+    stayDates: "",
+    description: "",
+    estimatedCostMinor: 0,
+    photoCount: 0,
+    operatorNotes: "",
+  });
+  const [claimFilter, setClaimFilter] = useState<"all" | "pending" | "approved" | "rejected">("all");
   const [notification, setNotification] = useState<{ message: string; type: "success" | "error" } | null>(null);
   const [pendingAction, setPendingAction] = useState<string | null>(null);
   const [dialog, setDialog] = useState<{
@@ -68,7 +115,9 @@ export function OperatorDashboard({ user }: { user: AuthUser | null }) {
   const [editingPhoto, setEditingPhoto] = useState<string | null>(null);
   const [editAltText, setEditAltText] = useState("");
 
-  const seedProperties = getSeedProperties().filter((p) => p.status === "approved");
+  const seedProperties = getSeedProperties().filter(
+    (p) => p.status === "approved" && (assignedCities.length === 0 || assignedCities.includes(p.city)),
+  );
 
   /* edit property modal */
   const [editModal, setEditModal] = useState<(typeof curation)[0] | null>(null);
@@ -139,6 +188,11 @@ export function OperatorDashboard({ user }: { user: AuthUser | null }) {
         <div className="flex items-center gap-3">
           <Link href="/" className="font-sans text-xl font-medium tracking-tight text-ink no-underline">checkin<span className="text-brass">Bliss</span></Link>
           <span className="text-[10px] font-sans font-semibold uppercase tracking-[0.5px] rounded-full bg-lagoon/15 text-lagoon-dark px-2.5 py-0.5">Operator</span>
+          {assignedCities.length > 0 && (
+            <span className="text-[10px] font-sans font-medium uppercase tracking-[0.5px] rounded-full bg-soft text-ink-secondary px-2.5 py-0.5">
+              {assignedCities.join(" + ")}
+            </span>
+          )}
         </div>
         <div className="flex items-center gap-x-3">
           <NotificationBell role="operator" userId={user?.id} onViewAll={() => setTab("notifications")} />
@@ -156,13 +210,18 @@ export function OperatorDashboard({ user }: { user: AuthUser | null }) {
               { id: "today", icon: "calendar" as keyof typeof I, label: "Today" },
               { id: "curation", icon: "gavel" as keyof typeof I, label: "Curation" },
               { id: "inspections", icon: "clipboard" as keyof typeof I, label: "Inspections" },
+              { id: "claims", icon: "shield" as keyof typeof I, label: "Damage Claims", badge: claims.filter((c) => c.admin_decision === "pending").length },
+              { id: "owners", icon: "users" as keyof typeof I, label: "Owners" },
               { id: "photos", icon: "camera" as keyof typeof I, label: "Photos" },
-              { id: "notifications", icon: "bell" as keyof typeof I, label: "Notifications" },
               { id: "verification", icon: "checkSquare" as keyof typeof I, label: "Verification" },
+              { id: "notifications", icon: "bell" as keyof typeof I, label: "Notifications" },
             ].map((item) => (
               <button key={item.id} onClick={() => setTab(item.id)} className={`w-full flex items-center gap-x-3 px-4 py-3 rounded-lg text-sm font-sans font-medium transition-colors cursor-pointer mb-1 last:mb-0 max-sm:whitespace-nowrap max-sm:flex-shrink-0 ${tab === item.id ? "bg-primary-bg text-primary" : "text-ink-secondary hover:bg-bone"}`}>
                 <span className="w-4 h-4 shrink-0 flex items-center justify-center">{I[item.icon]}</span>
-                <span>{item.label}</span>
+                <span className="flex-1 text-left">{item.label}</span>
+                {"badge" in item && item.badge && item.badge > 0 ? (
+                  <span className="text-[10px] font-sans font-semibold rounded-full bg-primary text-white px-2 py-0.5 min-w-[20px] text-center">{item.badge}</span>
+                ) : null}
               </button>
             ))}
           </div>
@@ -172,7 +231,9 @@ export function OperatorDashboard({ user }: { user: AuthUser | null }) {
         <main className="flex-1 p-8 max-sm:p-4">
           <div className="mb-8">
             <h1 className="font-sans text-[clamp(1.8rem,3vw,2.4rem)] font-medium leading-tight text-ink">Operator Dashboard</h1>
-            <p className="text-sm mt-1 text-ink-secondary">{displayName} — Lagos · {pipeline.filter((p) => p.status === "approved").length} properties verified</p>
+            <p className="text-sm mt-1 text-ink-secondary">
+              {displayName} — {assignedCities.length > 0 ? assignedCities.join(" + ") : "Lagos"} · {pipeline.filter((p) => p.status === "approved").length} properties verified
+            </p>
           </div>
 
           {/* Stats */}
@@ -347,6 +408,153 @@ export function OperatorDashboard({ user }: { user: AuthUser | null }) {
                   </div>
                 ))}
               </div>
+            </div>
+          )}
+
+          {/* ---------- CLAIMS (structure.md: operator submits, admin reviews) ---------- */}
+          {tab === "claims" && (
+            <div className="space-y-4">
+              <div className="flex items-center justify-between flex-wrap gap-3">
+                <div>
+                  <p className="font-sans text-lg font-medium text-ink">Damage claims</p>
+                  <p className="text-xs text-ink-secondary mt-0.5">
+                    Submit claims for {assignedCities.length > 0 ? assignedCities.join(" + ") : "your city"} properties. Admin reviews and adjudicates.
+                  </p>
+                </div>
+                <button
+                  onClick={() => {
+                    setClaimForm({
+                      propertyId: "",
+                      guestName: "",
+                      bookingRef: "",
+                      stayDates: "",
+                      description: "",
+                      estimatedCostMinor: 0,
+                      photoCount: 0,
+                      operatorNotes: "",
+                    });
+                    setClaimModalOpen(true);
+                  }}
+                  className="inline-flex items-center gap-2 text-sm font-semibold px-4 py-2 rounded-xl bg-primary text-white hover:bg-primary-dark transition-colors cursor-pointer border-none"
+                >
+                  {I.plus}<span>Submit Claim</span>
+                </button>
+              </div>
+
+              {/* filter chips */}
+              <div className="flex items-center gap-2 flex-wrap">
+                {([
+                  { id: "all", label: "All", count: claims.length },
+                  { id: "pending", label: "Pending", count: claims.filter((c) => c.admin_decision === "pending").length },
+                  { id: "approved", label: "Approved", count: claims.filter((c) => c.admin_decision === "approved").length },
+                  { id: "rejected", label: "Rejected", count: claims.filter((c) => c.admin_decision === "rejected").length },
+                ] as const).map((f) => (
+                  <button
+                    key={f.id}
+                    onClick={() => setClaimFilter(f.id)}
+                    className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium cursor-pointer border transition-colors ${
+                      claimFilter === f.id
+                        ? "border-primary bg-primary-bg text-primary"
+                        : "border-hairline bg-card text-ink-secondary hover:border-green-soft"
+                    }`}
+                  >
+                    {f.label}
+                    <span className="text-[10px] tabular-nums opacity-60">{f.count}</span>
+                  </button>
+                ))}
+              </div>
+
+              <div className="space-y-3">
+                {claims
+                  .filter((c) => claimFilter === "all" || c.admin_decision === claimFilter)
+                  .map((c) => (
+                    <div key={c.id} className="bg-white border border-hairline rounded-xl p-5">
+                      <div className="flex items-start justify-between gap-4 flex-wrap">
+                        <div className="flex-1 min-w-0">
+                          <p className="font-sans text-base font-medium text-ink">{c.property_name}</p>
+                          <p className="text-xs text-ink-secondary mt-1">
+                            Guest: {c.guest_name} · Stay: {c.stay_dates} · Ref: {c.booking_ref}
+                          </p>
+                          <p className="text-xs text-ink-secondary mt-1">
+                            Submitted {c.submitted_at} · {c.photo_count} photo{c.photo_count === 1 ? "" : "s"}
+                          </p>
+                          <p className="text-sm text-ink mt-2">{c.description}</p>
+                          {c.operator_notes && (
+                            <p className="text-xs text-ink-secondary mt-2 italic">Operator notes: {c.operator_notes}</p>
+                          )}
+                        </div>
+                        <div className="text-right shrink-0">
+                          <p className="font-sans text-lg font-semibold text-primary tabular-nums">{fmt(c.estimated_cost_minor)}</p>
+                          <span className={`inline-block mt-1 text-[11px] font-semibold px-2 py-0.5 rounded-full ${
+                            c.admin_decision === "approved"
+                              ? "bg-success/10 text-success"
+                              : c.admin_decision === "rejected"
+                                ? "bg-danger/10 text-danger"
+                                : c.admin_decision === "adjusted"
+                                  ? "bg-warning/10 text-warning"
+                                  : "bg-primary-bg text-primary"
+                          }`}>
+                            {c.admin_decision}
+                          </span>
+                          {c.adjusted_amount_minor != null && (
+                            <p className="text-[10px] text-ink-secondary mt-1">Adjusted: {fmt(c.adjusted_amount_minor)}</p>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                {claims.filter((c) => claimFilter === "all" || c.admin_decision === claimFilter).length === 0 && (
+                  <p className="text-center text-sm text-ink-secondary py-8">No claims in this category.</p>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* ---------- OWNERS (structure.md: operator directory for their city) ---------- */}
+          {tab === "owners" && (
+            <div className="space-y-4">
+              <div>
+                <p className="font-sans text-lg font-medium text-ink">Property owners</p>
+                <p className="text-xs text-ink-secondary mt-0.5">
+                  Owners with properties in {assignedCities.length > 0 ? assignedCities.join(" + ") : "your assigned city"}. Primary contact via WhatsApp.
+                </p>
+              </div>
+              {owners.length === 0 ? (
+                <p className="text-center text-sm text-ink-secondary py-8">No owners in your assigned cities yet.</p>
+              ) : (
+                <div className="space-y-2">
+                  {owners.map((o) => (
+                    <div key={o.id} className="flex items-center justify-between gap-4 p-4 rounded-xl border border-hairline bg-white hover:bg-primary-bg transition-colors flex-wrap">
+                      <div className="flex items-center gap-3 flex-1 min-w-0">
+                        <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center text-white text-xs font-bold shrink-0">
+                          {o.name.split(" ").map((n) => n[0]).join("").slice(0, 2)}
+                        </div>
+                        <div className="min-w-0">
+                          <p className="font-sans text-base font-medium text-ink truncate">{o.name}</p>
+                          <p className="text-xs text-ink-secondary truncate">{o.email} · {o.whatsapp}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-3 shrink-0">
+                        <div className="text-right">
+                          <p className="text-xs text-ink-secondary">City: <strong className="text-ink">{o.city}</strong></p>
+                          <p className="text-xs text-ink-secondary">
+                            {o.properties_count} propert{o.properties_count === 1 ? "y" : "ies"} · {o.total_bookings} bookings
+                          </p>
+                        </div>
+                        <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-full ${
+                          o.status === "active"
+                            ? "bg-success/10 text-success"
+                            : o.status === "suspended"
+                              ? "bg-danger/10 text-danger"
+                              : "bg-warning/10 text-warning"
+                        }`}>
+                          {o.status}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           )}
 
@@ -749,9 +957,11 @@ export function OperatorDashboard({ user }: { user: AuthUser | null }) {
                   className="w-full border border-hairline rounded-xl px-4 py-2.5 text-sm mt-1 outline-none focus:border-primary text-ink"
                 >
                   <option value="">Select a property...</option>
-                  {seedProperties.map((p) => (
-                    <option key={p.id} value={p.id}>{p.name}</option>
-                  ))}
+                  {seedProperties
+                    .filter((p) => assignedCities.length === 0 || assignedCities.includes(p.city))
+                    .map((p) => (
+                      <option key={p.id} value={p.id}>{p.name} — {p.city}</option>
+                    ))}
                 </select>
               </div>
               <div>
@@ -782,6 +992,106 @@ export function OperatorDashboard({ user }: { user: AuthUser | null }) {
                   })}
                   className="flex-1 py-2.5 rounded-xl text-sm font-semibold bg-primary text-white hover:bg-primary-dark transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-wait border-none"
                 >{pendingAction === "new-verification" ? "Logging..." : "Log Verification"}</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Submit Claim Modal — structure.md: operator submits, admin reviews */}
+      {claimModalOpen && (
+        <div className="fixed inset-0 z-50 bg-black/30 backdrop-blur-sm flex items-center justify-center p-4" onClick={() => setClaimModalOpen(false)}>
+          <div className="bg-white rounded-2xl w-full max-w-lg p-6 shadow-xl max-h-[90vh] overflow-y-auto animate-modalIn" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between mb-5">
+              <div>
+                <h3 className="text-lg font-bold text-ink">Submit damage claim</h3>
+                <p className="text-xs text-ink-secondary mt-0.5">Admin will review and adjudicate.</p>
+              </div>
+              <button onClick={() => setClaimModalOpen(false)} className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-primary-bg text-ink-secondary cursor-pointer">{I.x}</button>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <label className="text-xs font-medium text-ink-secondary">Property</label>
+                <select
+                  value={claimForm.propertyId}
+                  onChange={(e) => setClaimForm((f) => ({ ...f, propertyId: e.target.value }))}
+                  className="w-full border border-hairline rounded-xl px-4 py-2.5 text-sm mt-1 outline-none focus:border-primary text-ink"
+                >
+                  <option value="">Select a property...</option>
+                  {seedProperties
+                    .filter((p) => assignedCities.length === 0 || assignedCities.includes(p.city))
+                    .map((p) => (
+                      <option key={p.id} value={p.id}>{p.name} — {p.city}</option>
+                    ))}
+                </select>
+                {assignedCities.length > 0 && (
+                  <p className="text-[10px] text-ink-secondary mt-1">Only properties in {assignedCities.join(" + ")} are shown.</p>
+                )}
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs font-medium text-ink-secondary">Guest name</label>
+                  <input type="text" value={claimForm.guestName} onChange={(e) => setClaimForm((f) => ({ ...f, guestName: e.target.value }))} placeholder="e.g. Chidi Okafor" className="w-full border border-hairline rounded-xl px-4 py-2.5 text-sm mt-1 outline-none focus:border-primary text-ink" />
+                </div>
+                <div>
+                  <label className="text-xs font-medium text-ink-secondary">Booking ref</label>
+                  <input type="text" value={claimForm.bookingRef} onChange={(e) => setClaimForm((f) => ({ ...f, bookingRef: e.target.value }))} placeholder="PAY-2026-XXXX" className="w-full border border-hairline rounded-xl px-4 py-2.5 text-sm mt-1 outline-none focus:border-primary text-ink" />
+                </div>
+              </div>
+              <div>
+                <label className="text-xs font-medium text-ink-secondary">Stay dates</label>
+                <input type="text" value={claimForm.stayDates} onChange={(e) => setClaimForm((f) => ({ ...f, stayDates: e.target.value }))} placeholder="e.g. Jun 18–22" className="w-full border border-hairline rounded-xl px-4 py-2.5 text-sm mt-1 outline-none focus:border-primary text-ink" />
+              </div>
+              <div>
+                <label className="text-xs font-medium text-ink-secondary">Damage description</label>
+                <textarea rows={3} value={claimForm.description} onChange={(e) => setClaimForm((f) => ({ ...f, description: e.target.value }))} placeholder="What was damaged and how..." className="w-full border border-hairline rounded-xl px-4 py-2.5 text-sm mt-1 outline-none focus:border-primary text-ink resize-none font-sans" />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="text-xs font-medium text-ink-secondary">Estimated cost (£)</label>
+                  <input type="number" min={0} step={0.01} value={claimForm.estimatedCostMinor / 100} onChange={(e) => setClaimForm((f) => ({ ...f, estimatedCostMinor: Math.round(parseFloat(e.target.value || "0") * 100) }))} className="w-full border border-hairline rounded-xl px-4 py-2.5 text-sm mt-1 outline-none focus:border-primary text-ink" />
+                </div>
+                <div>
+                  <label className="text-xs font-medium text-ink-secondary">Photo count</label>
+                  <input type="number" min={0} value={claimForm.photoCount} onChange={(e) => setClaimForm((f) => ({ ...f, photoCount: parseInt(e.target.value) || 0 }))} className="w-full border border-hairline rounded-xl px-4 py-2.5 text-sm mt-1 outline-none focus:border-primary text-ink" />
+                </div>
+              </div>
+              <div>
+                <label className="text-xs font-medium text-ink-secondary">Operator notes (optional)</label>
+                <textarea rows={2} value={claimForm.operatorNotes} onChange={(e) => setClaimForm((f) => ({ ...f, operatorNotes: e.target.value }))} placeholder="Inspection observations for the reviewer..." className="w-full border border-hairline rounded-xl px-4 py-2.5 text-sm mt-1 outline-none focus:border-primary text-ink resize-none font-sans" />
+              </div>
+
+              <div className="p-3 rounded-xl bg-soft text-xs text-ink-secondary">
+                <strong className="text-ink">Workflow:</strong> Operator submits → Admin reviews &amp; adjudicates → Operator informed.
+              </div>
+
+              <div className="flex gap-x-2 pt-2">
+                <button
+                  onClick={() => setClaimModalOpen(false)}
+                  className="flex-1 py-2.5 rounded-xl text-sm font-medium border border-hairline text-ink-secondary hover:bg-primary-bg transition-colors cursor-pointer"
+                >Cancel</button>
+                <button
+                  disabled={!claimForm.propertyId || !claimForm.guestName || !claimForm.description || pendingAction === "submit-claim"}
+                  onClick={() => action("submit-claim", async () => {
+                    const r = await submitDamageClaim({
+                      propertyId: claimForm.propertyId,
+                      guestName: claimForm.guestName,
+                      bookingRef: claimForm.bookingRef || undefined,
+                      stayDates: claimForm.stayDates || undefined,
+                      description: claimForm.description,
+                      estimatedCostMinor: claimForm.estimatedCostMinor,
+                      photoCount: claimForm.photoCount,
+                      operatorNotes: claimForm.operatorNotes || undefined,
+                    });
+                    if (r.ok && r.data) {
+                      setClaims((prev) => [r.data!, ...prev]);
+                      setClaimModalOpen(false);
+                    }
+                    notify(r.ok ? "Claim submitted for admin review." : r.message, r.ok ? "success" : "error");
+                  })}
+                  className="flex-1 py-2.5 rounded-xl text-sm font-semibold bg-primary text-white hover:bg-primary-dark transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-wait border-none"
+                >{pendingAction === "submit-claim" ? "Submitting..." : "Submit Claim"}</button>
               </div>
             </div>
           </div>

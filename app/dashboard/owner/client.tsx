@@ -45,12 +45,17 @@ function statusColor(s: string) {
   }
 }
 
-type OwnerTab = "home" | "bookings" | "properties" | "claims" | "payouts" | "calendar" | "notifications";
+type OwnerTab = "home" | "bookings" | "claims" | "payouts" | "calendar" | "notifications";
 
+/* ---------- sidebar config ----------
+   Per .context/admin/structure.md: Property Owner dashboard should be
+   lightweight. Keep only essential needs: calendar, bookings, claims
+   (view-only), payouts, calendar sync. Owners cannot modify property
+   details (operator submits changes for approval).
+   -------------------------------- */
 const SIDEBAR: { id: OwnerTab; icon: keyof typeof I; label: string }[] = [
   { id: "home", icon: "barChart3", label: "Dashboard" },
   { id: "bookings", icon: "calendar", label: "Bookings" },
-  { id: "properties", icon: "building2", label: "Properties" },
   { id: "claims", icon: "shield", label: "Damage Claims" },
   { id: "payouts", icon: "receipt", label: "Payouts" },
   { id: "calendar", icon: "sync", label: "Calendar Sync" },
@@ -394,44 +399,6 @@ export function OwnerDashboard({ user }: { user: AuthUser | null }) {
                           <p className="text-sm font-bold tabular-nums text-ink">{fmt(b.amount_minor)}</p>
                           <span className={`inline-block mt-1 text-[11px] font-semibold ${statusColor(b.status)}`}>{b.status}</span>
                         </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* ---------- PROPERTIES ---------- */}
-          {tab === "properties" && (
-            <div className="space-y-6">
-              <div className="bg-white rounded-xl border border-hairline p-5">
-                <div className="flex items-center justify-between mb-5">
-                  <div>
-                    <h2 className="text-base font-bold text-ink">Your Properties</h2>
-                    <p className="text-xs text-ink-secondary mt-0.5">{properties.length} units · Managed by CheckinBliss</p>
-                  </div>
-                </div>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  {properties.map((p) => (
-                    <div key={p.unit} className="bg-white p-5 rounded-xl border border-hairline hover:-translate-y-0.5 hover:shadow-[0_8px_24px_rgba(0,0,0,0.06)] transition-all cursor-default">
-                      <div className="flex justify-between items-start mb-4">
-                        <div>
-                          <p className="text-xs font-medium uppercase tracking-wide text-ink-secondary">{p.name}</p>
-                          <p className="text-lg font-bold mt-0.5 text-ink">{p.unit}</p>
-                          <p className="text-xs mt-0.5 text-ink-secondary">{p.meta}</p>
-                        </div>
-                        <span className={`text-[11px] font-semibold ${p.active ? "text-success" : "text-danger"}`}>{p.active ? "Active" : "Inactive"}</span>
-                      </div>
-                      <div className="grid grid-cols-3 gap-3 text-center border-t border-hairline pt-4">
-                        <div><p className="text-base font-semibold text-ink tabular-nums">{fmt(p.monthly_minor)}</p><p className="text-[10px] text-ink-secondary">Revenue</p></div>
-                        <div><p className="text-base font-semibold text-ink tabular-nums">{p.bookings}</p><p className="text-[10px] text-ink-secondary">Bookings</p></div>
-                        <div><p className="text-base font-semibold text-ink tabular-nums">{p.occ}</p><p className="text-[10px] text-ink-secondary">Occupancy</p></div>
-                      </div>
-                      <div className="grid grid-cols-3 gap-3 text-center mt-3 pt-3 border-t border-hairline">
-                        <div><p className="text-xs text-ink-secondary">Beds</p><p className="text-sm font-semibold text-ink">{p.beds ?? 2}</p></div>
-                        <div><p className="text-xs text-ink-secondary">Baths</p><p className="text-sm font-semibold text-ink">{p.baths ?? 2}</p></div>
-                        <div><p className="text-xs text-ink-secondary">Sleeps</p><p className="text-sm font-semibold text-ink">{p.sleeps ?? 4}</p></div>
                       </div>
                     </div>
                   ))}

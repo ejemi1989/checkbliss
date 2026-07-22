@@ -1,23 +1,15 @@
 import type { Metadata } from "next";
-import { searchPropertiesAsync } from "@/lib/data";
-import { HomePageClient } from "./client";
+import { HomePageClient } from "./landing-client";
 
-export const dynamic = "force-dynamic";
+export const dynamic = "force-static";
 
-export function generateMetadata(): Metadata {
-  return {
-    alternates: { canonical: "/" },
-  };
-}
+export const metadata: Metadata = {
+  alternates: { canonical: "/" },
+  title: "CheckinBliss — The premium way to stay in Africa",
+  description:
+    "Hand-selected apartments in Lagos and Abuja. Instantly bookable from anywhere. Verified short-stay apartments built for the diaspora.",
+};
 
-export default async function Home({
-  searchParams,
-}: {
-  searchParams: Promise<{ where?: string; in?: string; out?: string }>;
-}) {
-  const { where, in: checkIn, out: checkOut } = await searchParams;
-  const properties = await searchPropertiesAsync({ where, checkIn, checkOut });
-  const hasSearch = !!(where || checkIn || checkOut);
-
-  return <HomePageClient properties={properties} hasSearch={hasSearch} />;
+export default function Home() {
+  return <HomePageClient />;
 }

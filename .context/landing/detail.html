@@ -1,0 +1,598 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>The Ikoyi Residence — CheckinBliss</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&family=Newsreader:ital,opsz,wght@0,6..72,300;0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400;1,6..72,500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #E9ECE2;
+  --soft: #F4F6F0;
+  --card: #FCFDFB;
+  --ink: #171915;
+  --body-c: #44483D;
+  --mute: #6A6E63;
+  --line: #D8DBCF;
+  --green: #2F3D2C;
+  --green-d: #232E22;
+  --green-soft: #5C6B4F;
+  --trustpilot: #00B67A;
+
+  --font-display: 'Newsreader', 'Gallient', Georgia, serif;
+  --font-body: 'Hanken Grotesk', system-ui, -apple-system, sans-serif;
+
+  --s1: 4px; --s2: 8px; --s3: 12px; --s4: 16px; --s5: 20px; --s6: 24px;
+  --s7: 28px; --s8: 32px; --s9: 40px; --s10: 48px; --s11: 64px; --s12: 80px;
+
+  --r-0: 0px; --r-3: 3px; --r-10: 10px; --r-18: 18px; --r-28: 28px; --r-pill: 999px;
+
+  --mw: 1240px;
+  --gutter: 32px;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { -webkit-font-smoothing: antialiased; }
+body {
+  font-family: var(--font-body);
+  font-size: 16px;
+  font-weight: 400;
+  line-height: 1.55;
+  color: var(--body-c);
+  background: var(--bg);
+}
+img { display: block; max-width: 100%; }
+a { color: var(--green-soft); text-decoration: none; }
+a:hover { color: var(--green-d); }
+
+.container { max-width: var(--mw); margin: 0 auto; padding: 0 var(--gutter); }
+
+/* ── Header ── */
+.detail-header {
+  background: var(--card);
+  border-bottom: 1px solid var(--line);
+  position: sticky;
+  top: 0;
+  z-index: 50;
+}
+.header-inner {
+  max-width: var(--mw);
+  margin: 0 auto;
+  padding: var(--s4) var(--gutter);
+  display: flex;
+  align-items: center;
+  gap: var(--s5);
+}
+.header-back {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--body-c);
+  display: flex;
+  align-items: center;
+  gap: var(--s1);
+  text-decoration: none;
+  flex-shrink: 0;
+}
+.header-back:hover { color: var(--green-soft); }
+.header-logo {
+  font-family: var(--font-display);
+  font-size: 20px;
+  font-weight: 500;
+  color: var(--ink);
+  letter-spacing: -0.01em;
+}
+.header-actions {
+  margin-left: auto;
+  display: flex;
+  gap: var(--s3);
+}
+.header-action-btn {
+  width: 36px; height: 36px;
+  border-radius: 50%;
+  border: 1px solid var(--line);
+  background: var(--card);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: var(--body-c);
+  font-size: 16px;
+  text-decoration: none;
+}
+
+/* ── Gallery ── */
+.gallery {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: var(--s2);
+  margin-bottom: var(--s9);
+}
+.gallery-hero {
+  aspect-ratio: 16 / 10;
+  overflow: hidden;
+  border-radius: var(--r-0);
+}
+.gallery-hero img {
+  width: 100%; height: 100%;
+  object-fit: cover;
+}
+.gallery-side {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s2);
+}
+.gallery-thumb {
+  flex: 1;
+  aspect-ratio: 16 / 10;
+  overflow: hidden;
+  border-radius: var(--r-0);
+}
+.gallery-thumb img {
+  width: 100%; height: 100%;
+  object-fit: cover;
+}
+
+/* ── Detail Grid ── */
+.detail-grid {
+  display: grid;
+  grid-template-columns: 1fr 360px;
+  gap: var(--s11);
+  margin-bottom: var(--s12);
+}
+.detail-main { min-width: 0; }
+.detail-sidebar { position: relative; }
+
+/* ── Main Content ── */
+.detail-kicker {
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: 20px;
+  color: var(--green-soft);
+  margin-bottom: var(--s1);
+}
+.detail-name {
+  font-family: var(--font-display);
+  font-size: clamp(2rem, 3.6vw, 3.2rem);
+  font-weight: 500;
+  line-height: 1.08;
+  color: var(--ink);
+  margin-bottom: var(--s3);
+}
+.detail-location {
+  font-size: 15px;
+  color: var(--mute);
+  margin-bottom: var(--s5);
+}
+.detail-stats {
+  display: flex;
+  gap: var(--s6);
+  margin-bottom: var(--s7);
+  flex-wrap: wrap;
+}
+.detail-stat {
+  text-align: center;
+}
+.detail-stat-num {
+  font-family: var(--font-display);
+  font-size: 28px;
+  font-weight: 500;
+  color: var(--ink);
+  line-height: 1.1;
+}
+.detail-stat-label {
+  font-size: 13px;
+  color: var(--mute);
+}
+
+.detail-divider {
+  border: none;
+  border-top: 1px solid var(--line);
+  margin: var(--s8) 0;
+}
+.detail-section-title {
+  font-family: var(--font-display);
+  font-size: 24px;
+  font-weight: 500;
+  color: var(--ink);
+  margin-bottom: var(--s4);
+}
+.detail-section-body {
+  font-size: 15px;
+  line-height: 1.6;
+  color: var(--body-c);
+  max-width: 56ch;
+  margin-bottom: var(--s5);
+}
+
+/* ── Amenities ── */
+.amenities-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--s3);
+  margin-bottom: var(--s4);
+}
+.amenity-item {
+  display: flex;
+  align-items: center;
+  gap: var(--s3);
+  font-size: 14px;
+  color: var(--body-c);
+  padding: var(--s2) 0;
+}
+.amenity-icon {
+  width: 20px; height: 20px;
+  color: var(--green-soft);
+  flex-shrink: 0;
+}
+.show-all {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--green-soft);
+  cursor: pointer;
+  margin-top: var(--s2);
+}
+
+/* ── Reviews ── */
+.review-card {
+  padding: var(--s6);
+  background: var(--card);
+  border-radius: var(--r-0);
+  border: 1px solid var(--line);
+  margin-bottom: var(--s4);
+}
+.review-header {
+  display: flex;
+  align-items: center;
+  gap: var(--s3);
+  margin-bottom: var(--s3);
+}
+.review-avatar {
+  width: 40px; height: 40px;
+  border-radius: 50%;
+  background: var(--soft);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--mute);
+  flex-shrink: 0;
+}
+.review-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ink);
+}
+.review-date {
+  font-size: 13px;
+  color: var(--mute);
+}
+.review-stars {
+  margin-left: auto;
+  color: var(--trustpilot);
+  font-size: 14px;
+}
+.review-text {
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--body-c);
+}
+
+/* ── Sidebar ── */
+.sidebar-card {
+  position: sticky;
+  top: 80px;
+  padding: var(--s7);
+  background: var(--card);
+  border-radius: var(--r-18);
+  border: 1px solid var(--line);
+}
+.sidebar-price {
+  font-family: var(--font-display);
+  font-size: 22px;
+  font-weight: 500;
+  color: var(--ink);
+  margin-bottom: var(--s1);
+}
+.sidebar-price span {
+  font-family: var(--font-body);
+  font-size: 16px;
+  font-weight: 400;
+  color: var(--body-c);
+}
+.sidebar-rating {
+  font-size: 14px;
+  color: var(--mute);
+  margin-bottom: var(--s5);
+}
+.sidebar-rating strong { color: var(--ink); }
+
+.sidebar-field {
+  margin-bottom: var(--s4);
+}
+.sidebar-field-label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--mute);
+  margin-bottom: var(--s1);
+}
+.sidebar-field-input {
+  width: 100%;
+  padding: var(--s3) var(--s4);
+  border-radius: var(--r-10);
+  border: 1px solid var(--line);
+  background: var(--card);
+  font-family: var(--font-body);
+  font-size: 15px;
+  color: var(--ink);
+}
+.sidebar-field-input:focus {
+  outline: none;
+  border-color: var(--green-soft);
+}
+
+.sidebar-guests-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--s3) 0;
+  border-bottom: 1px solid var(--line);
+}
+.sidebar-guests-label {
+  font-size: 14px;
+  color: var(--body-c);
+}
+.sidebar-guests-controls {
+  display: flex;
+  align-items: center;
+  gap: var(--s3);
+}
+.sidebar-guests-btn {
+  width: 28px; height: 28px;
+  border-radius: 50%;
+  border: 1px solid var(--line);
+  background: var(--card);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 16px;
+  color: var(--body-c);
+}
+.sidebar-guests-val {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--ink);
+  min-width: 20px;
+  text-align: center;
+}
+
+.sidebar-book-btn {
+  display: block;
+  width: 100%;
+  padding: var(--s4) var(--s8);
+  margin-top: var(--s5);
+  background: var(--green);
+  color: #F4F6F0;
+  font-family: var(--font-body);
+  font-size: 16px;
+  font-weight: 600;
+  border: none;
+  border-radius: var(--r-3);
+  cursor: pointer;
+  text-align: center;
+  text-decoration: none;
+  transition: background 0.2s;
+}
+.sidebar-book-btn:hover { background: var(--green-d); }
+
+.sidebar-price-breakdown {
+  margin-top: var(--s5);
+  font-size: 13px;
+  color: var(--mute);
+}
+.sidebar-price-row {
+  display: flex;
+  justify-content: space-between;
+  padding: var(--s1) 0;
+}
+.sidebar-price-total {
+  display: flex;
+  justify-content: space-between;
+  padding-top: var(--s3);
+  margin-top: var(--s3);
+  border-top: 1px solid var(--line);
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+/* ── Responsive ── */
+@media (max-width: 980px) {
+  .detail-grid { grid-template-columns: 1fr; gap: var(--s9); }
+  .sidebar-card { position: static; }
+}
+@media (max-width: 760px) {
+  .gallery { grid-template-columns: 1fr; }
+  .gallery-side { flex-direction: row; }
+  .amenities-grid { grid-template-columns: 1fr; }
+  :root { --gutter: 20px; }
+}
+@media (max-width: 560px) {
+  .detail-stats { justify-content: space-between; gap: var(--s4); }
+  .detail-name { font-size: clamp(1.6rem, 5vw, 2rem); }
+  .gallery-side { flex-direction: column; }
+}
+@media (prefers-reduced-motion: reduce) {
+  * { transition: none !important; }
+}
+</style>
+</head>
+<body>
+
+<header class="detail-header">
+  <div class="header-inner">
+    <a href="search.html" class="header-back">&#8592; Back to search</a>
+    <span class="header-logo">CheckinBliss</span>
+    <div class="header-actions">
+      <button class="header-action-btn" aria-label="Share">&#8599;</button>
+      <button class="header-action-btn" aria-label="Save">&#9825;</button>
+    </div>
+  </div>
+</header>
+
+<section class="container" style="margin-top:var(--s7)">
+  <div class="gallery">
+    <div class="gallery-hero">
+      <img src="https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=1200&q=80" alt="The Ikoyi Residence living room">
+    </div>
+    <div class="gallery-side">
+      <div class="gallery-thumb">
+        <img src="https://images.unsplash.com/photo-1600573472591-ee6b68d14c68?auto=format&fit=crop&w=600&q=80" alt="Bedroom">
+      </div>
+      <div class="gallery-thumb">
+        <img src="https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?auto=format&fit=crop&w=600&q=80" alt="Kitchen">
+      </div>
+    </div>
+  </div>
+
+  <div class="detail-grid">
+    <div class="detail-main">
+      <p class="detail-kicker">Ikoyi</p>
+      <h1 class="detail-name">The Ikoyi Residence</h1>
+      <p class="detail-location">Lagos, Nigeria &middot; &#9733; 4.9 &middot; 24 reviews &middot; <span style="color:var(--green-soft);font-weight:600">&#10003; Verified</span></p>
+
+      <div class="detail-stats">
+        <div class="detail-stat">
+          <div class="detail-stat-num">2</div>
+          <div class="detail-stat-label">Bedrooms</div>
+        </div>
+        <div class="detail-stat">
+          <div class="detail-stat-num">2</div>
+          <div class="detail-stat-label">Bathrooms</div>
+        </div>
+        <div class="detail-stat">
+          <div class="detail-stat-num">4</div>
+          <div class="detail-stat-label">Guests</div>
+        </div>
+        <div class="detail-stat">
+          <div class="detail-stat-num">110</div>
+          <div class="detail-stat-label">sq metres</div>
+        </div>
+      </div>
+
+      <hr class="detail-divider">
+
+      <h2 class="detail-section-title">About this apartment</h2>
+      <p class="detail-section-body">A sun-drenched two-bedroom on the top floor of a quiet Ikoyi building, freshly renovated with natural materials and warm tones. The living room opens onto a private balcony with Atlantic breezes and a view over the neighbourhood canopy. Every piece of furniture was chosen by the owner, an architect who splits her time between Lagos and London.</p>
+      <p class="detail-section-body">The kitchen is fully equipped for cooking (gas hob, full-sized fridge, French press), and the second bedroom doubles as a study with a desk that faces the window. The building has 24-hour security, a generator, and a small gym on the ground floor.</p>
+
+      <hr class="detail-divider">
+
+      <h2 class="detail-section-title">Amenities</h2>
+      <div class="amenities-grid">
+        <div class="amenity-item">
+          <svg class="amenity-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8.111 16.404a5.5 5.5 0 017.778 0M12 20h.01M8.111 12.404a8 8 0 0112 0M4.93 9.17a10.5 10.5 0 0116.14 0"/></svg>
+          High-speed Wi-Fi
+        </div>
+        <div class="amenity-item">
+          <svg class="amenity-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="3" width="20" height="14" rx="2"/><line x1="8" y1="21" x2="16" y2="21"/><line x1="12" y1="17" x2="12" y2="21"/></svg>
+          Workspace / desk
+        </div>
+        <div class="amenity-item">
+          <svg class="amenity-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z"/></svg>
+          Full kitchen
+        </div>
+        <div class="amenity-item">
+          <svg class="amenity-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 01-3.46 0"/></svg>
+          Air conditioning
+        </div>
+        <div class="amenity-item">
+          <svg class="amenity-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
+          24/7 security
+        </div>
+        <div class="amenity-item">
+          <svg class="amenity-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 4h18M3 12h12M3 20h18"/></svg>
+          Generator backup
+        </div>
+        <div class="amenity-item">
+          <svg class="amenity-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="5"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+          Private balcony
+        </div>
+        <div class="amenity-item">
+          <svg class="amenity-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="1" y="3" width="15" height="13"/><polygon points="16 8 20 8 23 11 23 16 16 16 16 8"/><circle cx="5.5" cy="18.5" r="2.5"/><circle cx="18.5" cy="18.5" r="2.5"/></svg>
+          Free parking
+        </div>
+      </div>
+      <span class="show-all">Show all 16 amenities →</span>
+
+      <hr class="detail-divider">
+
+      <h2 class="detail-section-title">Guest reviews</h2>
+      <div class="review-card">
+        <div class="review-header">
+          <div class="review-avatar">T</div>
+          <div>
+            <div class="review-name">Temi A.</div>
+            <div class="review-date">May 2026</div>
+          </div>
+          <div class="review-stars">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
+        </div>
+        <p class="review-text">This apartment is even better than the photos. The balcony is a sanctuary &mdash; I had my coffee there every morning watching the neighbourhood wake up. Everything was spotless and the host left a handwritten note with local recommendations. Will definitely stay again.</p>
+      </div>
+      <div class="review-card">
+        <div class="review-header">
+          <div class="review-avatar">C</div>
+          <div>
+            <div class="review-name">Chinedu O.</div>
+            <div class="review-date">April 2026</div>
+          </div>
+          <div class="review-stars">&#9733;&#9733;&#9733;&#9733;&#9733;</div>
+        </div>
+        <p class="review-text">Booked for a week while relocating to Lagos. The apartment had everything I needed &mdash; fast internet for work calls, a proper kitchen, and the kind of quiet you don't expect in Ikoyi. The security team was friendly and professional.</p>
+      </div>
+      <span class="show-all">Show all 24 reviews →</span>
+    </div>
+
+    <aside class="detail-sidebar">
+      <div class="sidebar-card">
+        <div class="sidebar-price">$180 <span>/ night</span></div>
+        <div class="sidebar-rating">&#9733; <strong>4.9</strong> &middot; 24 reviews</div>
+
+        <div class="sidebar-field">
+          <div class="sidebar-field-label">Check-in</div>
+          <input class="sidebar-field-input" type="text" value="22 Jun 2026" readonly>
+        </div>
+        <div class="sidebar-field">
+          <div class="sidebar-field-label">Check-out</div>
+          <input class="sidebar-field-input" type="text" value="26 Jun 2026" readonly>
+        </div>
+
+        <div class="sidebar-guests-row">
+          <span class="sidebar-guests-label">Adults</span>
+          <div class="sidebar-guests-controls">
+            <button class="sidebar-guests-btn">&minus;</button>
+            <span class="sidebar-guests-val">2</span>
+            <button class="sidebar-guests-btn">+</button>
+          </div>
+        </div>
+
+        <a href="checkout.html" class="sidebar-book-btn">Reserve</a>
+
+        <div class="sidebar-price-breakdown">
+          <div class="sidebar-price-row"><span>$180 &times; 4 nights</span><span>$720</span></div>
+          <div class="sidebar-price-row"><span>Cleaning fee</span><span>$45</span></div>
+          <div class="sidebar-price-row"><span>Service fee</span><span>$62</span></div>
+          <div class="sidebar-price-total"><span>Total</span><span>$827</span></div>
+        </div>
+      </div>
+    </aside>
+  </div>
+</section>
+
+</body>
+</html>

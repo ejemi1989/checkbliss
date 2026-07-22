@@ -124,7 +124,60 @@ export function getAdminClaims(): DamageClaim[] {
     { id: "C001", reservation_id: "R001", property_name: "The Palms Maisonette · Unit 1", property_id: "PR001", guest_name: "Chidi Okafor", guest_email: "chidi.o@email.com", booking_ref: "PAY-2026-0618", stay_dates: `Jun 18–22`, description: "Broken glass table in living room. Photos attached.", estimated_cost_minor: 35000, operator_notes: "", photo_count: 3, admin_decision: "pending", adjusted_amount_minor: null, dispute_status: "none", submitted_at: `${yyyy}-${mm}-22`, decided_at: null, decided_by: null },
     { id: "C002", reservation_id: "R002", property_name: "Sunset Dove · Unit 2", property_id: "PR002", guest_name: "Folake Adeyemi", guest_email: "folake.a@email.com", booking_ref: "PAY-2026-0620", stay_dates: `Jun 20–24`, description: "Stained bedsheets — replacement needed.", estimated_cost_minor: 15000, operator_notes: "", photo_count: 2, admin_decision: "pending", adjusted_amount_minor: null, dispute_status: "none", submitted_at: `${yyyy}-${mm}-23`, decided_at: null, decided_by: null },
     { id: "C003", reservation_id: "R003", property_name: "Lekki Beach House", property_id: "PR003", guest_name: "Walkthrough", guest_email: "", booking_ref: "N/A", stay_dates: "Pre-listing", description: "Minor wall scuff marks noted during pre-listing inspection.", estimated_cost_minor: 0, operator_notes: "", photo_count: 1, admin_decision: "pending", adjusted_amount_minor: null, dispute_status: "none", submitted_at: `${yyyy}-${mm}-20`, decided_at: null, decided_by: null },
+    { id: "C004", reservation_id: "R004", property_name: "GRA Executive Suite", property_id: "P005", guest_name: "Zainab Bello", guest_email: "zainab.b@email.com", booking_ref: "PAY-2026-0701", stay_dates: `Jul 1–4`, description: "Towel rack pulled from bathroom wall — needs re-mounting and paint touch-up.", estimated_cost_minor: 12000, operator_notes: "Photos show mounting screws pulled from drywall. Recommended re-mounting into stud with proper anchors.", photo_count: 4, admin_decision: "pending", adjusted_amount_minor: null, dispute_status: "none", submitted_at: `${yyyy}-07-04`, decided_at: null, decided_by: null },
   ];
+}
+
+/**
+ * Operator-scoped damage claims. Filters by the operator's assigned city/cities
+ * so Lagos operators only see Lagos claims, Abuja operators only see Abuja.
+ * Per structure.md, this is row-level access control.
+ */
+export function getOperatorClaims(assignedCities?: string[]): DamageClaim[] {
+  const all = getAdminClaims();
+  if (!assignedCities || assignedCities.length === 0) return [];
+  // Map claims to cities via property_name prefix or property_id
+  return all.filter((c) => {
+    const prop = getAdminProperties().find((p) => p.id === c.property_id);
+    if (prop) return assignedCities.includes(prop.city);
+    // Fallback: try to match by name (Lagos vs Abuja hints)
+    if (c.property_name.includes("GRA") || c.property_name.includes("Transcorp")) {
+      return assignedCities.includes("Abuja");
+    }
+    return assignedCities.includes("Lagos");
+  });
+}
+
+/**
+ * Owner directory for a city. Operators see only owners whose properties
+ * are in their assigned city/cities.
+ */
+export interface OwnerDirectoryEntry {
+  id: string;
+  name: string;
+  email: string;
+  whatsapp: string;
+  city: string;
+  properties_count: number;
+  total_bookings: number;
+  last_verified: string;
+  status: "active" | "onboarding" | "suspended";
+}
+
+export function getOwnersForCity(assignedCities?: string[]): OwnerDirectoryEntry[] {
+  if (!assignedCities || assignedCities.length === 0) return [];
+  const cities = new Set(assignedCities);
+
+  const allOwners: OwnerDirectoryEntry[] = [
+    { id: "OW1", name: "Adaora Mensah", email: "a.mensah@mail.com", whatsapp: "+234 803 111 1111", city: "Lagos", properties_count: 2, total_bookings: 8, last_verified: `${yyyy}-${mm}-15`, status: "active" },
+    { id: "OW2", name: "Kola Ogun", email: "kola.o@email.com", whatsapp: "+234 805 222 2222", city: "Lagos", properties_count: 1, total_bookings: 0, last_verified: `${yyyy}-05-20`, status: "onboarding" },
+    { id: "OW3", name: "Bisi Fashola", email: "bisi.f@email.com", whatsapp: "+234 807 333 3333", city: "Lagos", properties_count: 1, total_bookings: 0, last_verified: `${yyyy}-05-15`, status: "onboarding" },
+    { id: "OW5", name: "Tunde Savage", email: "tunde.s@email.com", whatsapp: "+234 809 444 4444", city: "Lagos", properties_count: 1, total_bookings: 1, last_verified: `${yyyy}-04-28`, status: "suspended" },
+    { id: "OW4", name: "Ngozi Okonkwo", email: "ngozi.o@email.com", whatsapp: "+234 802 555 5555", city: "Abuja", properties_count: 1, total_bookings: 2, last_verified: `${yyyy}-${mm}-12`, status: "active" },
+    { id: "OW6", name: "Ibrahim Musa", email: "ibrahim.m@email.com", whatsapp: "+234 806 666 6666", city: "Abuja", properties_count: 1, total_bookings: 1, last_verified: `${yyyy}-06-20`, status: "active" },
+  ];
+
+  return allOwners.filter((o) => cities.has(o.city));
 }
 
 export function getAdminOperators(): Operator[] {

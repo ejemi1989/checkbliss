@@ -1,0 +1,1179 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CheckinBliss — The premium way to stay in Africa</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&family=Newsreader:ital,opsz,wght@0,6..72,300;0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400;1,6..72,500&display=swap" rel="stylesheet">
+<style>
+/* ── Tokens ── */
+:root {
+  --bg: #E9ECE2;
+  --soft: #F4F6F0;
+  --card: #FCFDFB;
+  --ink: #171915;
+  --body-c: #44483D;
+  --mute: #6A6E63;
+  --line: #D8DBCF;
+  --green: #2F3D2C;
+  --green-d: #232E22;
+  --green-soft: #5C6B4F;
+  --trustpilot: #00B67A;
+
+  --font-display: 'Newsreader', 'Gallient', Georgia, serif;
+  --font-body: 'Hanken Grotesk', system-ui, -apple-system, sans-serif;
+
+  --s1: 4px; --s2: 8px; --s3: 12px; --s4: 16px; --s5: 20px; --s6: 24px;
+  --s7: 28px; --s8: 32px; --s9: 40px; --s10: 48px; --s11: 64px; --s12: 80px;
+
+  --r-0: 0px; --r-3: 3px; --r-10: 10px; --r-18: 18px; --r-28: 28px; --r-pill: 999px;
+
+  --sh1: 0 1px 2px rgba(0,0,0,0.07);
+  --sh2: 0 8px 24px rgba(0,0,0,0.10);
+  --sh3: 0 14px 40px rgba(0,0,0,0.14);
+  --sh4: 0 24px 60px rgba(0,0,0,0.20);
+
+  --mw: 1240px;
+  --gutter: 32px;
+  --section-py: 80px;
+}
+
+/* ── Reset ── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { -webkit-font-smoothing: antialiased; -moz-osx-font-smoothing: grayscale; }
+body {
+  font-family: var(--font-body);
+  font-size: 16px;
+  font-weight: 400;
+  line-height: 1.55;
+  color: var(--body-c);
+  background: var(--bg);
+  overflow-x: hidden;
+}
+img { display: block; max-width: 100%; }
+a { color: var(--green-soft); text-decoration: none; }
+a:hover { color: var(--green-d); }
+
+/* ── Utility ── */
+.container { max-width: var(--mw); margin: 0 auto; padding: 0 var(--gutter); }
+.section { padding-top: var(--section-py); padding-bottom: var(--section-py); }
+.section-label {
+  font-family: var(--font-body);
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: var(--mute);
+  margin-bottom: var(--s2);
+}
+.section-headline {
+  font-family: var(--font-display);
+  font-size: clamp(2rem, 3.6vw, 3.2rem);
+  font-weight: 500;
+  line-height: 1.08;
+  color: var(--ink);
+  margin-bottom: var(--s2);
+}
+
+/* ── Nav ── */
+.nav-overlay {
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  z-index: 100;
+  padding: var(--s5) var(--gutter);
+}
+.nav-grid {
+  max-width: var(--mw);
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+}
+.nav-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s2);
+  padding: var(--s2) var(--s4);
+  border-radius: var(--r-pill);
+  background: rgba(255,255,255,0.18);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  font-size: 14px;
+  font-weight: 500;
+  color: #fff;
+  border: 1px solid rgba(255,255,255,0.15);
+}
+.nav-left  { justify-self: start; }
+.nav-right { justify-self: end; }
+.nav-logo {
+  font-family: var(--font-display);
+  font-size: 22px;
+  font-weight: 500;
+  color: #fff;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+}
+.nav-avatar {
+  width: 26px; height: 26px;
+  border-radius: 50%;
+  background: rgba(255,255,255,0.25);
+  flex-shrink: 0;
+}
+.nav-hamburger {
+  display: flex; flex-direction: column; gap: 3px;
+  width: 16px;
+}
+.nav-hamburger span {
+  display: block; height: 1.5px;
+  border-radius: 2px;
+  background: #fff;
+}
+.nav-hamburger span:nth-child(2) { width: 70%; }
+
+/* ── Hero ── */
+.hero {
+  position: relative;
+  height: 100vh;
+  min-height: 640px;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.hero-bg {
+  position: absolute;
+  inset: 0;
+  object-fit: cover;
+  width: 100%;
+  height: 100%;
+}
+.hero-scrim {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to bottom, rgba(0,0,0,0.38) 0%, rgba(0,0,0,0.18) 40%, rgba(0,0,0,0.45) 100%);
+}
+.hero-content {
+  position: relative;
+  text-align: center;
+  color: #fff;
+  padding: 0 var(--gutter);
+  margin-top: -40px;
+}
+.hero-kicker {
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: clamp(20px, 2.8vw, 28px);
+  color: rgba(255,255,255,0.82);
+  margin-bottom: var(--s4);
+}
+.hero-headline {
+  font-family: var(--font-display);
+  font-size: clamp(2.2rem, 4.6vw, 4rem);
+  font-weight: 500;
+  line-height: 1.04;
+  letter-spacing: -0.01em;
+  margin-bottom: var(--s5);
+  max-width: 720px;
+  margin-left: auto;
+  margin-right: auto;
+}
+.hero-subhead {
+  font-family: var(--font-body);
+  font-size: clamp(16px, 1.4vw, 18px);
+  font-weight: 400;
+  line-height: 1.5;
+  opacity: 0.85;
+  max-width: 520px;
+  margin: 0 auto var(--s10);
+}
+
+/* ── Search Bar ── */
+.search-bar-wrap {
+  position: relative;
+  margin-top: -32px;
+  z-index: 50;
+  padding: 0 var(--gutter);
+}
+.search-bar {
+  max-width: 920px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  background: var(--card);
+  border-radius: var(--r-3);
+  box-shadow: var(--sh4);
+  overflow: hidden;
+}
+.search-field {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+  padding: var(--s4) var(--s5);
+  cursor: pointer;
+}
+.search-field:not(:last-of-type) {
+  border-right: 1px solid var(--line);
+}
+.search-field-icon {
+  width: 18px; height: 18px;
+  color: var(--mute);
+  flex-shrink: 0;
+}
+.search-field-content {
+  text-align: left;
+  min-width: 0;
+}
+.search-field-label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--mute);
+}
+.search-field-value {
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--ink);
+}
+.search-btn {
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+  padding: var(--s4) var(--s8);
+  background: var(--green);
+  color: #F4F6F0;
+  font-family: var(--font-body);
+  font-size: 15px;
+  font-weight: 600;
+  border: none;
+  cursor: pointer;
+  border-radius: var(--r-0);
+  white-space: nowrap;
+  transition: background 0.2s;
+  text-decoration: none;
+}
+.search-btn:hover { background: var(--green-d); }
+
+/* ── Editorial Cards (3-up) ── */
+.editorial-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+}
+.editorial-grid > * + * {
+  border-left: 1px solid var(--line);
+}
+.editorial-card {
+  padding: 0 var(--s7);
+}
+.editorial-card:first-child { padding-left: 0; }
+.editorial-card:last-child  { padding-right: 0; }
+.editorial-card-img {
+  aspect-ratio: 3 / 4;
+  border-radius: var(--r-0);
+  overflow: hidden;
+  margin-bottom: var(--s6);
+}
+.editorial-card-img img {
+  width: 100%; height: 100%;
+  object-fit: cover;
+  transition: transform 0.5s ease;
+}
+.editorial-card:hover .editorial-card-img img {
+  transform: scale(1.04);
+}
+.editorial-card-kicker {
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: clamp(20px, 2vw, 26px);
+  color: var(--green-soft);
+  margin-bottom: var(--s1);
+  line-height: 1.3;
+}
+.editorial-card-title {
+  font-family: var(--font-display);
+  font-size: clamp(20px, 2vw, 26px);
+  font-weight: 500;
+  color: var(--ink);
+  line-height: 1.2;
+  margin-bottom: var(--s3);
+}
+.editorial-card-body {
+  font-size: 15px;
+  line-height: 1.55;
+  color: var(--body-c);
+  max-width: 48ch;
+  margin-bottom: var(--s4);
+}
+.editorial-card-link {
+  font-family: var(--font-body);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--green-soft);
+}
+
+/* ── Stays Carousel ── */
+.stays-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  margin-bottom: var(--s9);
+  flex-wrap: wrap;
+  gap: var(--s4);
+}
+.stays-header .section-headline { margin-bottom: 0; }
+.stays-view-all {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--green-soft);
+  white-space: nowrap;
+}
+.stays-track {
+  display: flex;
+  gap: var(--s5);
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  padding-bottom: var(--s1);
+}
+.stays-track::-webkit-scrollbar { display: none; }
+.stay-card {
+  flex: 0 0 calc((100% - (var(--s5) * 2)) / 3.4);
+  min-width: 260px;
+  scroll-snap-align: start;
+  text-decoration: none;
+  color: inherit;
+  display: block;
+}
+.stay-card:hover .stay-card-img img { transform: scale(1.04); }
+.stay-card-img {
+  aspect-ratio: 3 / 4;
+  border-radius: var(--r-0);
+  overflow: hidden;
+  margin-bottom: var(--s4);
+}
+.stay-card-img img {
+  width: 100%; height: 100%;
+  object-fit: cover;
+  transition: transform 0.5s ease;
+}
+.stay-card-kicker {
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: 18px;
+  color: var(--green-soft);
+  margin-bottom: var(--s1);
+}
+.stay-card-name {
+  font-family: var(--font-display);
+  font-size: clamp(20px, 1.8vw, 24px);
+  font-weight: 500;
+  color: var(--ink);
+  line-height: 1.2;
+  margin-bottom: var(--s1);
+}
+.stay-card-location {
+  font-size: 14px;
+  color: var(--mute);
+}
+.stay-card-meta {
+  display: flex;
+  align-items: center;
+  gap: var(--s2);
+  margin-top: var(--s2);
+  font-size: 14px;
+  color: var(--body-c);
+}
+.stay-card-price {
+  font-weight: 600;
+  color: var(--ink);
+}
+.stay-card-stars { color: var(--trustpilot); }
+.stay-card-verified {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--green-soft);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+/* ── How It Works ── */
+.how-it-works {
+  background: var(--soft);
+}
+.how-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--s11);
+  align-items: start;
+}
+.how-left {
+  position: sticky;
+  top: var(--s10);
+}
+.how-counter {
+  font-family: var(--font-body);
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--mute);
+  margin-bottom: var(--s4);
+}
+.how-counter span { color: var(--ink); }
+.how-progress {
+  height: 2px;
+  background: var(--line);
+  border-radius: 1px;
+  margin-bottom: var(--s8);
+}
+.how-progress-bar {
+  height: 100%;
+  width: 33.33%;
+  background: var(--green-soft);
+  border-radius: 1px;
+  transition: width 0.3s;
+}
+.how-right { display: flex; flex-direction: column; gap: var(--s9); }
+.how-step { padding: var(--s8); background: var(--card); border-radius: var(--r-0); }
+.how-step-num {
+  font-family: var(--font-display);
+  font-size: 32px;
+  font-weight: 500;
+  color: var(--green-soft);
+  margin-bottom: var(--s2);
+}
+.how-step-title {
+  font-family: var(--font-display);
+  font-size: clamp(22px, 2vw, 28px);
+  font-weight: 500;
+  color: var(--ink);
+  margin-bottom: var(--s3);
+}
+.how-step-body {
+  font-size: 15px;
+  line-height: 1.55;
+  color: var(--body-c);
+  max-width: 48ch;
+}
+.how-step-img {
+  aspect-ratio: 16 / 10;
+  border-radius: var(--r-0);
+  overflow: hidden;
+  margin-top: var(--s5);
+}
+.how-step-img img {
+  width: 100%; height: 100%;
+  object-fit: cover;
+}
+
+/* ── Quote Band ── */
+.quote-band {
+  position: relative;
+  width: 100%;
+  min-height: 480px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+.quote-band-bg {
+  position: absolute;
+  inset: 0;
+  object-fit: cover;
+  width: 100%;
+  height: 100%;
+}
+.quote-band-scrim {
+  position: absolute;
+  inset: 0;
+  background: rgba(0,0,0,0.52);
+}
+.quote-band-content {
+  position: relative;
+  text-align: center;
+  color: #fff;
+  padding: var(--s12) var(--gutter);
+  max-width: 720px;
+}
+.quote-band-quote {
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: clamp(22px, 2.4vw, 32px);
+  font-weight: 400;
+  line-height: 1.35;
+  margin-bottom: var(--s6);
+}
+.quote-band-quote::before { content: '\201C'; }
+.quote-band-quote::after  { content: '\201D'; }
+.quote-band-attribution {
+  font-family: var(--font-body);
+  font-size: 14px;
+  font-weight: 500;
+  opacity: 0.8;
+}
+
+/* ── Trustpilot ── */
+.trustpilot-section { text-align: center; }
+.trustpilot-card {
+  max-width: 640px;
+  margin: 0 auto var(--s7);
+  padding: var(--s10) var(--s9);
+  background: var(--card);
+  border-radius: var(--r-0);
+  border: 1px solid var(--line);
+}
+.trustpilot-stars {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  margin-bottom: var(--s6);
+}
+.trustpilot-star {
+  width: 22px; height: 22px;
+  color: var(--trustpilot);
+}
+.trustpilot-brand {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--s2);
+  margin-bottom: var(--s6);
+}
+.trustpilot-rating {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--mute);
+}
+.trustpilot-rating strong { color: var(--ink); }
+.trustpilot-quote {
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: clamp(18px, 1.8vw, 24px);
+  line-height: 1.4;
+  color: var(--ink);
+  margin-bottom: var(--s6);
+}
+.trustpilot-quote::before { content: '\201C'; }
+.trustpilot-quote::after  { content: '\201D'; }
+.trustpilot-reviewer {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--body-c);
+  margin-bottom: var(--s1);
+}
+.trustpilot-date {
+  font-size: 13px;
+  color: var(--mute);
+}
+.trustpilot-link {
+  display: inline-block;
+  margin-top: var(--s6);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+/* ── Trustpilot controls (static) ── */
+.trustpilot-controls {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--s6);
+}
+.trustpilot-arrow {
+  width: 40px; height: 40px;
+  border-radius: 50%;
+  border: 1px solid var(--line);
+  background: var(--card);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: var(--mute);
+  font-size: 16px;
+}
+.trustpilot-dots {
+  display: flex; gap: var(--s2);
+}
+.trustpilot-dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: var(--line);
+}
+.trustpilot-dot.active { background: var(--green-soft); }
+
+/* ── Promise ── */
+.promise { background: var(--soft); }
+.promise-header { text-align: center; margin-bottom: var(--s10); }
+.promise-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+}
+.promise-grid > * + * { border-left: 1px solid var(--line); }
+.promise-card {
+  padding: 0 var(--s7);
+  text-align: center;
+}
+.promise-card:first-child { padding-left: 0; }
+.promise-card:last-child  { padding-right: 0; }
+.promise-icon {
+  width: 48px; height: 48px;
+  margin: 0 auto var(--s5);
+  color: var(--green-soft);
+}
+.promise-card-title {
+  font-family: var(--font-display);
+  font-size: clamp(18px, 1.6vw, 24px);
+  font-weight: 500;
+  color: var(--ink);
+  margin-bottom: var(--s2);
+  line-height: 1.2;
+}
+.promise-card-body {
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--body-c);
+  max-width: 36ch;
+  margin: 0 auto;
+}
+
+/* ── Footer ── */
+.footer {
+  background: var(--soft);
+  padding: var(--s12) 0 var(--s9);
+  border-top: 1px solid var(--line);
+}
+.footer-grid {
+  display: grid;
+  grid-template-columns: 2fr 1fr 1fr 1fr;
+  gap: var(--s9);
+  margin-bottom: var(--s11);
+}
+.footer-brand-name {
+  font-family: var(--font-display);
+  font-size: 22px;
+  font-weight: 500;
+  color: var(--ink);
+  margin-bottom: var(--s3);
+}
+.footer-brand-desc {
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--body-c);
+  max-width: 32ch;
+}
+.footer-col-title {
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: var(--mute);
+  margin-bottom: var(--s5);
+}
+.footer-col a {
+  display: block;
+  font-size: 14px;
+  color: var(--body-c);
+  margin-bottom: var(--s2);
+  text-decoration: none;
+}
+.footer-col a:hover { color: var(--green-soft); }
+.footer-tease {
+  margin-bottom: var(--s9);
+  padding: var(--s6) 0;
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+  text-align: center;
+}
+.footer-tease-label {
+  font-family: var(--font-body);
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  color: var(--mute);
+  margin-bottom: var(--s1);
+}
+.footer-tease-text {
+  font-family: var(--font-display);
+  font-style: italic;
+  font-size: 22px;
+  color: var(--green-soft);
+}
+.footer-bottom {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--s4);
+  font-size: 13px;
+  color: var(--mute);
+}
+
+/* ── Responsive ── */
+@media (max-width: 980px) {
+  .stay-card { flex: 0 0 calc((100% - var(--s5)) / 2); }
+  .footer-grid { grid-template-columns: 1fr 1fr; }
+}
+@media (max-width: 860px) {
+  .how-grid {
+    grid-template-columns: 1fr;
+    gap: var(--s7);
+  }
+  .how-left { position: static; }
+  .how-progress { display: none; }
+  .how-counter { text-align: center; }
+  .section-headline { text-align: center; }
+}
+@media (max-width: 760px) {
+  .editorial-grid,
+  .promise-grid {
+    grid-template-columns: 1fr;
+    gap: var(--s7);
+  }
+  .editorial-grid > * + *,
+  .promise-grid > * + * {
+    border-left: none;
+    border-top: 1px solid var(--line);
+  }
+  .editorial-card,
+  .promise-card {
+    padding: var(--s7) 0 0 0;
+  }
+  .editorial-card:first-child,
+  .promise-card:first-child {
+    padding-top: 0;
+  }
+  .editorial-card-img { aspect-ratio: 16 / 10; }
+  .promise-card { text-align: left; }
+  .promise-icon { margin: 0 0 var(--s4); }
+  .search-bar { flex-wrap: wrap; }
+  .search-field { flex: 1 1 50%; min-width: 0; }
+  .search-btn { flex: 1 1 100%; justify-content: center; border-radius: 0 0 var(--r-3) var(--r-3); }
+}
+@media (max-width: 620px) {
+  .trustpilot-arrow { width: 32px; height: 32px; font-size: 14px; }
+  .trustpilot-card { padding: var(--s7) var(--s5); }
+}
+@media (max-width: 560px) {
+  .nav-grid { grid-template-columns: auto auto; justify-content: space-between; }
+  .nav-logo { grid-row: 1; grid-column: 1 / -1; text-align: center; margin-bottom: var(--s3); }
+  .nav-pill { font-size: 13px; padding: var(--s1) var(--s3); }
+  .hero-headline { font-size: clamp(1.8rem, 5vw, 2.4rem); }
+  .hero-subhead { font-size: 15px; }
+  .hero { min-height: 520px; }
+  .footer-grid { grid-template-columns: 1fr; gap: var(--s7); }
+  :root { --section-py: 56px; --gutter: 20px; }
+}
+@media (max-width: 390px) {
+  .search-field { flex: 1 1 100%; }
+  .search-field:not(:last-of-type) { border-right: none; border-bottom: 1px solid var(--line); }
+  .stay-card { flex: 0 0 82%; min-width: 0; }
+  .hero-content { margin-top: -60px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .editorial-card-img img,
+  .stay-card-img img { transition: none; }
+}
+</style>
+</head>
+<body>
+
+<!-- ── Nav Overlay ── -->
+<nav class="nav-overlay" aria-label="Main navigation">
+  <div class="nav-grid">
+    <div class="nav-left">
+      <span class="nav-pill">
+        <span>EN</span>
+        <span style="opacity:0.5">|</span>
+        <span>USD</span>
+      </span>
+    </div>
+    <div class="nav-logo">CheckinBliss</div>
+    <div class="nav-right">
+      <span class="nav-pill" style="gap:10px">
+        <span class="nav-hamburger" aria-label="Menu">
+          <span></span><span></span><span></span>
+        </span>
+        <span class="nav-avatar"></span>
+      </span>
+    </div>
+  </div>
+</nav>
+
+<!-- ── Hero ── -->
+<section class="hero">
+  <img class="hero-bg" src="https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=2400&q=80" alt="" loading="eager">
+  <div class="hero-scrim"></div>
+  <div class="hero-content">
+    <p class="hero-kicker">Lagos &amp; Abuja</p>
+    <h1 class="hero-headline">The premium way to stay in Africa</h1>
+    <p class="hero-subhead">Hand-selected apartments in Lagos and Abuja. Instantly bookable from anywhere.</p>
+  </div>
+</section>
+
+<!-- ── Hero Search Bar ── -->
+<div class="search-bar-wrap">
+  <div class="search-bar">
+    <a href="search.html" class="search-field" style="text-decoration:none;color:inherit;">
+      <svg class="search-field-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+      <div class="search-field-content">
+        <div class="search-field-label">Where</div>
+        <div class="search-field-value">Lagos, Nigeria</div>
+      </div>
+    </a>
+    <div class="search-field">
+      <svg class="search-field-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+      <div class="search-field-content">
+        <div class="search-field-label">Check-in</div>
+        <div class="search-field-value">22 Jun 2026</div>
+      </div>
+    </div>
+    <div class="search-field">
+      <svg class="search-field-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+      <div class="search-field-content">
+        <div class="search-field-label">Check-out</div>
+        <div class="search-field-value">26 Jun 2026</div>
+      </div>
+    </div>
+    <div class="search-field">
+      <svg class="search-field-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+      <div class="search-field-content">
+        <div class="search-field-label">Guests</div>
+        <div class="search-field-value">2 guests</div>
+      </div>
+    </div>
+    <a href="search.html" class="search-btn">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+      Search
+    </a>
+  </div>
+</div>
+
+<!-- ── Categories ── -->
+<section class="section">
+  <div class="container">
+    <p class="section-label">Explore</p>
+    <h2 class="section-headline">Where would you like to stay?</h2>
+  </div>
+  <div class="container" style="margin-top:var(--s10)">
+    <div class="editorial-grid">
+      <article class="editorial-card">
+        <a href="search.html" style="text-decoration:none;color:inherit;display:block;">
+          <div class="editorial-card-img">
+            <img src="https://images.unsplash.com/photo-1522708323-2a93d582dbab?auto=format&fit=crop&w=800&q=80" alt="Lagos apartment" loading="lazy">
+          </div>
+          <p class="editorial-card-kicker">Coastal City</p>
+          <h3 class="editorial-card-title">Lagos</h3>
+          <p class="editorial-card-body">Island apartments with Atlantic views, from Ikoyi to Victoria Island. Every home inspected in person.</p>
+          <span class="editorial-card-link">Browse Lagos stays →</span>
+        </a>
+      </article>
+      <article class="editorial-card">
+        <a href="search.html" style="text-decoration:none;color:inherit;display:block;">
+          <div class="editorial-card-img">
+            <img src="https://images.unsplash.com/photo-1600210492486-724fe5c67fb0?auto=format&fit=crop&w=800&q=80" alt="Abuja apartment" loading="lazy">
+          </div>
+          <p class="editorial-card-kicker">Capital Calm</p>
+          <h3 class="editorial-card-title">Abuja</h3>
+          <p class="editorial-card-body">Spacious residences in Maitama, Asokoro, and Jabi. Designed for longer stays with room to breathe.</p>
+          <span class="editorial-card-link">Browse Abuja stays →</span>
+        </a>
+      </article>
+      <article class="editorial-card">
+        <a href="search.html" style="text-decoration:none;color:inherit;display:block;">
+          <div class="editorial-card-img">
+            <img src="https://images.unsplash.com/photo-1564013799919-ab600027f3ae?auto=format&fit=crop&w=800&q=80" alt="Verified pick" loading="lazy">
+          </div>
+          <p class="editorial-card-kicker">Verified Favourites</p>
+          <h3 class="editorial-card-title">Our Picks</h3>
+          <p class="editorial-card-body">The apartments our team returns to. Standout homes across both cities, re-inspected every quarter.</p>
+          <span class="editorial-card-link">See our picks →</span>
+        </a>
+      </article>
+    </div>
+  </div>
+</section>
+
+<!-- ── Stays Carousel ── -->
+<section class="section" style="padding-bottom:var(--s11)">
+  <div class="container">
+    <div class="stays-header">
+      <div>
+        <p class="section-label">Hand-selected stays</p>
+        <h2 class="section-headline">Featured apartments</h2>
+      </div>
+      <a href="search.html" class="stays-view-all">View all stays →</a>
+    </div>
+  </div>
+  <div style="padding-left:var(--gutter);padding-right:var(--gutter)">
+    <div class="stays-track" style="max-width:var(--mw);margin:0 auto">
+      <a href="detail.html" class="stay-card">
+        <div class="stay-card-img">
+          <img src="https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=800&q=80" alt="The Ikoyi Residence" loading="lazy">
+        </div>
+        <p class="stay-card-kicker">Ikoyi</p>
+        <h3 class="stay-card-name">The Ikoyi Residence</h3>
+        <p class="stay-card-location">Lagos, Nigeria</p>
+        <div class="stay-card-meta">
+          <span class="stay-card-stars">★★★★★</span>
+          <span>4.9</span>
+          <span>&middot;</span>
+          <span class="stay-card-verified">&#10003; Verified</span>
+        </div>
+        <div class="stay-card-meta">
+          <span class="stay-card-price">$180</span><span>/night</span>
+        </div>
+      </a>
+      <a href="detail.html" class="stay-card">
+        <div class="stay-card-img">
+          <img src="https://images.unsplash.com/photo-1600573472591-ee6b68d14c68?auto=format&fit=crop&w=800&q=80" alt="Maitama Heights" loading="lazy">
+        </div>
+        <p class="stay-card-kicker">Maitama</p>
+        <h3 class="stay-card-name">Maitama Heights</h3>
+        <p class="stay-card-location">Abuja, Nigeria</p>
+        <div class="stay-card-meta">
+          <span class="stay-card-stars">★★★★★</span>
+          <span>4.8</span>
+          <span>&middot;</span>
+          <span class="stay-card-verified">&#10003; Verified</span>
+        </div>
+        <div class="stay-card-meta">
+          <span class="stay-card-price">$220</span><span>/night</span>
+        </div>
+      </a>
+      <a href="detail.html" class="stay-card">
+        <div class="stay-card-img">
+          <img src="https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?auto=format&fit=crop&w=800&q=80" alt="Lekki Sky Suite" loading="lazy">
+        </div>
+        <p class="stay-card-kicker">Lekki</p>
+        <h3 class="stay-card-name">Lekki Sky Suite</h3>
+        <p class="stay-card-location">Lagos, Nigeria</p>
+        <div class="stay-card-meta">
+          <span class="stay-card-stars">★★★★★</span>
+          <span>4.7</span>
+          <span>&middot;</span>
+          <span class="stay-card-verified">&#10003; Verified</span>
+        </div>
+        <div class="stay-card-meta">
+          <span class="stay-card-price">$145</span><span>/night</span>
+        </div>
+      </a>
+      <a href="detail.html" class="stay-card">
+        <div class="stay-card-img">
+          <img src="https://images.unsplash.com/photo-1564078560-4ef4b9c5e5f0?auto=format&fit=crop&w=800&q=80" alt="Jabi Lake View" loading="lazy">
+        </div>
+        <p class="stay-card-kicker">Jabi</p>
+        <h3 class="stay-card-name">Jabi Lake View</h3>
+        <p class="stay-card-location">Abuja, Nigeria</p>
+        <div class="stay-card-meta">
+          <span class="stay-card-stars">★★★★★</span>
+          <span>4.9</span>
+          <span>&middot;</span>
+          <span class="stay-card-verified">&#10003; Verified</span>
+        </div>
+        <div class="stay-card-meta">
+          <span class="stay-card-price">$195</span><span>/night</span>
+        </div>
+      </a>
+      <a href="detail.html" class="stay-card">
+        <div class="stay-card-img">
+          <img src="https://images.unsplash.com/photo-1600585154526-990a2a80f3e7?auto=format&fit=crop&w=800&q=80" alt="Victoria Island Loft" loading="lazy">
+        </div>
+        <p class="stay-card-kicker">Victoria Island</p>
+        <h3 class="stay-card-name">Victoria Island Loft</h3>
+        <p class="stay-card-location">Lagos, Nigeria</p>
+        <div class="stay-card-meta">
+          <span class="stay-card-stars">★★★★★</span>
+          <span>4.6</span>
+          <span>&middot;</span>
+          <span class="stay-card-verified">&#10003; Verified</span>
+        </div>
+        <div class="stay-card-meta">
+          <span class="stay-card-price">$260</span><span>/night</span>
+        </div>
+      </a>
+    </div>
+  </div>
+</section>
+
+<!-- ── Quote Band 1 ── -->
+<section class="quote-band">
+  <img class="quote-band-bg" src="https://images.unsplash.com/photo-1582719478250-c89bbae0a5fa?auto=format&fit=crop&w=2400&q=80" alt="" loading="lazy">
+  <div class="quote-band-scrim"></div>
+  <div class="quote-band-content">
+    <p class="quote-band-quote">I&rsquo;ve stayed in Lagos dozens of times &mdash; this is the first time I didn&rsquo;t worry about what I&rsquo;d find when I arrived. The apartment was exactly as photographed.</p>
+    <p class="quote-band-attribution">Temi A., Lagos &mdash; 6 stays</p>
+  </div>
+</section>
+
+<!-- ── How It Works ── -->
+<section class="section how-it-works">
+  <div class="container">
+    <div class="how-grid">
+      <div class="how-left">
+        <p class="section-label">How it works</p>
+        <h2 class="section-headline" style="text-align:left">Three steps to&nbsp;bliss</h2>
+        <div class="how-counter" style="margin-top:var(--s8)"><span>01</span> / 03</div>
+        <div class="how-progress">
+          <div class="how-progress-bar"></div>
+        </div>
+      </div>
+      <div class="how-right">
+        <div class="how-step">
+          <div class="how-step-num">01</div>
+          <h3 class="how-step-title">Browse verified homes</h3>
+          <p class="how-step-body">Every apartment is inspected in person before it appears on CheckinBliss. We photograph each space editorially &mdash; what you see is what you&rsquo;ll find. No surprises, no disappointments.</p>
+          <div class="how-step-img">
+            <img src="https://images.unsplash.com/photo-1560185007-cde436f6af10?auto=format&fit=crop&w=800&q=80" alt="Browse homes" loading="lazy">
+          </div>
+        </div>
+        <div class="how-step">
+          <div class="how-step-num">02</div>
+          <h3 class="how-step-title">Book in under a minute</h3>
+          <p class="how-step-body">Select your dates, review the total, and confirm. Instant booking means no back-and-forth with hosts. Your reservation is confirmed the moment you pay.</p>
+          <div class="how-step-img">
+            <img src="https://images.unsplash.com/photo-1554224155-6726b3ff858f?auto=format&fit=crop&w=800&q=80" alt="Book instantly" loading="lazy">
+          </div>
+        </div>
+        <div class="how-step">
+          <div class="how-step-num">03</div>
+          <h3 class="how-step-title">Arrive and settle in</h3>
+          <p class="how-step-body">A local host meets you at the door. The apartment is cleaned, stocked, and ready. If anything isn&rsquo;t right, we fix it within the hour &mdash; or you stay free.</p>
+          <div class="how-step-img">
+            <img src="https://images.unsplash.com/photo-1522708323-2a93d582dbab?auto=format&fit=crop&w=800&q=80" alt="Arrive and settle" loading="lazy">
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── Trustpilot ── -->
+<section class="section trustpilot-section">
+  <div class="container">
+    <p class="section-label">Trusted by guests</p>
+    <h2 class="section-headline" style="margin-bottom:var(--s10)">What our guests say</h2>
+    <div class="trustpilot-card">
+      <div class="trustpilot-brand">
+        <svg class="trustpilot-star" viewBox="0 0 20 20" fill="currentColor"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>
+        <span class="trustpilot-rating">Trustpilot &middot; <strong>4.8</strong> &middot; 340+ reviews</span>
+      </div>
+      <div class="trustpilot-stars">
+        <svg class="trustpilot-star" viewBox="0 0 20 20" fill="currentColor"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>
+        <svg class="trustpilot-star" viewBox="0 0 20 20" fill="currentColor"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>
+        <svg class="trustpilot-star" viewBox="0 0 20 20" fill="currentColor"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>
+        <svg class="trustpilot-star" viewBox="0 0 20 20" fill="currentColor"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>
+        <svg class="trustpilot-star" viewBox="0 0 20 20" fill="currentColor"><path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/></svg>
+      </div>
+      <p class="trustpilot-quote">CheckinBliss has completely changed how I travel within Nigeria. Every apartment I&rsquo;ve booked has been immaculate &mdash; the photos are honest, the hosts are warm, and the booking process is seamless.</p>
+      <p class="trustpilot-reviewer">Amara O.</p>
+      <p class="trustpilot-date">March 2026 &middot; Lagos</p>
+      <a href="#" class="trustpilot-link">View on Trustpilot →</a>
+    </div>
+    <div class="trustpilot-controls">
+      <button class="trustpilot-arrow" aria-label="Previous review">&#8592;</button>
+      <div class="trustpilot-dots">
+        <div class="trustpilot-dot active"></div>
+        <div class="trustpilot-dot"></div>
+        <div class="trustpilot-dot"></div>
+      </div>
+      <button class="trustpilot-arrow" aria-label="Next review">&#8594;</button>
+    </div>
+  </div>
+</section>
+
+<!-- ── Promise ── -->
+<section class="section promise">
+  <div class="container">
+    <div class="promise-header">
+      <p class="section-label">Our Promise</p>
+      <h2 class="section-headline">Every stay, verified</h2>
+    </div>
+    <div class="promise-grid">
+      <div class="promise-card">
+        <svg class="promise-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <path d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+        </svg>
+        <h3 class="promise-card-title">Inspected in&nbsp;person</h3>
+        <p class="promise-card-body">We visit every apartment before it&rsquo;s listed. No exceptions. We check the water pressure, the wifi speed, and whether the third photo is actually the second bedroom.</p>
+      </div>
+      <div class="promise-card">
+        <svg class="promise-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <path d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/>
+          <circle cx="12" cy="13" r="3"/>
+        </svg>
+        <h3 class="promise-card-title">Photographed editorially</h3>
+        <p class="promise-card-body">No wide-angle tricks or aggressive HDR. Every photo is shot with natural light at 35mm, so proportions and colours are honest. What you see is what you&rsquo;ll find.</p>
+      </div>
+      <div class="promise-card">
+        <svg class="promise-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+          <path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+        </svg>
+        <h3 class="promise-card-title">Fixed within the&nbsp;hour</h3>
+        <p class="promise-card-body">If anything isn&rsquo;t right when you check in, we fix it within 60 minutes &mdash; or your first night is on us. We mean it. It&rsquo;s happened once, and we made it right.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── Quote Band 2 ── -->
+<section class="quote-band">
+  <img class="quote-band-bg" src="https://images.unsplash.com/photo-1600047509807-ba8f99d2cdde?auto=format&fit=crop&w=2400&q=80" alt="" loading="lazy">
+  <div class="quote-band-scrim"></div>
+  <div class="quote-band-content">
+    <p class="quote-band-quote">Finally &mdash; a place in Abuja that feels like home, not a hotel. We booked two weeks and extended to a month. The host even left fresh fruit on the counter.</p>
+    <p class="quote-band-attribution">Kelechi N., Abuja &mdash; 4 stays</p>
+  </div>
+</section>
+
+<!-- ── Footer ── -->
+<footer class="footer">
+  <div class="container">
+    <div class="footer-grid">
+      <div>
+        <div class="footer-brand-name">CheckinBliss</div>
+        <p class="footer-brand-desc">The premium way to stay in Africa. Hand-selected apartments in Lagos and Abuja, instantly bookable from anywhere.</p>
+      </div>
+      <div>
+        <div class="footer-col-title">Explore</div>
+        <a href="search.html">Lagos stays</a>
+        <a href="search.html">Abuja stays</a>
+        <a href="search.html">Our picks</a>
+        <a href="search.html">All apartments</a>
+      </div>
+      <div>
+        <div class="footer-col-title">Company</div>
+        <a href="#">About</a>
+        <a href="#">How we verify</a>
+        <a href="#">Press</a>
+        <a href="#">Careers</a>
+      </div>
+      <div>
+        <div class="footer-col-title">Support</div>
+        <a href="#">Help centre</a>
+        <a href="#">Contact</a>
+        <a href="#">Host with us</a>
+        <a href="#">Trust &amp; safety</a>
+      </div>
+    </div>
+    <div class="footer-tease">
+      <p class="footer-tease-label">Coming Year 2</p>
+      <p class="footer-tease-text">Lifestyle — curated experiences in every city</p>
+    </div>
+    <div class="footer-bottom">
+      <span>&copy; 2026 CheckinBliss</span>
+      <span>
+        <a href="#" style="color:var(--mute);margin-right:var(--s4)">Privacy</a>
+        <a href="#" style="color:var(--mute);margin-right:var(--s4)">Terms</a>
+        <a href="#" style="color:var(--mute)">Cookies</a>
+      </span>
+    </div>
+  </div>
+</footer>
+
+</body>
+</html>

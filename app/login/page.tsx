@@ -1,44 +1,27 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useTransition } from "react";
 import Link from "next/link";
+import { loginAction } from "@/actions/auth";
 
 const CREDENTIALS = [
-  { role: "Admin", email: "admin@checkbliss.com" },
-  { role: "Operator", email: "operator@checkbliss.com" },
-  { role: "Owner", email: "owner@checkbliss.com" },
+  { role: "Admin", email: "admin@checkbliss.com", sub: "Strategic oversight, financial control" },
+  { role: "Operator — Lagos", email: "operator-lagos@checkbliss.com", sub: "Lagos city operations" },
+  { role: "Operator — Abuja", email: "operator-abuja@checkbliss.com", sub: "Abuja city operations" },
+  { role: "Owner", email: "owner@checkbliss.com", sub: "Property portfolio" },
 ] as const;
 
 export default function LoginPage() {
   const [error, setError] = useState<string | null>(null);
-  const [pending, setPending] = useState(false);
+  const [pending, startTransition] = useTransition();
   const [fillEmail, setFillEmail] = useState("");
 
-  async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
-    e.preventDefault();
-    setPending(true);
+  function handleSubmit(formData: FormData) {
     setError(null);
-    const form = new FormData(e.currentTarget);
-    const email = (form.get("email") as string)?.trim().toLowerCase();
-    const password = form.get("password") as string;
-
-    if (!email || !password) {
-      setError("Email and password are required.");
-      setPending(false);
-      return;
-    }
-
-    // Mock login for demo — accepts demo credentials
-    const validEmails = ["admin@checkbliss.com", "operator@checkbliss.com", "owner@checkbliss.com"];
-    if (!validEmails.includes(email) || password !== "checkbliss-demo-2026") {
-      setError("Invalid email or password.");
-      setPending(false);
-      return;
-    }
-
-    const role = email.split("@")[0] as "admin" | "operator" | "owner";
-    const routes: Record<string, string> = { admin: "/admin", operator: "/dashboard/operator", owner: "/dashboard/owner" };
-    window.location.href = routes[role] ?? "/";
+    startTransition(async () => {
+      const result = await loginAction(null, formData);
+      if (result?.error) setError(result.error);
+    });
   }
 
   return (
@@ -92,7 +75,7 @@ export default function LoginPage() {
             <p className="font-sans text-sm text-ink-secondary mt-2">Access your dashboard, bookings, and properties.</p>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-5">
+          <form action={handleSubmit} className="space-y-5">
             <div>
               <label className="font-sans text-xs font-semibold uppercase tracking-[0.1em] text-mute block mb-1.5">Email address</label>
               <input
@@ -144,6 +127,7 @@ export default function LoginPage() {
               {CREDENTIALS.map((c) => (
                 <button
                   key={c.email}
+                  type="button"
                   onClick={() => setFillEmail(c.email)}
                   className={`w-full flex items-center gap-3 px-4 py-3 rounded-[var(--radius-md)] text-sm font-sans cursor-pointer transition-all border ${
                     fillEmail === c.email
@@ -159,6 +143,7 @@ export default function LoginPage() {
                   <div className="text-left min-w-0">
                     <div className="font-medium text-[13px]">{c.role}</div>
                     <div className="text-[11px] opacity-60 truncate">{c.email}</div>
+                    <div className="text-[10px] opacity-50 truncate">{c.sub}</div>
                   </div>
                   <span className="ml-auto text-[10px] font-mono opacity-40 shrink-0">checkbliss-demo-2026</span>
                 </button>

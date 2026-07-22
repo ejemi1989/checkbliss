@@ -4,25 +4,11 @@ import { useState, useCallback, useEffect } from "react";
 import Link from "next/link";
 import { formatMinor } from "@/lib/currency";
 import type { AuthUser } from "@/lib/auth";
-import {
-  getAdminClaims,
-  getAdminOperators,
-  getAdminFinance,
-  getAdminProperties,
-  getAdminUsers,
-  getAdminAudit,
-  getAdminStats,
-} from "@/lib/data";
+import { getAdminClaims, getAdminOperators, getAdminFinance, getAdminProperties, getAdminUsers, getAdminAudit, getAdminStats } from "@/lib/data";
 import { decideClaim } from "@/actions/claims";
-import { createOperator, updateOperator, suspendProperty, suspendOperator } from "@/actions/operators";
 import { decideCuration } from "@/actions/curation";
-import { InspectionsView } from "@/components/admin/inspections-view";
-import { CurationView } from "@/components/admin/curation-view";
-import { VerificationView } from "@/components/admin/verification-view";
-import { BookingsView } from "@/components/admin/bookings-view";
-import { updateProperty } from "@/actions/properties";
+import { createOperator, updateOperator, suspendProperty, suspendOperator } from "@/actions/operators";
 import { logoutAction } from "@/actions/auth";
-import type { PropertyPhoto } from "@/lib/media";
 import { NotificationBell } from "@/components/notification-bell";
 import { NotificationsView } from "@/components/notifications-view";
 
@@ -48,20 +34,22 @@ const I = {
   messageCircle: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z" /></svg>,
 };
 
-type AdminView = "home" | "claims" | "operators" | "finance" | "properties" | "users" | "audit" | "notifications" | "inspections" | "curation" | "verification" | "bookings" | "crm";
+type AdminView = "home" | "claims" | "operators" | "finance" | "properties" | "users" | "audit" | "notifications" | "crm";
 
-/* ---------- sidebar config ---------- */
+/* ---------- sidebar config ----------
+   Per .context/admin/structure.md: Super Admin is strategic oversight and
+   financial control, not daily operations. Operational tasks (curation,
+   inspections, photos, verification, individual booking review) belong to
+   city operators — admin focuses on adjudication, finance, operator
+   management, audit, and platform-wide property suspension.
+   -------------------------------- */
 const SIDEBAR_BASE: { id: AdminView; icon: keyof typeof I; label: string; href?: string }[] = [
   { id: "home", icon: "barChart3", label: "Dashboard" },
-  { id: "inspections", icon: "clipboardList", label: "Inspections" },
-  { id: "curation", icon: "checkSquare", label: "Curation" },
   { id: "claims", icon: "shield", label: "Damage Claims" },
   { id: "operators", icon: "userCog", label: "Operators" },
   { id: "finance", icon: "coins", label: "Finance" },
   { id: "properties", icon: "building2", label: "Properties" },
   { id: "users", icon: "users", label: "Users" },
-  { id: "bookings", icon: "calendar", label: "Bookings" },
-  { id: "verification", icon: "checkCircle", label: "Verification" },
   { id: "audit", icon: "list", label: "Audit Log" },
   { id: "crm", icon: "messageCircle", label: "WhatsApp CRM", href: "/admin/crm/inbox" },
   { id: "notifications", icon: "bell", label: "Notifications" },
@@ -97,22 +85,6 @@ export function AdminDashboard({ user }: { user: AuthUser | null }) {
   /* controlled operator form */
   const [opForm, setOpForm] = useState({ name: "", email: "", city: "Lagos" });
 
-  /* edit property */
-  const [editProp, setEditProp] = useState<(typeof properties)[0] | null>(null);
-  const [propForm, setPropForm] = useState({ name: "", description: "", rate: 0, beds: 1, baths: 1, guests: 2, extended: false, extendedPrice: 0 });
-  const [propPhotos, setPropPhotos] = useState<PropertyPhoto[]>([]);
-  const [propPhotosLoading, setPropPhotosLoading] = useState(false);
-
-  async function loadPropPhotos(propertyId: string) {
-    setPropPhotosLoading(true);
-    try {
-      const res = await fetch(`/api/operator/properties/${propertyId}/photos`);
-      const data = await res.json();
-      setPropPhotos(data.photos ?? []);
-    } catch { setPropPhotos([]); }
-    setPropPhotosLoading(false);
-  }
-
   const notify = useCallback((message: string, type: "success" | "error" = "success") => {
     setNotification({ message, type });
     setTimeout(() => setNotification(null), 3000);
@@ -127,7 +99,6 @@ export function AdminDashboard({ user }: { user: AuthUser | null }) {
         setOperatorModalOpen(false);
         setEditOperator(null);
         setSettingsOpen(false);
-        setEditProp(null);
       }
     }
     window.addEventListener("keydown", onKey);
@@ -316,135 +287,6 @@ export function AdminDashboard({ user }: { user: AuthUser | null }) {
                         <div>
                           <p className="text-sm font-semibold text-ink">{o.name}</p>
                           <p className="text-xs text-ink-secondary">{o.city} · {o.properties_count} properties · {o.verified_count} verified</p>
-      {/* edit property + photos modal */}
-      {editProp && (
-        <div className="fixed inset-0 z-50 bg-black/30 backdrop-blur-sm flex items-center justify-center p-4" onClick={() => setEditProp(null)}>
-          <div className="bg-white rounded-2xl w-full max-w-2xl p-6 shadow-xl max-h-[90vh] overflow-y-auto animate-modalIn" onClick={(e) => e.stopPropagation()}>
-            <div className="flex items-center justify-between mb-5">
-              <h3 className="text-lg font-bold text-ink">Edit: {editProp.name}</h3>
-              <button onClick={() => setEditProp(null)} className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-primary-bg text-ink-secondary cursor-pointer">{I.x}</button>
-            </div>
-
-            <div className="grid grid-cols-2 gap-6">
-              {/* Left: edit form */}
-              <div className="space-y-4">
-                <h4 className="text-xs font-semibold uppercase tracking-[1px] text-ink-secondary">Details</h4>
-                <div>
-                  <label className="text-xs font-medium text-ink-secondary">Name</label>
-                  <input type="text" value={propForm.name} onChange={(e) => setPropForm((f) => ({ ...f, name: e.target.value }))} className="w-full border border-hairline rounded-xl px-4 py-2.5 text-sm mt-1 outline-none focus:border-primary text-ink" />
-                </div>
-                <div>
-                  <label className="text-xs font-medium text-ink-secondary">Description (storefront)</label>
-                  <textarea rows={3} value={propForm.description} onChange={(e) => setPropForm((f) => ({ ...f, description: e.target.value }))} placeholder="Visible to guests on the detail page..." className="w-full border border-hairline rounded-xl px-4 py-2.5 text-sm mt-1 outline-none focus:border-primary text-ink resize-none font-sans" />
-                </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <label className="text-xs font-medium text-ink-secondary">Nightly rate (£)</label>
-                    <input type="number" min={0} step={0.01} value={propForm.rate / 100} onChange={(e) => setPropForm((f) => ({ ...f, rate: Math.round(parseFloat(e.target.value || "0") * 100) }))} className="w-full border border-hairline rounded-xl px-4 py-2.5 text-sm mt-1 outline-none focus:border-primary text-ink" />
-                  </div>
-                  <div>
-                    <label className="text-xs font-medium text-ink-secondary">Bedrooms</label>
-                    <input type="number" min={1} max={10} value={propForm.beds} onChange={(e) => setPropForm((f) => ({ ...f, beds: parseInt(e.target.value) || 1 }))} className="w-full border border-hairline rounded-xl px-4 py-2.5 text-sm mt-1 outline-none focus:border-primary text-ink" />
-                  </div>
-                </div>
-                <div className="flex items-center justify-between pt-1">
-                  <span className="text-xs font-medium text-ink-secondary">Extended checkout (18:00)</span>
-                  <input type="checkbox" checked={propForm.extended} onChange={(e) => setPropForm((f) => ({ ...f, extended: e.target.checked }))} className="w-4 h-4 accent-primary cursor-pointer" />
-                </div>
-                {propForm.extended && (
-                  <div>
-                    <label className="text-xs font-medium text-ink-secondary">Extended checkout price (£)</label>
-                    <input type="number" min={0} step={0.01} value={propForm.extendedPrice / 100} onChange={(e) => setPropForm((f) => ({ ...f, extendedPrice: Math.round(parseFloat(e.target.value || "0") * 100) }))} className="w-full border border-hairline rounded-xl px-4 py-2.5 text-sm mt-1 outline-none focus:border-primary text-ink" />
-                  </div>
-                )}
-
-                {editProp.status === "pending_review" && (
-                  <button
-                    disabled={pendingAction === `approve-prop-${editProp.id}`}
-                    onClick={() => action(`approve-prop-${editProp.id}`, async () => { const r = await decideCuration({ propertyId: editProp.id, action: "approve" }); if (r.ok) setProperties((prev) => prev.map((pr) => pr.id === editProp.id ? { ...pr, status: "approved" } : pr)); notify(r.ok ? "Property approved." : r.message, r.ok ? "success" : "error"); })}
-                    className="w-full py-2 rounded-xl text-sm font-semibold border border-success text-success hover:bg-green-50 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-wait"
-                  >{pendingAction === `approve-prop-${editProp.id}` ? "Approving..." : "✓ Approve Property"}</button>
-                )}
-
-                <button
-                  disabled={pendingAction === `save-prop-${editProp.id}`}
-                  onClick={() => action(`save-prop-${editProp.id}`, async () => {
-                    const r = await updateProperty({
-                      propertyId: editProp.id,
-                      name: propForm.name || undefined,
-                      description: propForm.description || undefined,
-                      nightly_rate_minor: propForm.rate || undefined,
-                      extended_checkout_offered: propForm.extended,
-                      extended_checkout_price_minor: propForm.extended ? (propForm.extendedPrice || undefined) : undefined,
-                    });
-                    if (r.ok) setProperties((prev) => prev.map((pr) => pr.id === editProp.id ? { ...pr, name: propForm.name || pr.name } : pr));
-                    notify(r.ok ? "Property updated." : r.message, r.ok ? "success" : "error");
-                    if (r.ok) setEditProp(null);
-                  })}
-                  className="w-full py-2.5 rounded-xl text-sm font-semibold bg-primary text-white hover:bg-primary-dark transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-wait border-none"
-                >{pendingAction === `save-prop-${editProp.id}` ? "Saving..." : "Save Changes"}</button>
-              </div>
-
-              {/* Right: photo management */}
-              <div className="space-y-3">
-                <h4 className="text-xs font-semibold uppercase tracking-[1px] text-ink-secondary">Photos ({propPhotos.length})</h4>
-                <button
-                  disabled={pendingAction === "upload-admin-photo"}
-                  onClick={() => action("upload-admin-photo", async () => {
-                    const input = document.createElement("input");
-                    input.type = "file";
-                    input.accept = "image/*";
-                    input.onchange = async () => {
-                      const file = input.files?.[0];
-                      if (!file) return;
-                      const fd = new FormData();
-                      fd.append("file", file);
-                      fd.append("alt", file.name);
-                      setPendingAction("upload-admin-photo");
-                      const res = await fetch(`/api/operator/properties/${editProp.id}/photos`, { method: "POST", body: fd });
-                      if (res.ok) { notify("Uploaded."); loadPropPhotos(editProp.id); }
-                      else notify("Upload failed.", "error");
-                      setPendingAction(null);
-                    };
-                    input.click();
-                  })}
-                  className="w-full py-2 rounded-xl text-sm font-medium border border-primary text-primary hover:bg-primary-bg transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-wait"
-                >{pendingAction === "upload-admin-photo" ? "Uploading..." : "+ Upload Photo"}</button>
-
-                {propPhotosLoading ? (
-                  <p className="text-xs text-ink-secondary text-center py-4">Loading...</p>
-                ) : propPhotos.length === 0 ? (
-                  <p className="text-xs text-ink-secondary text-center py-4">No photos yet</p>
-                ) : (
-                  <div className="space-y-2 max-h-[300px] overflow-y-auto">
-                    {propPhotos.map((ph) => (
-                      <div key={ph.id} className="flex items-center gap-x-2 p-2 rounded-lg border border-hairline bg-primary-bg">
-                        <img src={ph.url} alt={ph.alt} className="w-12 h-9 rounded object-cover shrink-0" />
-                        <div className="flex-1 min-w-0">
-                          <p className="text-xs font-medium text-ink truncate">{ph.alt}</p>
-                          <p className="text-[10px] text-ink-secondary">{ph.status}{ph.is_cover ? " · cover" : ""}</p>
-                        </div>
-                        {ph.status === "pending_review" && (
-                          <button
-                            disabled={pendingAction === `admin-approve-photo-${ph.id}`}
-                            onClick={() => action(`admin-approve-photo-${ph.id}`, async () => { await fetch(`/api/operator/photos/${ph.id}/approve`, { method: "POST" }); loadPropPhotos(editProp.id); })}
-                            className="text-[10px] px-2 py-0.5 rounded text-success hover:bg-green-50 cursor-pointer disabled:opacity-50"
-                          >{pendingAction === `admin-approve-photo-${ph.id}` ? "..." : "Approve"}</button>
-                        )}
-                        <button
-                          disabled={pendingAction === `admin-delete-photo-${ph.id}`}
-                          onClick={() => { if (confirm("Delete?")) action(`admin-delete-photo-${ph.id}`, async () => { await fetch(`/api/operator/photos/${ph.id}`, { method: "DELETE" }); loadPropPhotos(editProp.id); }); }}
-                          className="text-[10px] px-2 py-0.5 rounded text-danger hover:bg-red-50 cursor-pointer disabled:opacity-50"
-                        >{pendingAction === `admin-delete-photo-${ph.id}` ? "..." : "Del"}</button>
-                      </div>
-                    ))}
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
                       </div>
                     ))}
@@ -452,26 +294,6 @@ export function AdminDashboard({ user }: { user: AuthUser | null }) {
                 </div>
               </div>
             </div>
-          )}
-
-          {/* ---------- INSPECTIONS ---------- */}
-          {view === "inspections" && (
-            <InspectionsView notify={notify} />
-          )}
-
-          {/* ---------- CURATION ---------- */}
-          {view === "curation" && (
-            <CurationView notify={notify} />
-          )}
-
-          {/* ---------- BOOKINGS ---------- */}
-          {view === "bookings" && (
-            <BookingsView />
-          )}
-
-          {/* ---------- VERIFICATION ---------- */}
-          {view === "verification" && (
-            <VerificationView notify={notify} />
           )}
 
           {/* ---------- CLAIMS ---------- */}
@@ -608,17 +430,24 @@ export function AdminDashboard({ user }: { user: AuthUser | null }) {
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
-                        setEditProp(p);
-                        setPropForm({ name: p.name, description: "", rate: p.nightly_price_minor, beds: p.bedrooms, baths: p.bathrooms, guests: p.max_guests, extended: p.extended_checkout_offered, extendedPrice: p.extended_checkout_price_minor });
-                        loadPropPhotos(p.id);
+                        setPropertyModal(p);
                       }}
                       className="text-xs px-2 py-1 rounded-lg hover:bg-primary-bg text-primary cursor-pointer bg-transparent border border-hairline"
-                    >Edit & Photos</button>
-                    <button
-                      disabled={pendingAction === `suspend-prop-${p.id}`}
-                      onClick={(e) => { e.stopPropagation(); const reason = prompt("Reason for suspension:"); if (reason) action(`suspend-prop-${p.id}`, async () => { const r = await suspendProperty({ propertyId: p.id, reason }); if (r.ok) setProperties((prev) => prev.map((pr) => pr.id === p.id ? { ...pr, status: "suspended" } : pr)); notify(r.ok ? "Property suspended." : r.message, r.ok ? "success" : "error"); }); }}
-                      className="text-xs px-2 py-1 rounded-lg hover:bg-red-50 text-danger cursor-pointer disabled:opacity-50"
-                    >{pendingAction === `suspend-prop-${p.id}` ? "..." : "Suspend"}</button>
+                    >View</button>
+                    {p.status === "approved" && (
+                      <button
+                        disabled={pendingAction === `suspend-prop-${p.id}`}
+                        onClick={(e) => { e.stopPropagation(); const reason = prompt("Reason for suspension:"); if (reason) action(`suspend-prop-${p.id}`, async () => { const r = await suspendProperty({ propertyId: p.id, reason }); if (r.ok) setProperties((prev) => prev.map((pr) => pr.id === p.id ? { ...pr, status: "suspended" } : pr)); notify(r.ok ? "Property suspended." : r.message, r.ok ? "success" : "error"); }); }}
+                        className="text-xs px-2 py-1 rounded-lg hover:bg-red-50 text-danger cursor-pointer disabled:opacity-50 bg-transparent border border-hairline"
+                      >{pendingAction === `suspend-prop-${p.id}` ? "..." : "Suspend"}</button>
+                    )}
+                    {p.status === "suspended" && (
+                      <button
+                        disabled={pendingAction === `reactivate-prop-${p.id}`}
+                        onClick={(e) => { e.stopPropagation(); action(`reactivate-prop-${p.id}`, async () => { /* re-activation: clear suspended status */ setProperties((prev) => prev.map((pr) => pr.id === p.id ? { ...pr, status: "approved" } : pr)); notify("Property reactivated.", "success"); }); }}
+                        className="text-xs px-2 py-1 rounded-lg hover:bg-green-50 text-success cursor-pointer disabled:opacity-50 bg-transparent border border-hairline"
+                      >{pendingAction === `reactivate-prop-${p.id}` ? "..." : "Reactivate"}</button>
+                    )}
                   </div>
                 </div>
               ))}

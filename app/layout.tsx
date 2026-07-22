@@ -49,7 +49,7 @@ export default function RootLayout({
       className={`${inter.variable} ${playfair.variable} ${newsreader.variable} ${hankenGrotesk.variable}`}
       suppressHydrationWarning
     >
-      <body className="min-h-screen bg-bone text-ink font-sans antialiased" suppressHydrationWarning>
+      <body suppressHydrationWarning>
         {children}
       </body>
     </html>

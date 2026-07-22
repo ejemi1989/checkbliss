@@ -134,12 +134,6 @@ function PropertyCard({ p }: { p: SeedProperty }) {
       <h3 className="font-display text-[clamp(22px,1.8vw,28px)] font-medium text-ink leading-tight mb-1">{p.name}</h3>
       <p className="font-sans text-sm text-mute">{p.city}, Nigeria</p>
       <div className="flex items-center gap-2 mt-2 font-sans text-sm">
-        <span className="text-trustpilot">★★★★★</span>
-        <span className="text-ink-secondary">4.8</span>
-        <span>&middot;</span>
-        <span className="text-xs font-semibold text-green-soft uppercase tracking-[0.06em]">&#10003; Verified</span>
-      </div>
-      <div className="flex items-center gap-2 mt-2 font-sans text-sm">
         <span className="font-semibold text-ink">{formatMinor(p.nightly_rate_minor, p.currency as CurrencyCode)}</span>
         <span className="text-ink-secondary">/night</span>
       </div>

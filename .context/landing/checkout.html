@@ -1,0 +1,554 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Checkout — CheckinBliss</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Hanken+Grotesk:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&family=Newsreader:ital,opsz,wght@0,6..72,300;0,6..72,400;0,6..72,500;0,6..72,600;1,6..72,400;1,6..72,500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #E9ECE2;
+  --soft: #F4F6F0;
+  --card: #FCFDFB;
+  --ink: #171915;
+  --body-c: #44483D;
+  --mute: #6A6E63;
+  --line: #D8DBCF;
+  --green: #2F3D2C;
+  --green-d: #232E22;
+  --green-soft: #5C6B4F;
+
+  --font-display: 'Newsreader', 'Gallient', Georgia, serif;
+  --font-body: 'Hanken Grotesk', system-ui, -apple-system, sans-serif;
+
+  --s1: 4px; --s2: 8px; --s3: 12px; --s4: 16px; --s5: 20px; --s6: 24px;
+  --s7: 28px; --s8: 32px; --s9: 40px; --s10: 48px; --s11: 64px; --s12: 80px;
+
+  --r-0: 0px; --r-3: 3px; --r-10: 10px; --r-18: 18px; --r-28: 28px; --r-pill: 999px;
+
+  --mw: 1240px;
+  --gutter: 32px;
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { -webkit-font-smoothing: antialiased; }
+body {
+  font-family: var(--font-body);
+  font-size: 16px;
+  font-weight: 400;
+  line-height: 1.55;
+  color: var(--body-c);
+  background: var(--bg);
+}
+img { display: block; max-width: 100%; }
+a { color: var(--green-soft); text-decoration: none; }
+a:hover { color: var(--green-d); }
+
+.container { max-width: var(--mw); margin: 0 auto; padding: 0 var(--gutter); }
+
+/* ── Header ── */
+.checkout-header {
+  background: var(--card);
+  border-bottom: 1px solid var(--line);
+  position: sticky;
+  top: 0;
+  z-index: 50;
+}
+.header-inner {
+  max-width: var(--mw);
+  margin: 0 auto;
+  padding: var(--s4) var(--gutter);
+  display: flex;
+  align-items: center;
+  gap: var(--s5);
+}
+.header-back {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--body-c);
+  display: flex;
+  align-items: center;
+  gap: var(--s1);
+  text-decoration: none;
+  flex-shrink: 0;
+}
+.header-back:hover { color: var(--green-soft); }
+.header-logo {
+  font-family: var(--font-display);
+  font-size: 20px;
+  font-weight: 500;
+  color: var(--ink);
+  letter-spacing: -0.01em;
+}
+
+/* ── Checkout Grid ── */
+.checkout-grid {
+  display: grid;
+  grid-template-columns: 1fr 400px;
+  gap: var(--s11);
+  padding: var(--s9) 0;
+  align-items: start;
+}
+.checkout-main { min-width: 0; }
+.checkout-sidebar { position: relative; }
+
+/* ── Step Indicator ── */
+.step-indicator {
+  display: flex;
+  align-items: center;
+  gap: var(--s3);
+  margin-bottom: var(--s9);
+  font-size: 14px;
+  color: var(--mute);
+}
+.step-indicator .step-num {
+  width: 28px; height: 28px;
+  border-radius: 50%;
+  border: 1.5px solid var(--line);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  font-weight: 600;
+  flex-shrink: 0;
+}
+.step-indicator .step-num.active {
+  background: var(--green);
+  border-color: var(--green);
+  color: #F4F6F0;
+}
+.step-indicator .step-num.done {
+  background: var(--green-soft);
+  border-color: var(--green-soft);
+  color: #F4F6F0;
+}
+.step-line {
+  width: 24px;
+  height: 1px;
+  background: var(--line);
+  flex-shrink: 0;
+}
+.step-label {
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+/* ── Form Sections ── */
+.form-section {
+  margin-bottom: var(--s10);
+}
+.form-section-title {
+  font-family: var(--font-display);
+  font-size: 22px;
+  font-weight: 500;
+  color: var(--ink);
+  margin-bottom: var(--s5);
+}
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--s4);
+  margin-bottom: var(--s4);
+}
+.form-row.single { grid-template-columns: 1fr; }
+.form-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--s1);
+}
+.form-label {
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--mute);
+}
+.form-input {
+  padding: var(--s3) var(--s4);
+  border-radius: var(--r-10);
+  border: 1px solid var(--line);
+  background: var(--card);
+  font-family: var(--font-body);
+  font-size: 15px;
+  color: var(--ink);
+  transition: border-color 0.15s;
+}
+.form-input:focus {
+  outline: none;
+  border-color: var(--green-soft);
+}
+.form-input::placeholder { color: var(--mute); }
+.form-select {
+  padding: var(--s3) var(--s4);
+  border-radius: var(--r-10);
+  border: 1px solid var(--line);
+  background: var(--card);
+  font-family: var(--font-body);
+  font-size: 15px;
+  color: var(--ink);
+  appearance: none;
+  cursor: pointer;
+}
+
+/* ── Payment ── */
+.payment-card {
+  padding: var(--s5);
+  border-radius: var(--r-10);
+  border: 1px solid var(--line);
+  background: var(--card);
+  display: flex;
+  align-items: center;
+  gap: var(--s4);
+  margin-bottom: var(--s3);
+  cursor: pointer;
+}
+.payment-card:hover { border-color: var(--green-soft); }
+.payment-card.selected {
+  border-color: var(--green);
+  background: #F4F6F0;
+}
+.payment-radio {
+  width: 18px; height: 18px;
+  border-radius: 50%;
+  border: 1.5px solid var(--line);
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.payment-card.selected .payment-radio {
+  border-color: var(--green);
+}
+.payment-card.selected .payment-radio::after {
+  content: '';
+  width: 9px; height: 9px;
+  border-radius: 50%;
+  background: var(--green);
+}
+.payment-icon {
+  width: 24px; height: 24px;
+  color: var(--mute);
+  flex-shrink: 0;
+}
+.payment-label {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--ink);
+}
+
+/* ── Sidebar ── */
+.sidebar-card {
+  position: sticky;
+  top: 80px;
+  padding: var(--s7);
+  background: var(--card);
+  border-radius: var(--r-18);
+  border: 1px solid var(--line);
+}
+.sidebar-property {
+  display: flex;
+  gap: var(--s4);
+  margin-bottom: var(--s5);
+  padding-bottom: var(--s5);
+  border-bottom: 1px solid var(--line);
+}
+.sidebar-property-img {
+  width: 100px; height: 80px;
+  border-radius: var(--r-0);
+  overflow: hidden;
+  flex-shrink: 0;
+}
+.sidebar-property-img img {
+  width: 100%; height: 100%;
+  object-fit: cover;
+}
+.sidebar-property-name {
+  font-family: var(--font-display);
+  font-size: 18px;
+  font-weight: 500;
+  color: var(--ink);
+  line-height: 1.2;
+  margin-bottom: var(--s1);
+}
+.sidebar-property-loc {
+  font-size: 13px;
+  color: var(--mute);
+  margin-bottom: var(--s1);
+}
+.sidebar-property-rating {
+  font-size: 13px;
+  color: var(--body-c);
+}
+
+.sidebar-dates {
+  display: flex;
+  gap: var(--s4);
+  margin-bottom: var(--s5);
+  padding-bottom: var(--s5);
+  border-bottom: 1px solid var(--line);
+}
+.sidebar-date-col { flex: 1; }
+.sidebar-date-label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--mute);
+  margin-bottom: var(--s1);
+}
+.sidebar-date-val {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--ink);
+}
+
+.sidebar-price-row {
+  display: flex;
+  justify-content: space-between;
+  padding: var(--s1) 0;
+  font-size: 14px;
+}
+.sidebar-price-row.total {
+  padding-top: var(--s3);
+  margin-top: var(--s3);
+  border-top: 1px solid var(--line);
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--ink);
+}
+.sidebar-price-row.green {
+  color: var(--green-soft);
+}
+
+.confirm-btn {
+  display: block;
+  width: 100%;
+  padding: var(--s4) var(--s8);
+  margin-top: var(--s6);
+  background: var(--green);
+  color: #F4F6F0;
+  font-family: var(--font-body);
+  font-size: 16px;
+  font-weight: 600;
+  border: none;
+  border-radius: var(--r-3);
+  cursor: pointer;
+  text-align: center;
+  text-decoration: none;
+  transition: background 0.2s;
+}
+.confirm-btn:hover { background: var(--green-d); }
+
+.sidebar-guarantee {
+  margin-top: var(--s5);
+  text-align: center;
+  font-size: 12px;
+  color: var(--mute);
+  line-height: 1.45;
+}
+.sidebar-guarantee strong { color: var(--body-c); }
+
+/* ── Cancellation Policy ── */
+.policy-card {
+  padding: var(--s5);
+  background: var(--soft);
+  border-radius: var(--r-0);
+  margin-top: var(--s5);
+}
+.policy-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ink);
+  margin-bottom: var(--s2);
+}
+.policy-body {
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--body-c);
+}
+
+/* ── Responsive ── */
+@media (max-width: 980px) {
+  .checkout-grid { grid-template-columns: 1fr; gap: var(--s9); }
+  .sidebar-card { position: static; }
+}
+@media (max-width: 760px) {
+  .form-row { grid-template-columns: 1fr; }
+  :root { --gutter: 20px; }
+}
+@media (max-width: 560px) {
+  .sidebar-property { flex-direction: column; }
+  .sidebar-property-img { width: 100%; height: 160px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  * { transition: none !important; }
+}
+</style>
+</head>
+<body>
+
+<header class="checkout-header">
+  <div class="header-inner">
+    <a href="detail.html" class="header-back">&#8592; Back to property</a>
+    <span class="header-logo">CheckinBliss</span>
+  </div>
+</header>
+
+<section class="container">
+  <div class="checkout-grid">
+    <div class="checkout-main">
+      <!-- Step Indicator -->
+      <div class="step-indicator">
+        <span class="step-num done">&#10003;</span><span class="step-label">Dates</span>
+        <span class="step-line"></span>
+        <span class="step-num active">2</span><span class="step-label">Guest info</span>
+        <span class="step-line"></span>
+        <span class="step-num">3</span><span class="step-label">Payment</span>
+      </div>
+
+      <!-- Guest Details -->
+      <div class="form-section">
+        <h2 class="form-section-title">Guest details</h2>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">First name</label>
+            <input class="form-input" type="text" placeholder="Temi">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Last name</label>
+            <input class="form-input" type="text" placeholder="Adetola">
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label class="form-label">Email address</label>
+            <input class="form-input" type="email" placeholder="temi@email.com">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Phone number</label>
+            <input class="form-input" type="tel" placeholder="+234 801 234 5678">
+          </div>
+        </div>
+      </div>
+
+      <!-- Trip Purpose -->
+      <div class="form-section">
+        <h2 class="form-section-title">Trip details</h2>
+        <div class="form-row single">
+          <div class="form-group">
+            <label class="form-label">What brings you to Lagos?</label>
+            <select class="form-select">
+              <option>Business travel</option>
+              <option>Leisure / holiday</option>
+              <option>Relocation</option>
+              <option>Visiting family</option>
+              <option>Other</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-row single">
+          <div class="form-group">
+            <label class="form-label">Special requests (optional)</label>
+            <input class="form-input" type="text" placeholder="Early check-in, airport transfer, dietary needs…">
+          </div>
+        </div>
+      </div>
+
+      <!-- Payment Method -->
+      <div class="form-section">
+        <h2 class="form-section-title">Payment method</h2>
+        <div class="payment-card selected">
+          <div class="payment-radio"></div>
+          <svg class="payment-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+          <span class="payment-label">Credit or debit card</span>
+        </div>
+        <div class="payment-card">
+          <div class="payment-radio"></div>
+          <svg class="payment-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M8 12h8M12 8v8"/></svg>
+          <span class="payment-label">Bank transfer</span>
+        </div>
+
+        <!-- Card form (shown for card selection) -->
+        <div style="margin-top:var(--s5)">
+          <div class="form-row single" style="margin-bottom:var(--s4)">
+            <div class="form-group">
+              <label class="form-label">Card number</label>
+              <input class="form-input" type="text" placeholder="1234 5678 9012 3456">
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Expiry date</label>
+              <input class="form-input" type="text" placeholder="MM / YY">
+            </div>
+            <div class="form-group">
+              <label class="form-label">CVC</label>
+              <input class="form-input" type="text" placeholder="123">
+            </div>
+          </div>
+          <div class="form-row single">
+            <div class="form-group">
+              <label class="form-label">Cardholder name</label>
+              <input class="form-input" type="text" placeholder="Temi Adetola">
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Cancellation -->
+      <div class="policy-card">
+        <div class="policy-title">Free cancellation</div>
+        <p class="policy-body">Cancel up to 48 hours before check-in for a full refund. After that, the first night is non-refundable. Date changes are free up to 7 days before check-in. Read the <a href="#">full policy</a>.</p>
+      </div>
+    </div>
+
+    <!-- Sidebar -->
+    <aside class="checkout-sidebar">
+      <div class="sidebar-card">
+        <div class="sidebar-property">
+          <div class="sidebar-property-img">
+            <img src="https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=200&q=80" alt="">
+          </div>
+          <div>
+            <div class="sidebar-property-name">The Ikoyi Residence</div>
+            <div class="sidebar-property-loc">Ikoyi, Lagos</div>
+            <div class="sidebar-property-rating">&#9733; 4.9 &middot; &#10003; Verified</div>
+          </div>
+        </div>
+
+        <div class="sidebar-dates">
+          <div class="sidebar-date-col">
+            <div class="sidebar-date-label">Check-in</div>
+            <div class="sidebar-date-val">22 Jun 2026</div>
+            <div style="font-size:12px;color:var(--mute)">After 2:00 PM</div>
+          </div>
+          <div class="sidebar-date-col" style="text-align:right">
+            <div class="sidebar-date-label">Check-out</div>
+            <div class="sidebar-date-val">26 Jun 2026</div>
+            <div style="font-size:12px;color:var(--mute)">Before 11:00 AM</div>
+          </div>
+        </div>
+
+        <div class="sidebar-price-row"><span>$180 &times; 4 nights</span><span>$720</span></div>
+        <div class="sidebar-price-row"><span>Cleaning fee</span><span>$45</span></div>
+        <div class="sidebar-price-row"><span>Service fee</span><span>$62</span></div>
+        <div class="sidebar-price-row green"><span>First-time guest credit</span><span>&minus;$40</span></div>
+        <div class="sidebar-price-row total"><span>Total (USD)</span><span>$787</span></div>
+
+        <button class="confirm-btn">Confirm and pay</button>
+
+        <div class="sidebar-guarantee">
+          <strong>You won't be charged yet.</strong><br>
+          Your card will be charged 48 hours before check-in. Free cancellation until then.
+        </div>
+      </div>
+    </aside>
+  </div>
+</section>
+
+</body>
+</html>
