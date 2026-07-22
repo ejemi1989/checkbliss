@@ -33,6 +33,10 @@ export async function decideCuration(
     const actorRole = session?.role;
     const actorId = session?.id;
 
+    if (actorRole !== "admin") {
+      return { ok: false, code: "FORBIDDEN", message: "Only platform admins can approve, reject, or request changes on property listings." };
+    }
+
     if (!supabaseAdminConfigured) {
       console.log(`[mock] Property ${propertyId} ${action}${reason ? ` (reason: ${reason})` : ""}`);
       const ownerId = findOwnerForProperty(propertyId);

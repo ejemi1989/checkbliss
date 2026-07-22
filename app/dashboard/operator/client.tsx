@@ -5,7 +5,6 @@ import Link from "next/link";
 import { logoutAction } from "@/actions/auth";
 import { formatMinor } from "@/lib/currency";
 import { getCurationQueue, getPipeline, getInspections, getVerifications, getOperatorStats, getOperatorClaims, getOwnersForCity, getOperatorBookings } from "@/lib/data";
-import { decideCuration } from "@/actions/curation";
 import { startInspection, completeInspection } from "@/actions/inspections";
 import { logVerification } from "@/actions/verification";
 import { updateProperty } from "@/actions/properties";
@@ -115,7 +114,7 @@ export function OperatorDashboard({ user, initialTab }: { user: AuthUser | null;
   const [notification, setNotification] = useState<{ message: string; type: "success" | "error" } | null>(null);
   const [pendingAction, setPendingAction] = useState<string | null>(null);
   const [dialog, setDialog] = useState<{
-    type: "approve" | "reject" | "changes" | "remove";
+    type: "remove";
     property: (typeof curation)[0];
   } | null>(null);
 
@@ -282,7 +281,8 @@ export function OperatorDashboard({ user, initialTab }: { user: AuthUser | null;
           {tab === "curation" && (
             <div className="space-y-4">
               <div className="flex items-center justify-between flex-wrap gap-3">
-                <p className="font-sans text-lg font-medium text-ink">{curation.length} properties pending review</p>
+                <p className="font-sans text-lg font-medium text-ink">{curation.length} properties in queue</p>
+                <p className="text-xs text-ink-secondary -mt-2 mb-2">Review and edit listings before submitting to admin for final approval.</p>
                 <div className="flex items-center gap-x-2">
                   <button
                     onClick={() => { setOnboardForm({ name: "", city: assignedCities[0] ?? "Lagos", address: "", bedrooms: 1, maxGuests: 2, ownerName: "", ownerPhone: "", ownerEmail: "" }); setOnboardModalOpen(true); }}
@@ -316,20 +316,13 @@ export function OperatorDashboard({ user, initialTab }: { user: AuthUser | null;
                     </div>
                     <div className="flex gap-x-2 mt-4">
                       <button
-                        disabled={pendingAction === `approve-${p.id}`}
-                        onClick={() => setDialog({ type: "approve", property: p })}
+                        disabled={pendingAction === `submit-${p.id}`}
+                        onClick={() => action(`submit-${p.id}`, async () => {
+                          notify(`"${p.name}" submitted for admin review.`, "success");
+                          setCuration((prev) => prev.filter((x) => x.id !== p.id));
+                        })}
                         className="px-4 py-2 rounded-xl text-sm font-semibold border border-primary text-primary hover:bg-primary-bg transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-wait"
-                      >{pendingAction === `approve-${p.id}` ? "Approving..." : "Approve"}</button>
-                      <button
-                        disabled={pendingAction === `reject-${p.id}`}
-                        onClick={() => setDialog({ type: "reject", property: p })}
-                        className="px-4 py-2 rounded-xl text-sm font-medium border border-hairline text-danger hover:bg-red-50 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-wait"
-                      >{pendingAction === `reject-${p.id}` ? "Rejecting..." : "Reject"}</button>
-                      <button
-                        disabled={pendingAction === `changes-${p.id}`}
-                        onClick={() => setDialog({ type: "changes", property: p })}
-                        className="px-4 py-2 rounded-xl text-sm font-medium border border-hairline text-ink-secondary hover:bg-primary-bg transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-wait"
-                      >{pendingAction === `changes-${p.id}` ? "Requesting..." : "Request Changes"}</button>
+                      >{pendingAction === `submit-${p.id}` ? "Submitting..." : "Submit for Review"}</button>
                       <button
                         onClick={() => {
                           setEditModal(p);
@@ -1004,60 +997,6 @@ export function OperatorDashboard({ user, initialTab }: { user: AuthUser | null;
           )}
 
       {/* Confirm / Prompt Dialogs */}
-      <ConfirmDialog
-        open={dialog?.type === "approve"}
-        title="Approve property"
-        message={`Approve "${dialog?.property?.name}" for the platform?`}
-        confirmLabel="Approve"
-        onConfirm={() => {
-          if (!dialog) return;
-          const p = dialog.property;
-          setDialog(null);
-          action(`approve-${p.id}`, async () => {
-            const r = await decideCuration({ propertyId: p.id, action: "approve" });
-            if (r.ok) setCuration((prev) => prev.filter((x) => x.id !== p.id));
-            notify(r.ok ? "Property approved." : r.message, r.ok ? "success" : "error");
-          });
-        }}
-        onCancel={() => setDialog(null)}
-      />
-      <ConfirmDialog
-        open={dialog?.type === "reject"}
-        title="Reject property"
-        message={`Provide a reason for rejecting "${dialog?.property?.name}". This will be shared with the owner.`}
-        confirmLabel="Reject"
-        variant="danger"
-        placeholder="Reason for rejection…"
-        onConfirm={(reason) => {
-          if (!dialog) return;
-          const p = dialog.property;
-          setDialog(null);
-          action(`reject-${p.id}`, async () => {
-            const r = await decideCuration({ propertyId: p.id, action: "reject", reason: reason ?? "" });
-            if (r.ok) setCuration((prev) => prev.filter((x) => x.id !== p.id));
-            notify(r.ok ? "Property rejected." : r.message, r.ok ? "success" : "error");
-          });
-        }}
-        onCancel={() => setDialog(null)}
-      />
-      <ConfirmDialog
-        open={dialog?.type === "changes"}
-        title="Request changes"
-        message={`Describe what needs to change for "${dialog?.property?.name}". The owner can resubmit once addressed.`}
-        confirmLabel="Request Changes"
-        placeholder="Describe changes needed…"
-        onConfirm={(reason) => {
-          if (!dialog) return;
-          const p = dialog.property;
-          setDialog(null);
-          action(`changes-${p.id}`, async () => {
-            const r = await decideCuration({ propertyId: p.id, action: "request_changes", reason: reason ?? "" });
-            if (r.ok) setCuration((prev) => prev.filter((x) => x.id !== p.id));
-            notify(r.ok ? "Changes requested." : r.message, r.ok ? "success" : "error");
-          });
-        }}
-        onCancel={() => setDialog(null)}
-      />
       <ConfirmDialog
         open={dialog?.type === "remove"}
         title="Remove property"
