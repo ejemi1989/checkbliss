@@ -178,8 +178,7 @@ export function HomePageClient() {
           </div>
         </nav>
         <div className="hero-content">
-          <p className="eyebrow" style={{ color: "rgba(255,255,255,0.7)", marginBottom: "var(--s4)" }}>Lagos &amp; Abuja</p>
-          <h1>The premium way to stay in Africa</h1>
+          <h1>The Premium way to stay in Africa</h1>
           <p className="hero-sub">Hand-selected luxury apartments in Lagos and Abuja. Book instantly from anywhere.</p>
         </div>
       </section>
@@ -304,7 +303,7 @@ export function HomePageClient() {
           <div className="stays-head">
             <div>
               <span className="eyebrow">Hand-selected stays</span>
-              <h2>Featured apartments</h2>
+              <h2>Hand-selected stays</h2>
             </div>
             <Link href="/lagos" className="cat-link" style={{ alignSelf: "flex-end" }}>View all stays &rarr;</Link>
           </div>
@@ -368,7 +367,7 @@ export function HomePageClient() {
       <section className="promise">
         <div className="wrap">
           <p className="eyebrow" style={{ textAlign: "center", display: "block" }}>The Standard, Upheld</p>
-          <h2>Every stay, verified</h2>
+          <h2>The standard, upheld.</h2>
           <div className="promise-grid">
             <div className="promise-card">
               <svg className="promise-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
@@ -400,7 +399,8 @@ export function HomePageClient() {
       <section className="standard">
         <div className="standard-content">
           <p>
-            </p>
+            We don&rsquo;t ask you to trust strangers&rsquo; reviews. We ask you to trust <em>the work we put in</em> before a single guest arrives.
+          </p>
         </div>
       </section>
 
@@ -408,7 +408,7 @@ export function HomePageClient() {
       <section className="closing">
         <div className="wrap">
           <div className="closing-logo">
-            <img src="/assets/images/logo/Logo1.png" alt="CheckinBliss" className="closing-logo-img" />
+            <img src="/assets/images/logo/Logo-DG.png" alt="CheckinBliss" className="closing-logo-img" />
           </div>
           <h2>
             Built on <span className="fade">trust, shaped by detail, defined by</span> quality, intention, and care.

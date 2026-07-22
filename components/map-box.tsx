@@ -38,6 +38,8 @@ function isBadToken(token: string): boolean {
   return !token || token.startsWith("sk.");
 }
 
+const HOUSE_ICON = `<svg viewBox="0 0 20 18" width="15" height="13" fill="currentColor" aria-hidden="true"><path d="M10 1L0 9h2v8h6v-5h4v5h6V9h2z"/></svg>`;
+
 export function MapBox({
   markers,
   center,
@@ -85,6 +87,21 @@ export function MapBox({
       }
     });
 
+    map.on("load", () => {
+      const brandColors = [
+        ["landuse", "#D8DDD0"],
+        ["water", "#C0CBB4"],
+        ["building", "#D4D8CA"],
+        ["landuse-residential", "#D8DDD0"],
+        ["park", "#D8DDD0"],
+        ["grass", "#D8DDD0"],
+        ["wood", "#D8DDD0"],
+      ];
+      brandColors.forEach(([layer, color]) => {
+        try { map.setPaintProperty(layer, "fill-color", color); } catch {}
+      });
+    });
+
     if (!interactive) {
       map.scrollZoom.disable();
       map.dragPan.disable();
@@ -93,11 +110,21 @@ export function MapBox({
 
     const created = markers.map((m) => {
       const el = document.createElement("div");
-      const color = m.color ?? "#2F3D2C";
-      el.innerHTML = `<span style="background:${color};color:#FCFDFB;padding:4px 8px;border-radius:999px;font-size:11px;font-weight:600;white-space:nowrap;box-shadow:0 2px 8px rgba(0,0,0,.2);cursor:${interactive ? "pointer" : "default"}">${m.label ?? ""}</span>`;
-      const marker = new mapboxgl.Marker({ element: el.firstElementChild as HTMLElement, anchor: "bottom" })
+      el.className = "cb-marker";
+      el.innerHTML = HOUSE_ICON;
+      el.setAttribute("title", m.label ? `${m.label} / night` : "");
+      el.setAttribute("aria-label", m.label ? `${m.label} / night` : "Property location");
+      el.style.cursor = interactive ? "pointer" : "default";
+
+      if (interactive) {
+        el.addEventListener("mouseenter", () => el.classList.add("is-active"));
+        el.addEventListener("mouseleave", () => el.classList.remove("is-active"));
+      }
+
+      const marker = new mapboxgl.Marker({ element: el, anchor: "center" })
         .setLngLat([m.lng, m.lat])
         .addTo(map);
+
       if (m.popup && interactive) {
         marker.setPopup(new mapboxgl.Popup({ offset: 25 }).setText(m.popup));
       }

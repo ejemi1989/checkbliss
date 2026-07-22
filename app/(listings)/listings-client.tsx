@@ -227,7 +227,12 @@ export function ListingsClient({ city, eyebrow, properties }: ListingsPageProps)
 
         <aside className={`mappane ${mapOpen ? "" : "mappane--hidden"}`} aria-label={`Map of ${city} apartments`}>
           <MapBox
-            markers={properties.map((p) => ({ lat: p.lat, lng: p.lng, label: `$${p.price}` }))}
+            markers={properties.map((p) => ({
+              lat: p.lat,
+              lng: p.lng,
+              label: `$${p.price}`,
+              popup: p.title ? `${p.kicker} · ${p.title}\n$${p.price} / night` : undefined,
+            }))}
             center={city === "Lagos" ? { lat: 6.4295, lng: 3.4219 } : { lat: 9.0695, lng: 7.4837 }}
             zoom={11}
             className="map-canvas"
