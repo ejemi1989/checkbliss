@@ -1,5 +1,4 @@
-import { createBrowser } from "@/lib/supabase";
-import { supabaseAdminConfigured } from "@/lib/supabase/admin";
+import { createAdmin, supabaseAdminConfigured } from "@/lib/supabase/admin";
 import { formatMinor, type CurrencyCode } from "@/lib/currency";
 import { getSeedProperties } from "@/lib/seed-data";
 import Link from "next/link";
@@ -45,7 +44,7 @@ export default async function ConfirmationPage({
       currency: "GBP",
     };
   } else {
-    const db = createBrowser();
+    const db = createAdmin();
     const { data: group } = await db
       .from("booking_groups")
       .select("*")
