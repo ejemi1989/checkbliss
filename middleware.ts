@@ -14,8 +14,10 @@ export async function middleware(request: NextRequest) {
   const response = await updateSession(request);
 
   const { pathname } = request.nextUrl;
-  const requiredRole = roleRouteMap[pathname];
-  if (!requiredRole) return response;
+  const matchedPrefix = Object.keys(roleRouteMap).find((prefix) => pathname.startsWith(prefix));
+  if (!matchedPrefix) return response;
+
+  const requiredRole = roleRouteMap[matchedPrefix];
 
   if (!supabaseServerConfigured || !supabaseAdminConfigured) return response;
 

@@ -39,6 +39,7 @@ const NAV_ITEMS: { id: AdminSection; icon: keyof typeof I; label: string; href: 
 
 function getActiveSection(pathname: string): AdminSection {
   if (pathname === "/admin") return "overview";
+  if (pathname.startsWith("/admin/crm")) return "crm";
   for (const item of NAV_ITEMS) {
     if (item.href !== "/admin" && pathname.startsWith(item.href)) return item.id;
   }
