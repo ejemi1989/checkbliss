@@ -193,8 +193,7 @@ export function HomePageClient({ properties, hasSearch }: { properties: SeedProp
       {/* Skip to content */}
       <a href="#main-content" className="sr-only focus:not-sr-only focus:absolute focus:top-4 focus:left-4 focus:z-50 focus:bg-brass focus:text-bone focus:px-4 focus:py-2 focus:rounded-lg focus:no-underline">Skip to content</a>
 
-      {/* Organization JSON-LD */}
-      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify({ "@context": "https://schema.org", "@type": "Organization", name: "CheckinBliss", url: "https://checkinbliss.com", description: "Premium apartment stays in Lagos and Abuja. Verified, instantly bookable homes for the diaspora.", foundingDate: "2025", founder: { "@type": "Person", name: "Admin" }, address: { "@type": "PostalAddress", addressCountry: "NG" }, sameAs: ["https://trustpilot.com/review/checkinbliss.com"] }) }} />
+      {/* SEO title handled by generateMetadata in page.tsx — no inline scripts needed */}
 
       {/* HERO — nav floats on top inside the hero */}
       <section className="relative bg-ink flex items-center justify-center text-center text-white overflow-hidden pt-[174px] pb-[40px] max-sm:pt-[140px] max-sm:pb-[40px]" aria-label="Hero">

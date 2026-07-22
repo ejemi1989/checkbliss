@@ -2,7 +2,7 @@ import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { getPropertyBySlugPath } from "@/lib/data";
 import { formatMinor, type CurrencyCode } from "@/lib/currency";
-import { buildMetaDescription, buildPropertyJsonLd } from "@/lib/seo";
+import { buildMetaDescription } from "@/lib/seo";
 import { slugify } from "@/lib/slug";
 import { PropertyClient } from "./property-client";
 
@@ -23,43 +23,7 @@ export default async function PropertyPage({
   const cityHref = `/${slugify(prop.city)}`;
 
   return (
-    <>
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{
-          __html: JSON.stringify(
-            buildPropertyJsonLd({
-              branded_name: prop.branded_name,
-              building_name: prop.building_name,
-              neighbourhood: prop.neighbourhood,
-              city: prop.city,
-              country: prop.country,
-              cover_photo_url: prop.cover_photo_url,
-              nightly_rate_minor: prop.nightly_rate_minor,
-              slug: prop.slug,
-              neighbourhood_slug: prop.neighbourhood_slug,
-              building_slug: prop.building_slug,
-            }),
-          ),
-        }}
-      />
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{
-          __html: JSON.stringify({
-            "@context": "https://schema.org",
-            "@type": "BreadcrumbList",
-            itemListElement: [
-              { "@type": "ListItem", position: 1, name: "CheckinBliss", item: "https://checkinbliss.com" },
-              { "@type": "ListItem", position: 2, name: prop.city, item: `https://checkinbliss.com/${slugify(prop.city)}` },
-              { "@type": "ListItem", position: 3, name: prop.neighbourhood, item: `https://checkinbliss.com/${slugify(prop.city)}/${prop.neighbourhood_slug}` },
-              { "@type": "ListItem", position: 4, name: prop.building_name, item: `https://checkinbliss.com/${slugify(prop.city)}/${prop.neighbourhood_slug}/${prop.building_slug}` },
-              { "@type": "ListItem", position: 5, name: prop.branded_name },
-            ],
-          }),
-        }}
-      />
-      <PropertyClient
+    <PropertyClient
         property={{
           id: prop.id,
           name: prop.name,
@@ -88,9 +52,8 @@ export default async function PropertyPage({
         formattedExtended={formattedExtended}
         cityHref={cityHref}
       />
-    </>
-  );
-}
+    );
+  }
 
 export async function generateMetadata({
   params,
