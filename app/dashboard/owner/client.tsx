@@ -245,7 +245,7 @@ export function OwnerDashboard({ user, initialTab }: { user: AuthUser | null; in
                       { label: "Avg nightly", value: `£${Math.round(prop.monthly_minor / (parseInt(prop.bookings) || 1) / 100)}` },
                     ].map((m) => (
                       <div key={m.label} className="text-center p-3 rounded-lg bg-primary-bg">
-                        <p className="font-display text-lg font-semibold text-ink">{m.value}</p>
+                        <p className="text-base font-semibold tabular-nums text-ink">{m.value}</p>
                         <p className="text-[10px] text-ink-secondary mt-0.5">{m.label}</p>
                       </div>
                     ))}
