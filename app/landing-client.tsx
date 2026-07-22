@@ -31,6 +31,21 @@ const WORKS_STEPS = [
   },
 ];
 
+const TRUSTPILOT_REVIEWS = [
+  {
+    text: "I&rsquo;ve stayed in Lagos dozens of times over the years. This was the first time everything &mdash; from the airport transfer to the apartment &mdash; was handled before I even asked.",
+    by: "Chidi O.",
+  },
+  {
+    text: "Finally &mdash; a place in Abuja that understands privacy and consistency. Not a single issue during my two-week stay.",
+    by: "Adaeze M.",
+  },
+  {
+    text: "The standard here is different. I didn&rsquo;t have to negotiate a single thing. The apartment matched the photos perfectly.",
+    by: "Tunde A.",
+  },
+];
+
 const STAYS = [
   {
     slug: "lagoon-living",
@@ -87,26 +102,40 @@ export function HomePageClient() {
   const stepsRef = useRef<HTMLDivElement>(null);
   const [activeStep, setActiveStep] = useState(0);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [revIdx, setRevIdx] = useState(0);
   const menuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const steps = stepsRef.current?.querySelectorAll(".wstep");
     if (!steps || steps.length === 0) return;
-    const io = new IntersectionObserver(
+    const revealObs = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
           if (entry.isIntersecting) {
             entry.target.classList.add("in");
-            const idx = Array.from(steps).indexOf(entry.target as HTMLElement);
-            if (idx >= 0) setActiveStep(Math.max(idx, activeStep));
           }
         });
       },
       { threshold: 0.25 }
     );
-    steps.forEach((s) => io.observe(s));
-    return () => io.disconnect();
-  }, [activeStep]);
+    steps.forEach((s) => revealObs.observe(s));
+    const activeObs = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            const idx = Array.from(steps).indexOf(entry.target as HTMLElement);
+            if (idx >= 0) setActiveStep(idx);
+          }
+        });
+      },
+      { threshold: 0, rootMargin: "-40% 0px -40% 0px" }
+    );
+    steps.forEach((s) => activeObs.observe(s));
+    return () => {
+      revealObs.disconnect();
+      activeObs.disconnect();
+    };
+  }, []);
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
@@ -117,6 +146,38 @@ export function HomePageClient() {
     if (menuOpen) document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, [menuOpen]);
+
+  useEffect(() => {
+    function makeDraggable(track: HTMLElement) {
+      let down = false, startX = 0, scrollLeft = 0, moved = 0;
+      track.addEventListener("mousedown", (e) => {
+        down = true; moved = 0; track.classList.add("dragging");
+        startX = e.pageX - track.offsetLeft;
+        scrollLeft = track.scrollLeft;
+      });
+      const up = () => { down = false; track.classList.remove("dragging"); };
+      window.addEventListener("mouseup", up);
+      track.addEventListener("mouseleave", up);
+      track.addEventListener("mousemove", (e) => {
+        if (!down) return;
+        e.preventDefault();
+        const x = e.pageX - track.offsetLeft;
+        moved = Math.abs(x - startX);
+        track.scrollLeft = scrollLeft - (x - startX);
+      });
+      track.querySelectorAll("a").forEach((a) => {
+        a.addEventListener("click", (e) => { if (moved > 6) e.preventDefault(); });
+      });
+    }
+    document.querySelectorAll("#staysTrack, .cats-grid").forEach((el) => makeDraggable(el as HTMLElement));
+  }, []);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setRevIdx((i) => (i + 1) % TRUSTPILOT_REVIEWS.length);
+    }, 6000);
+    return () => clearInterval(interval);
+  }, []);
 
   return (
     <div>
@@ -282,7 +343,7 @@ export function HomePageClient() {
       {/* ── Featured Stays ── */}
       <section className="stays">
         <div className="wrap">
-          <div className="stays-track">
+          <div className="stays-track" id="staysTrack">
             {STAYS.map((s) => (
               <Link key={s.slug} href={s.href} className="scard">
                 <div className="cat-img">
@@ -383,6 +444,52 @@ export function HomePageClient() {
           <p>
             We don&rsquo;t ask you to trust strangers&rsquo; reviews. We ask you to trust <em>the work we put in</em> before a single guest arrives.
           </p>
+        </div>
+      </section>
+
+      {/* ── Trustpilot reviews ── */}
+      <section className="testi">
+        <div className="wrap">
+          <div className="testi-head">
+            <div className="tp-mark">
+              <span className="tp-star">&starf;</span> Trustpilot
+            </div>
+            <h2 className="testi-title">What our guests say</h2>
+          </div>
+          <div className="review-stage">
+            <button className="rev-arrow" aria-label="Previous review" onClick={() => setRevIdx((i) => (i - 1 + TRUSTPILOT_REVIEWS.length) % TRUSTPILOT_REVIEWS.length)}>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="15 18 9 12 15 6"/>
+              </svg>
+            </button>
+            <div className="review-window">
+              {TRUSTPILOT_REVIEWS.map((r, i) => (
+                <div key={i} className={`review${i === revIdx ? " active" : ""}`}>
+                  <div className="stars">&starf;&starf;&starf;&starf;&starf;</div>
+                  <p>{r.text}</p>
+                  <div className="r-by">&mdash; {r.by}</div>
+                </div>
+              ))}
+            </div>
+            <button className="rev-arrow" aria-label="Next review" onClick={() => setRevIdx((i) => (i + 1) % TRUSTPILOT_REVIEWS.length)}>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round">
+                <polyline points="9 18 15 12 9 6"/>
+              </svg>
+            </button>
+          </div>
+          <div className="reviews-nav" id="revDots">
+            {TRUSTPILOT_REVIEWS.map((_, i) => (
+              <button
+                key={i}
+                className={`rev-dot${i === revIdx ? " active" : ""}`}
+                aria-label={`Review ${i + 1}`}
+                onClick={() => setRevIdx(i)}
+              />
+            ))}
+          </div>
+          <div style={{ marginTop: "var(--s8)" }}>
+            <a href="#" className="r-link">See all reviews on Trustpilot &rarr;</a>
+          </div>
         </div>
       </section>
 

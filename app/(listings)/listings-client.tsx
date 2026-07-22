@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo, useCallback, useEffect } from "react";
 import Link from "next/link";
 import { MapBox } from "@/components/map-box";
 
@@ -26,8 +26,66 @@ export interface ListingsPageProps {
   totalCount: number;
 }
 
+type FilterValue = "all" | "1-2-beds" | "3-4-beds" | "5-plus" | "pool" | "gym" | "workspace";
+type SortValue = "featured" | "price-asc" | "price-desc";
+
+const FILTER_CHIPS: { value: FilterValue; label: string; group: "beds" | "features" }[] = [
+  { value: "all", label: "All", group: "beds" },
+  { value: "1-2-beds", label: "1\u20132", group: "beds" },
+  { value: "3-4-beds", label: "3\u20134", group: "beds" },
+  { value: "5-plus", label: "5+", group: "beds" },
+  { value: "pool", label: "Pool", group: "features" },
+  { value: "gym", label: "Gym", group: "features" },
+  { value: "workspace", label: "Workspace", group: "features" },
+];
+
+const SORT_CHIPS: { value: SortValue; label: string }[] = [
+  { value: "featured", label: "Featured" },
+  { value: "price-asc", label: "Price low to high" },
+  { value: "price-desc", label: "Price high to low" },
+];
+
+function cardMatchesFilter(card: ListingProperty, filter: FilterValue): boolean {
+  switch (filter) {
+    case "all":       return true;
+    case "1-2-beds":  return card.beds >= 1 && card.beds <= 2;
+    case "3-4-beds":  return card.beds >= 3 && card.beds <= 4;
+    case "5-plus":    return card.beds >= 5;
+    case "pool":      return card.tags.includes("pool");
+    case "gym":       return card.tags.includes("gym");
+    case "workspace": return card.tags.includes("workspace");
+    default:          return true;
+  }
+}
+
 export function ListingsClient({ city, eyebrow, properties }: ListingsPageProps) {
   const [mapOpen, setMapOpen] = useState(true);
+  const [activeFilter, setActiveFilter] = useState<FilterValue>("all");
+  const [activeSort, setActiveSort] = useState<SortValue>("featured");
+  const [filterOpen, setFilterOpen] = useState(false);
+
+  useEffect(() => {
+    document.body.classList.toggle("map-open", mapOpen);
+  }, [mapOpen]);
+
+  const toggleMap = useCallback(() => {
+    setMapOpen((v) => !v);
+  }, []);
+
+  const filteredProperties = useMemo(() => {
+    const filtered = activeFilter === "all"
+      ? properties
+      : properties.filter((p) => cardMatchesFilter(p, activeFilter));
+
+    if (activeSort === "featured") {
+      return filtered;
+    }
+    return [...filtered].sort((a, b) => {
+      return activeSort === "price-asc" ? a.price - b.price : b.price - a.price;
+    });
+  }, [properties, activeFilter, activeSort]);
+
+  const visibleCount = filteredProperties.length;
 
   return (
     <>
@@ -77,9 +135,73 @@ export function ListingsClient({ city, eyebrow, properties }: ListingsPageProps)
               </button>
             </label>
           </form>
+          <button
+            className="filter-btn"
+            id="filterBtn"
+            aria-expanded={filterOpen}
+            aria-controls="filterPanel"
+            onClick={() => setFilterOpen((v) => !v)}
+            type="button"
+          >
+            <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round">
+              <path d="M2 4h12M4 8h8M6 12h4" />
+            </svg>
+            Filter &amp; sort
+          </button>
         </div>
 
-        <div className="filter-panel" id="filterPanel" hidden></div>
+        <div className="filter-panel" id="filterPanel" hidden={!filterOpen}>
+          <div className="filter-panel-inner">
+            <div className="fgroup">
+              <span className="fgroup-label">Bedrooms</span>
+              <div className="filter-chips">
+                {FILTER_CHIPS.filter((c) => c.group === "beds").map((chip) => (
+                  <button
+                    key={chip.value}
+                    className={`fchip${activeFilter === chip.value ? " active" : ""}`}
+                    data-filter={chip.value}
+                    onClick={() => setActiveFilter(chip.value)}
+                    type="button"
+                  >
+                    {chip.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div className="fgroup">
+              <span className="fgroup-label">Features</span>
+              <div className="filter-chips">
+                {FILTER_CHIPS.filter((c) => c.group === "features").map((chip) => (
+                  <button
+                    key={chip.value}
+                    className={`fchip${activeFilter === chip.value ? " active" : ""}`}
+                    data-filter={chip.value}
+                    onClick={() => setActiveFilter(activeFilter === chip.value ? "all" : chip.value)}
+                    type="button"
+                  >
+                    {chip.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+            <div className="fgroup">
+              <span className="fgroup-label">Sort by</span>
+              <div className="filter-chips">
+                {SORT_CHIPS.map((chip) => (
+                  <button
+                    key={chip.value}
+                    className={`schip${activeSort === chip.value ? " active" : ""}`}
+                    data-sort={chip.value}
+                    onClick={() => setActiveSort(chip.value)}
+                    type="button"
+                  >
+                    {chip.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
 
       <main className="split">
@@ -91,10 +213,13 @@ export function ListingsClient({ city, eyebrow, properties }: ListingsPageProps)
               </nav>
               <div className="lst-eyebrow">{eyebrow}</div>
               <h1 className="lst-city">{city}</h1>
+              <p className="results-count" id="filterTotal">
+                <strong>{visibleCount}</strong> {visibleCount === 1 ? "apartment" : "apartments"} found
+              </p>
             </header>
 
             <div className="results-list" id="listingsGrid">
-                {properties.map((p) => (
+                {filteredProperties.map((p) => (
                 <Link
                   key={p.id}
                   href={p.href ?? `/${city.toLowerCase()}/${p.kicker.toLowerCase().replace(/\s+/g, "-")}/${p.title.toLowerCase().replace(/\s+/g, "-")}`}
@@ -133,7 +258,7 @@ export function ListingsClient({ city, eyebrow, properties }: ListingsPageProps)
                 </Link>
               ))}
 
-              {properties.length === 0 && (
+              {visibleCount === 0 && (
                 <p className="no-results" id="noResults">
                   No apartments match this filter. Clear a filter to see more of {city}.
                 </p>
@@ -142,7 +267,7 @@ export function ListingsClient({ city, eyebrow, properties }: ListingsPageProps)
 
             <nav className="pager" aria-label="Pagination">
               <span className="pager-range">
-                <strong>1–{properties.length}</strong> of {properties.length} apartments
+                <strong>1–{visibleCount}</strong> of {visibleCount} apartments
               </span>
               <div className="pager-btns">
                 <button className="pager-btn" disabled aria-label="Previous page" type="button">
@@ -227,7 +352,7 @@ export function ListingsClient({ city, eyebrow, properties }: ListingsPageProps)
 
         <aside className={`mappane ${mapOpen ? "" : "mappane--hidden"}`} aria-label={`Map of ${city} apartments`}>
           <MapBox
-            markers={properties.map((p) => ({
+            markers={filteredProperties.map((p) => ({
               lat: p.lat,
               lng: p.lng,
               label: `$${p.price}`,
@@ -244,7 +369,7 @@ export function ListingsClient({ city, eyebrow, properties }: ListingsPageProps)
       <button
         className="map-toggle"
         aria-pressed={mapOpen}
-        onClick={() => setMapOpen((v) => !v)}
+        onClick={toggleMap}
         type="button"
       >
         <svg viewBox="0 0 16 16" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round">
