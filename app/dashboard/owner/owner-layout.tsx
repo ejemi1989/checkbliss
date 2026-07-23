@@ -56,8 +56,7 @@ export function OwnerLayout({ user, children }: { user: AuthUser | null; childre
         <div className="flex items-center gap-3">
           <button onClick={() => setSidebarOpen(true)} className="lg:hidden w-8 h-8 flex items-center justify-center rounded-lg hover:bg-primary-bg text-ink-secondary cursor-pointer">{I.hamburger}</button>
           <Link href="/" className="no-underline flex items-center gap-x-2">
-            <img src="/assets/images/logo/Logo1.png" alt="CheckinBliss" className="h-8 w-auto" />
-            <span className="text-sm font-display font-semibold text-ink tracking-tight">CheckinBliss</span>
+            <img src="/assets/images/logo/Logo1.png" alt="CheckinBliss" className="h-11 w-auto rounded-md border border-hairline p-1 bg-soft" />
           </Link>
           <span className="text-[10px] font-sans font-semibold uppercase tracking-[0.5px] rounded-full bg-lagoon/15 text-lagoon-dark px-2.5 py-0.5">Owner</span>
         </div>
