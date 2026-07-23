@@ -33,16 +33,22 @@ const WORKS_STEPS = [
 
 const TRUSTPILOT_REVIEWS = [
   {
+    text: "CheckinBliss has completely changed how I travel within Nigeria. Every apartment I&rsquo;ve booked has been immaculate &mdash; the photos are honest, the hosts are warm, and the booking process is seamless.",
+    by: "Amara O.",
+    date: "March 2026",
+    location: "Lagos",
+  },
+  {
     text: "I&rsquo;ve stayed in Lagos dozens of times over the years. This was the first time everything &mdash; from the airport transfer to the apartment &mdash; was handled before I arrived.",
     by: "Chidi O.",
+    date: "February 2026",
+    location: "Lagos",
   },
   {
     text: "Finally &mdash; a place in Abuja that understands privacy and consistency. Not a single issue during my two-week stay.",
     by: "Adaeze M.",
-  },
-  {
-    text: "The standard here is unmatched. I didn&rsquo;t have to haggle a single thing. The apartment matched the photos perfectly.",
-    by: "Tunde A.",
+    date: "January 2026",
+    location: "Abuja",
   },
 ];
 
@@ -475,6 +481,7 @@ export function HomePageClient() {
                   <div className="stars" />
                   <p>{r.text}</p>
                   <div className="r-by">&mdash; {r.by}</div>
+                  {"date" in r && <div className="r-date" style={{ fontSize: "12px", color: "var(--mute)", marginTop: "4px" }}>{(r as typeof TRUSTPILOT_REVIEWS[number] & { date?: string; location?: string }).date} &middot; {(r as typeof TRUSTPILOT_REVIEWS[number] & { date?: string; location?: string }).location}</div>}
                 </div>
               ))}
             </div>
