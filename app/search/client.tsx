@@ -30,14 +30,12 @@ export function SearchResultsClient({
 
   const defaultCurrency: CurrencyCode = displayCurrency !== "GBP" ? displayCurrency : "GBP";
   const [currency, setCurrency] = useState<CurrencyCode>(defaultCurrency);
-  const [hydrated, setHydrated] = useState(false);
 
   useEffect(() => {
     try {
       const v = localStorage.getItem("checkbliss_currency");
       if (v === "USD" || v === "EUR") setCurrency(v);
     } catch { /* SSR guard */ }
-    setHydrated(true);
   }, []);
   const [currencyOpen, setCurrencyOpen] = useState(false);
 

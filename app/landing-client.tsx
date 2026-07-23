@@ -105,14 +105,11 @@ const STAYS = [
 
 export function HomePageClient() {
 
-  const [mounted, setMounted] = useState(false);
   const stepsRef = useRef<HTMLDivElement>(null);
   const [activeStep, setActiveStep] = useState(0);
   const [menuOpen, setMenuOpen] = useState(false);
   const [revIdx, setRevIdx] = useState(0);
   const menuRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => { setMounted(true); }, []);
 
   useEffect(() => {
     const steps = stepsRef.current?.querySelectorAll(".wstep");
@@ -150,7 +147,7 @@ export function HomePageClient() {
       revealObs.disconnect();
       activeObs.disconnect();
     };
-  }, [mounted]);
+  }, []);
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
@@ -204,7 +201,7 @@ export function HomePageClient() {
     });
 
     return () => cleanups.forEach((fn) => fn());
-  }, [mounted]);
+  }, []);
 
   useEffect(() => {
     const interval = setInterval(() => {
@@ -212,10 +209,6 @@ export function HomePageClient() {
     }, 6000);
     return () => clearInterval(interval);
   }, []);
-
-  if (!mounted) {
-    return <div className="min-h-screen bg-bone" />;
-  }
 
   return (
     <div>

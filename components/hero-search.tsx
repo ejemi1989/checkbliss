@@ -24,9 +24,12 @@ export function HeroSearch({ advanceDays = 14, minNights = 2 }: HeroSearchProps)
   const [mobileOpen, setMobileOpen] = useState(false);
   const errTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
-  const minDate = new Date();
-  minDate.setDate(minDate.getDate() + advanceDays);
-  minDate.setHours(0, 0, 0, 0);
+  const [minDate] = useState(() => {
+    const d = new Date();
+    d.setDate(d.getDate() + advanceDays);
+    d.setHours(0, 0, 0, 0);
+    return d;
+  });
 
   useEffect(() => {
     if (errorMsg) {

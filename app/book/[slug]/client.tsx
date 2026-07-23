@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { formatMinor, type CurrencyCode } from "@/lib/currency";
 import { propertyHref } from "@/lib/slug";
 import { Footer } from "@/components/footer";
@@ -28,6 +28,7 @@ type Step = "dates" | "guest" | "payment";
 
 export function BookingFlow(props: Props) {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const {
     propertyId, propertySlug, propertyName, city, neighbourhood,
     neighbourhoodSlug, buildingSlug,
@@ -36,7 +37,16 @@ export function BookingFlow(props: Props) {
     sleeps, coverPhotoUrl,
   } = props;
 
-  const [step, setStep] = useState<Step>("dates");
+  const steps: Step[] = ["dates", "guest", "payment"];
+  const rawStep = searchParams.get("step");
+  const step: Step = steps.includes(rawStep as Step) ? (rawStep as Step) : "dates";
+  const currentIndex = steps.indexOf(step);
+
+  function setStep(s: Step) {
+    const params = new URLSearchParams(searchParams.toString());
+    params.set("step", s);
+    router.push(`?${params.toString()}`, { scroll: false });
+  }
   const [checkIn, setCheckIn] = useState("");
   const [checkOut, setCheckOut] = useState("");
   const [guestName, setGuestName] = useState("");
@@ -47,9 +57,6 @@ export function BookingFlow(props: Props) {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
-
-  const steps: Step[] = ["dates", "guest", "payment"];
-  const currentIndex = steps.indexOf(step);
 
   const today = new Date();
   const minDate = new Date(today);
