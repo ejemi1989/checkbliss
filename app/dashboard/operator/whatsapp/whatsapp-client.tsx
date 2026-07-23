@@ -38,3 +38,15 @@ export function WhatsAppOwnerList({ owners }: { owners: OwnerDirectoryEntry[] })
     </div>
   );
 }
+
+export function CopySyncLinkButton({ ownerId }: { ownerId: string }) {
+  return (
+    <button
+      type="button"
+      onClick={() => navigator.clipboard?.writeText(`https://checkinbliss.com/api/calendar/${ownerId}`)}
+      className="px-4 py-2 rounded-lg text-xs font-semibold border border-hairline text-ink-secondary hover:bg-white hover:border-green-soft transition-colors cursor-pointer bg-white"
+    >
+      Copy sync link
+    </button>
+  );
+}

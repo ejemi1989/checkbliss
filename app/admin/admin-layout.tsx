@@ -64,7 +64,7 @@ export function AdminLayout({ user, children }: { user: AuthUser | null; childre
       <aside className={`fixed lg:static inset-y-0 left-0 z-40 w-64 bg-white border-r border-hairline shrink-0 flex flex-col transition-transform duration-300 lg:translate-x-0 ${sidebarOpen ? "translate-x-0" : "-translate-x-full"}`}>
         <div className="p-5 border-b border-hairline flex items-center justify-between">
           <Link href="/" className="no-underline flex items-center gap-x-2">
-            <img src="/assets/images/logo/Logo1.png" alt="CheckinBliss" className="h-11 w-auto rounded-md border border-hairline p-1 bg-soft" />
+            <img src="/assets/images/logo/Logo-DG.png" alt="CheckinBliss" className="h-11 w-auto rounded-md border border-hairline p-1 bg-soft" />
           </Link>
           <button onClick={() => setSidebarOpen(false)} className="lg:hidden w-7 h-7 flex items-center justify-center text-ink-secondary">{I.x}</button>
         </div>

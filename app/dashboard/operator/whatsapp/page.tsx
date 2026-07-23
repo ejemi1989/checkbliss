@@ -3,7 +3,7 @@ import { getSession } from "@/actions/auth";
 import { getOwnersForCity, getOperatorBookings } from "@/lib/data";
 import { getSeedProperties, getSeedReservations, getSeedBlocks } from "@/lib/seed-data";
 import { formatMinor, type CurrencyCode } from "@/lib/currency";
-import { WhatsAppOwnerList } from "./whatsapp-client";
+import { WhatsAppOwnerList, CopySyncLinkButton } from "./whatsapp-client";
 
 export const metadata: Metadata = { title: "Operator — WhatsApp", robots: { index: false, follow: false } };
 
@@ -155,12 +155,7 @@ export default async function OperatorWhatsAppPage() {
                 <p className="text-sm font-medium text-ink">{o.name}</p>
                 <p className="text-xs text-ink-secondary mt-0.5">{o.properties_count ?? 0} properties · {o.whatsapp ?? "No phone"}</p>
               </div>
-              <button
-                onClick={() => navigator.clipboard?.writeText(`https://checkinbliss.com/api/calendar/${o.id}`)}
-                className="px-4 py-2 rounded-lg text-xs font-semibold border border-hairline text-ink-secondary hover:bg-white hover:border-green-soft transition-colors cursor-pointer bg-white"
-              >
-                Copy sync link
-              </button>
+              <CopySyncLinkButton ownerId={o.id} />
             </div>
           ))}
           {owners.length === 0 && (

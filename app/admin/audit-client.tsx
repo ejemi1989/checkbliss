@@ -1,9 +1,10 @@
 "use client";
 
+import { useState } from "react";
 import { getAdminAudit } from "@/lib/data";
 
 export function AdminAuditView() {
-  const audit = getAdminAudit();
+  const [audit] = useState(() => getAdminAudit());
 
   return (
     <div className="space-y-4">

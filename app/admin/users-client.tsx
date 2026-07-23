@@ -4,7 +4,7 @@ import { useState, useCallback } from "react";
 import { getAdminUsers } from "@/lib/data";
 
 export function AdminUsersView() {
-  const users = getAdminUsers();
+  const [users] = useState(() => getAdminUsers());
   const [notification, setNotification] = useState<{ message: string; type: "success" | "error" } | null>(null);
 
   const notify = useCallback((message: string, type: "success" | "error" = "success") => {

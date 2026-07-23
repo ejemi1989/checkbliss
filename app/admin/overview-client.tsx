@@ -10,8 +10,8 @@ export function AdminOverview() {
   const [mounted, setMounted] = useState(false);
   const [claims] = useState(() => getAdminClaims());
   const [operators] = useState(() => getAdminOperators());
-  const audit = getAdminAudit();
-  const stats = getAdminStats();
+  const [audit] = useState(() => getAdminAudit());
+  const [stats] = useState(() => getAdminStats());
 
   useEffect(() => { setMounted(true); }, []);
 
