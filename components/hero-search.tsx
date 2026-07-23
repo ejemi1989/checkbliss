@@ -12,7 +12,7 @@ const DOW = ["Mo", "Tu", "We", "Th", "Fr", "Sa", "Su"];
 
 export function HeroSearch({ advanceDays = 14, minNights = 2 }: HeroSearchProps) {
   const router = useRouter();
-  const [dest, setDest] = useState("");
+  const [dest, setDest] = useState("Lagos");
   const [guests, setGuests] = useState("1");
   const [calOpen, setCalOpen] = useState(false);
   const [calTarget, setCalTarget] = useState<"in" | "out">("in");
@@ -157,7 +157,6 @@ export function HeroSearch({ advanceDays = 14, minNights = 2 }: HeroSearchProps)
   }
 
   function handleSearch() {
-    if (!dest) return;
     const params = new URLSearchParams();
     params.set("where", dest);
     if (checkIn && checkOut) {
