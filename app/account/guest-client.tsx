@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { formatMinor } from "@/lib/currency";
 import { getOwnerBookings } from "@/lib/data";
@@ -17,9 +17,6 @@ export function GuestDashboard({ user, initialTab }: { user: AuthUser | null; in
   const displayUser = { name: user?.name ?? "Guest", email: user?.email ?? "" };
   const [tab, setTab] = useState<GuestTab>(initialTab ?? "overview");
   const [bookingDetail, setBookingDetail] = useState<typeof bookings[0] | null>(null);
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => { setMounted(true); }, []);
 
   const upcoming = bookings.filter(b => b.status === "confirmed");
   const past = bookings.filter(b => b.status === "completed");
@@ -52,10 +49,6 @@ export function GuestDashboard({ user, initialTab }: { user: AuthUser | null; in
       </nav>
     </div>
   );
-
-  if (!mounted) {
-    return <div className="min-h-screen bg-bone" />;
-  }
 
   return (
     <div className="min-h-screen bg-bone">

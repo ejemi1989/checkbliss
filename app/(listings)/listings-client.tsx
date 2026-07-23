@@ -64,10 +64,6 @@ export function ListingsClient({ city, eyebrow, properties }: ListingsPageProps)
   const [activeFilter, setActiveFilter] = useState<FilterValue>("all");
   const [activeSort, setActiveSort] = useState<SortValue>("featured");
   const [filterOpen, setFilterOpen] = useState(false);
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => { setMounted(true); }, []);
-
   useEffect(() => {
     document.body.classList.toggle("map-open", mapOpen);
   }, [mapOpen]);
@@ -90,10 +86,6 @@ export function ListingsClient({ city, eyebrow, properties }: ListingsPageProps)
   }, [properties, activeFilter, activeSort]);
 
   const visibleCount = filteredProperties.length;
-
-  if (!mounted) {
-    return <div className="h-screen bg-bone" />;
-  }
 
   return (
     <>

@@ -45,7 +45,6 @@ function statusColor(s: string) {
 type OwnerTab = "home" | "properties" | "bookings" | "claims" | "payouts" | "calendar" | "notifications";
 
 export function OwnerDashboard({ user, initialTab }: { user: AuthUser | null; initialTab?: OwnerTab }) {
-  const [mounted, setMounted] = useState(false);
   const [tab, setTab] = useState<OwnerTab>(initialTab ?? "home");
   const [month, setMonth] = useState(() => new Date().getMonth());
   const [year, setYear] = useState(() => new Date().getFullYear());
@@ -55,8 +54,6 @@ export function OwnerDashboard({ user, initialTab }: { user: AuthUser | null; in
   const [blockEnd, setBlockEnd] = useState("");
   const [notification, setNotification] = useState<{ message: string; type: "success" | "error" } | null>(null);
   const [pendingBlock, setPendingBlock] = useState<string | null>(null);
-
-  useEffect(() => { setMounted(true); }, []);
 
   const notify = (message: string, type: "success" | "error" = "success") => {
     setNotification({ message, type });
@@ -100,10 +97,6 @@ export function OwnerDashboard({ user, initialTab }: { user: AuthUser | null; in
   const totalRevenue = bookings.reduce((s, b) => s + (b.status === "cancelled" ? 0 : b.amount_minor), 0);
   const activeBookings = bookings.filter((b) => b.status === "confirmed" || b.status === "pending").length;
   const occupancyPct = "68%";
-
-  if (!mounted) {
-    return <div className="min-h-screen bg-bone" />;
-  }
 
   return (
     <>

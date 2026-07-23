@@ -3,6 +3,8 @@ import { notFound } from "next/navigation";
 import { getSeedProperties } from "@/lib/seed-data";
 import { BookingFlow } from "./client";
 
+export const dynamic = "force-dynamic";
+
 export function generateMetadata(): Metadata {
   return { robots: { index: false, follow: false } };
 }

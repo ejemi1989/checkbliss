@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback } from "react";
 import Link from "next/link";
 import { logoutAction } from "@/actions/auth";
 import { formatMinor } from "@/lib/currency";
@@ -59,10 +59,7 @@ function statusColor(s: string) {
 }
 
 export function OperatorDashboard({ user, initialTab }: { user: AuthUser | null; initialTab?: string }) {
-  const [mounted, setMounted] = useState(false);
   const [tab, setTab] = useState(initialTab ?? "today");
-
-  useEffect(() => { setMounted(true); }, []);
 
   /* structure.md: operators are city-scoped. Pull the assigned cities
      from the session, and filter every data list by them so a Lagos
@@ -197,20 +194,6 @@ export function OperatorDashboard({ user, initialTab }: { user: AuthUser | null;
   const upcomingBookings = bookings.filter((b) => b.status === "confirmed" && !isInProgress(b.check_in, b.check_out, todayStr) && isFuture(b.check_in, todayStr));
   const pendingBookings = bookings.filter((b) => b.status === "pending");
   const recentBookings = bookings.filter((b) => b.status === "completed" || (b.status === "confirmed" && !isFuture(b.check_in, todayStr) && !isInProgress(b.check_in, b.check_out, todayStr)));
-
-  if (!mounted) {
-    return (
-      <div className="space-y-6 animate-pulse">
-        <div className="grid grid-cols-4 gap-4">
-          {[1,2,3,4].map(i => <div key={i} className="h-24 bg-hairline rounded-xl" />)}
-        </div>
-        <div className="grid grid-cols-2 gap-6">
-          <div className="h-80 bg-hairline rounded-xl" />
-          <div className="h-80 bg-hairline rounded-xl" />
-        </div>
-      </div>
-    );
-  }
 
   return (
     <>

@@ -1,23 +1,16 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { formatMinor } from "@/lib/currency";
 import { getAdminClaims, getAdminOperators, getAdminAudit, getAdminStats } from "@/lib/data";
 
 function fmt(n: number) { return formatMinor(n); }
 
 export function AdminOverview() {
-  const [mounted, setMounted] = useState(false);
   const [claims] = useState(() => getAdminClaims());
   const [operators] = useState(() => getAdminOperators());
   const [audit] = useState(() => getAdminAudit());
   const [stats] = useState(() => getAdminStats());
-
-  useEffect(() => { setMounted(true); }, []);
-
-  if (!mounted) {
-    return <div className="min-h-screen bg-canvas" />;
-  }
 
   return (
     <div className="space-y-6">

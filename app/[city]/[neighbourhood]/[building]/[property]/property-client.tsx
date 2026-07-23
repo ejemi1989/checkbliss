@@ -60,9 +60,6 @@ export function PropertyClient({ property: prop, formattedNightly, formattedDepo
   const [checkIn, setCheckIn] = useState("");
   const [checkOut, setCheckOut] = useState("");
   const [guests, setGuests] = useState(3);
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => { setMounted(true); }, []);
 
   const nights = checkIn && checkOut
     ? Math.max(1, Math.round((new Date(checkOut).getTime() - new Date(checkIn).getTime()) / 86400000))
@@ -82,10 +79,6 @@ export function PropertyClient({ property: prop, formattedNightly, formattedDepo
       label: prop.branded_name,
     }];
   }, [prop.neighbourhood, prop.city, prop.branded_name]);
-
-  if (!mounted) {
-    return <div className="min-h-screen bg-bone" />;
-  }
 
   return (
     <>
