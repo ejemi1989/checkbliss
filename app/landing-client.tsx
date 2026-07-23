@@ -133,7 +133,13 @@ export function HomePageClient() {
         entries.forEach((entry) => {
           if (entry.isIntersecting) {
             const idx = Array.from(steps).indexOf(entry.target as HTMLElement);
-            if (idx >= 0) setActiveStep(idx);
+            if (idx >= 0) {
+              setActiveStep(idx);
+              steps.forEach((s, i) => {
+                s.classList.toggle("active", i === idx);
+                s.classList.toggle("done", i <= idx);
+              });
+            }
           }
         });
       },
@@ -383,18 +389,20 @@ export function HomePageClient() {
             <aside className="works-aside">
               <p className="eyebrow">The process</p>
               <h2>How CheckinBliss works</h2>
-              <div className="works-counter">
-                <span className="wc-num">0{activeStep + 1}</span>
-                <span className="wc-sep">/</span>
-                <span className="wc-total">03</span>
-              </div>
-              <div className="works-progress">
-                <span style={{ width: `${((activeStep + 1) / 3) * 100}%` }}></span>
+              <div className="works-track">
+                <div className="works-counter">
+                  <span className="wc-num">0{activeStep + 1}</span>
+                  <span className="wc-sep">/</span>
+                  <span className="wc-total">03</span>
+                </div>
+                <div className="works-progress">
+                  <span style={{ width: `${((activeStep + 1) / 3) * 100}%` }}></span>
+                </div>
               </div>
             </aside>
             <div className="works-steps" ref={stepsRef}>
               {WORKS_STEPS.map((step) => (
-                <div key={step.n} className="wstep">
+                <div key={step.n} className="wstep" data-step={step.n}>
                   <div className="wstep-inner">
                     <div className="wstep-img">
                       <img src={step.img} alt={step.title} loading="lazy" />
