@@ -459,7 +459,7 @@ export function HomePageClient() {
         <div className="wrap">
           <div className="testi-head">
             <div className="tp-mark">
-              <span className="tp-star">&starf;</span> Trustpilot
+              Trustpilot
             </div>
             <h2 className="testi-title">What our guests say</h2>
           </div>
@@ -472,7 +472,7 @@ export function HomePageClient() {
             <div className="review-window">
               {TRUSTPILOT_REVIEWS.map((r, i) => (
                 <div key={i} className={`review${i === revIdx ? " active" : ""}`}>
-                  <div className="stars">&starf;&starf;&starf;&starf;&starf;</div>
+                  <div className="stars" />
                   <p>{r.text}</p>
                   <div className="r-by">&mdash; {r.by}</div>
                 </div>
