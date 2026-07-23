@@ -464,9 +464,7 @@ export function HomePageClient() {
       <section className="testi">
         <div className="wrap">
           <div className="testi-head">
-            <div className="tp-mark">
-              Trustpilot
-            </div>
+            <p className="section-label" style={{ marginBottom: 0 }}>Trusted by guests</p>
             <h2 className="testi-title">What our guests say</h2>
           </div>
           <div className="review-stage">
