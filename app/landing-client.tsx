@@ -174,35 +174,31 @@ export function HomePageClient() {
 
       const onDown = (e: Event) => {
         down = true;
-        el.classList.add("dragging");
         startX = (e as MouseEvent).pageX - el.offsetLeft;
         scrollStart = el.scrollLeft;
       };
       const onUp = () => {
-        down = false; el.classList.remove("dragging");
+        if (down) el.classList.remove("dragging");
+        down = false;
       };
       const onMove = (e: Event) => {
         if (!down) return;
         e.preventDefault();
+        el.classList.add("dragging");
         const x = (e as MouseEvent).pageX - el.offsetLeft;
         el.scrollLeft = scrollStart - (x - startX);
-      };
-      const onClick = (e: Event) => {
-        if (el.scrollLeft !== scrollStart) e.preventDefault();
       };
 
       el.addEventListener("mousedown", onDown);
       window.addEventListener("mouseup", onUp);
       el.addEventListener("mouseleave", onUp);
       el.addEventListener("mousemove", onMove);
-      el.querySelectorAll("a").forEach((a) => a.addEventListener("click", onClick));
 
       cleanups.push(() => {
         el.removeEventListener("mousedown", onDown);
         window.removeEventListener("mouseup", onUp);
         el.removeEventListener("mouseleave", onUp);
         el.removeEventListener("mousemove", onMove);
-        el.querySelectorAll("a").forEach((a) => a.removeEventListener("click", onClick));
         el.classList.remove("dragging");
       });
     });
