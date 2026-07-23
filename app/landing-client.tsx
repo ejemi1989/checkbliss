@@ -170,10 +170,10 @@ export function HomePageClient() {
 
     tracks.forEach((track) => {
       const el = track as HTMLElement;
-      let down = false, startX = 0, scrollStart = 0, didDrag = false;
+      let down = false, startX = 0, scrollStart = 0;
 
       const onDown = (e: Event) => {
-        down = true; didDrag = false;
+        down = true;
         el.classList.add("dragging");
         startX = (e as MouseEvent).pageX - el.offsetLeft;
         scrollStart = el.scrollLeft;
@@ -185,11 +185,10 @@ export function HomePageClient() {
         if (!down) return;
         e.preventDefault();
         const x = (e as MouseEvent).pageX - el.offsetLeft;
-        if (Math.abs(x - startX) > 3) didDrag = true;
         el.scrollLeft = scrollStart - (x - startX);
       };
       const onClick = (e: Event) => {
-        if (didDrag) e.preventDefault();
+        if (el.scrollLeft !== scrollStart) e.preventDefault();
       };
 
       el.addEventListener("mousedown", onDown);
