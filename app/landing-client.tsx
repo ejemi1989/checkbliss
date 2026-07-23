@@ -314,42 +314,36 @@ export function HomePageClient() {
         </div>
         <div className="wrap">
           <div className="cats-grid">
-            <article className="cat">
-              <Link href="/lagos" style={{ textDecoration: "none", color: "inherit", display: "flex", flexDirection: "column", flex: 1 }}>
-                <div className="cat-img">
-                  <img src="/assets/images/cats/lagos.avif" alt="Lagos" loading="lazy" />
-                </div>
-                <div className="cat-body">
-                  <p className="cat-kicker">Remarkably</p>
-                  <h3 className="cat-title">Lagos</h3>
-                  <span className="cat-link">View apartments in Lagos &rarr;</span>
-                </div>
-              </Link>
-            </article>
-            <article className="cat">
-              <Link href="/search?where=Lagos&amenities=pool" style={{ textDecoration: "none", color: "inherit", display: "flex", flexDirection: "column", flex: 1 }}>
-                <div className="cat-img">
-                  <img src="/assets/images/cats/pool.avif" alt="Pool" loading="lazy" />
-                </div>
-                <div className="cat-body">
-                  <p className="cat-kicker">Apartments with a</p>
-                  <h3 className="cat-title">Pool</h3>
-                  <span className="cat-link">View apartments with private pools &rarr;</span>
-                </div>
-              </Link>
-            </article>
-            <article className="cat">
-              <Link href="/abuja" style={{ textDecoration: "none", color: "inherit", display: "flex", flexDirection: "column", flex: 1 }}>
-                <div className="cat-img">
-                  <img src="/assets/images/cats/abuja-calm.avif" alt="Abuja" loading="lazy" />
-                </div>
-                <div className="cat-body">
-                  <p className="cat-kicker">Calmly</p>
-                  <h3 className="cat-title">Abuja</h3>
-                  <span className="cat-link">View apartments in Abuja &rarr;</span>
-                </div>
-              </Link>
-            </article>
+            <Link href="/lagos" className="cat" style={{ textDecoration: "none", color: "inherit" }}>
+              <div className="cat-img">
+                <img src="/assets/images/cats/lagos.avif" alt="Lagos" loading="lazy" />
+              </div>
+              <div className="cat-body">
+                <p className="cat-kicker">Remarkably</p>
+                <h3 className="cat-title">Lagos</h3>
+                <span className="cat-link">View apartments in Lagos &rarr;</span>
+              </div>
+            </Link>
+            <Link href="/search?where=Lagos&amenities=pool" className="cat" style={{ textDecoration: "none", color: "inherit" }}>
+              <div className="cat-img">
+                <img src="/assets/images/cats/pool.avif" alt="Pool" loading="lazy" />
+              </div>
+              <div className="cat-body">
+                <p className="cat-kicker">Apartments with a</p>
+                <h3 className="cat-title">Pool</h3>
+                <span className="cat-link">View apartments with private pools &rarr;</span>
+              </div>
+            </Link>
+            <Link href="/abuja" className="cat" style={{ textDecoration: "none", color: "inherit" }}>
+              <div className="cat-img">
+                <img src="/assets/images/cats/abuja-calm.avif" alt="Abuja" loading="lazy" />
+              </div>
+              <div className="cat-body">
+                <p className="cat-kicker">Calmly</p>
+                <h3 className="cat-title">Abuja</h3>
+                <span className="cat-link">View apartments in Abuja &rarr;</span>
+              </div>
+            </Link>
           </div>
         </div>
         <div className="wrap">
