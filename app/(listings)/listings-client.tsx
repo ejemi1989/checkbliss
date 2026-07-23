@@ -3,6 +3,7 @@
 import { useState, useMemo, useCallback, useEffect } from "react";
 import Link from "next/link";
 import { MapBox } from "@/components/map-box";
+import "@/app/styles/listings.css";
 
 /* ---------- Data ---------- */
 export interface ListingProperty {

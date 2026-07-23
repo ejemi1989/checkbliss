@@ -57,7 +57,7 @@ const STAYS = [
     slug: "lagoon-living",
     kicker: "Lagos",
     title: "Lagoon Living",
-    href: "/search?where=Victoria+Island",
+    href: "/lagos",
     link: "View apartments in Victoria Island \u2192",
     img: "/assets/images/stays/lagos-lagoon-living.avif",
   },
@@ -65,7 +65,7 @@ const STAYS = [
     slug: "hills-hush",
     kicker: "Abuja",
     title: "Hills & Hush",
-    href: "/search?where=Maitama",
+    href: "/abuja",
     link: "View apartments in Maitama \u2192",
     img: "/assets/images/stays/abuja-hills-hush.avif",
   },
@@ -89,7 +89,7 @@ const STAYS = [
     slug: "banana-island",
     kicker: "Lagos",
     title: "Banana Island",
-    href: "/search?where=Banana+Island",
+    href: "/lagos",
     link: "View apartments on Banana Island \u2192",
     img: "/assets/images/stays/banana-island.avif",
   },
@@ -97,7 +97,7 @@ const STAYS = [
     slug: "asokoro-calm",
     kicker: "Abuja",
     title: "Asokoro Calm",
-    href: "/search?where=Asokoro",
+    href: "/abuja",
     link: "View apartments in Asokoro \u2192",
     img: "/assets/images/stays/asokoro-calm.avif",
   },
@@ -292,7 +292,7 @@ export function HomePageClient() {
         <div className="wrap">
           <div className="cats-grid">
             <article className="cat">
-              <Link href="/search?where=Lagos" style={{ textDecoration: "none", color: "inherit", display: "flex", flexDirection: "column", flex: 1 }}>
+              <Link href="/lagos" style={{ textDecoration: "none", color: "inherit", display: "flex", flexDirection: "column", flex: 1 }}>
                 <div className="cat-img">
                   <img src="/assets/images/cats/lagos.avif" alt="Lagos" loading="lazy" />
                 </div>
@@ -316,7 +316,7 @@ export function HomePageClient() {
               </Link>
             </article>
             <article className="cat">
-              <Link href="/search?where=Abuja" style={{ textDecoration: "none", color: "inherit", display: "flex", flexDirection: "column", flex: 1 }}>
+              <Link href="/abuja" style={{ textDecoration: "none", color: "inherit", display: "flex", flexDirection: "column", flex: 1 }}>
                 <div className="cat-img">
                   <img src="/assets/images/cats/abuja-calm.avif" alt="Abuja" loading="lazy" />
                 </div>
@@ -575,9 +575,9 @@ export function HomePageClient() {
           <div className="foot-bottom">
             <div className="foot-row foot-row--statement">
               <div className="foot-row">
-                <Link href="/search?where=Lagos" className="foot-dest-link">Lagos</Link>
+                <Link href="/lagos" className="foot-dest-link">Lagos</Link>
                 <span className="foot-sep">&middot;</span>
-                <Link href="/search?where=Abuja" className="foot-dest-link">Abuja</Link>
+                <Link href="/abuja" className="foot-dest-link">Abuja</Link>
                 <span className="foot-sep">&middot;</span>
                 <span className="foot-dest-soon">Coming soon:</span>
                 <span className="foot-dest-muted">Port Harcourt, Accra, Nairobi</span>

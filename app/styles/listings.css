@@ -6,6 +6,37 @@
    --green --green-d --green-soft --display --heading --body --s* --r-* --sh*
    ========================================================================== */
 
+/* Import token dependency (standalone — self-contained for City results pages) */
+:root {
+  --bg: #E9ECE2;
+  --soft: #F4F6F0;
+  --card: #FCFDFB;
+  --ink: #171915;
+  --body-c: #44483D;
+  --mute: #6A6E63;
+  --line: #D8DBCF;
+  --green: #2F3D2C;
+  --green-d: #232E22;
+  --green-soft: #5C6B4F;
+  --danger: #D94F4F;
+
+  --display: var(--font-newsreader), Georgia, serif;
+  --heading: var(--font-playfair), Georgia, serif;
+  --body: var(--font-hanken-grotesk), system-ui, sans-serif;
+
+  --s1: 4px; --s2: 8px; --s3: 12px; --s4: 16px; --s5: 20px;
+  --s6: 24px; --s7: 28px; --s8: 32px; --s10: 40px; --s12: 48px;
+  --s16: 64px; --s20: 80px;
+
+  --r-sm: 10px; --r-md: 18px; --r-lg: 28px; --r-xl: 34px; --r-pill: 999px;
+  --r-3: 3px;
+
+  --sh1: 0 1px 2px rgba(23,25,21,.07);
+  --sh2: 0 8px 24px rgba(23,25,21,.10);
+  --sh3: 0 14px 40px rgba(23,25,21,.14);
+  --sh4: 0 24px 60px rgba(23,25,21,.20);
+}
+
 :root{
   --nav-h: 76px;
   --band-h: 88px;
