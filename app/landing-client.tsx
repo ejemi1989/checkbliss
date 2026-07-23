@@ -33,7 +33,7 @@ const WORKS_STEPS = [
 
 const TRUSTPILOT_REVIEWS = [
   {
-    text: "I&rsquo;ve stayed in Lagos dozens of times over the years. This was the first time everything &mdash; from the airport transfer to the apartment &mdash; was handled before I even asked.",
+    text: "I&rsquo;ve stayed in Lagos dozens of times over the years. This was the first time everything &mdash; from the airport transfer to the apartment &mdash; was handled before I arrived.",
     by: "Chidi O.",
   },
   {
@@ -41,7 +41,7 @@ const TRUSTPILOT_REVIEWS = [
     by: "Adaeze M.",
   },
   {
-    text: "The standard here is different. I didn&rsquo;t have to negotiate a single thing. The apartment matched the photos perfectly.",
+    text: "The standard here is unmatched. I didn&rsquo;t have to haggle a single thing. The apartment matched the photos perfectly.",
     by: "Tunde A.",
   },
 ];
