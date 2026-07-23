@@ -39,7 +39,7 @@ const TRUSTPILOT_REVIEWS = [
     location: "Lagos",
   },
   {
-    text: "I&rsquo;ve stayed in Lagos dozens of times over the years. This was the first time everything &mdash; from the airport transfer to the apartment &mdash; was handled before I arrived.",
+    text: "We have stayed in Lagos dozens of times over the years. This was the first time everything &mdash; from the airport transfer to the apartment &mdash; was handled before I arrived.",
     by: "Chidi O.",
     date: "February 2026",
     location: "Lagos",
@@ -478,10 +478,9 @@ export function HomePageClient() {
             <div className="review-window">
               {TRUSTPILOT_REVIEWS.map((r, i) => (
                 <div key={i} className={`review${i === revIdx ? " active" : ""}`}>
-                  <div className="stars" />
                   <p>{r.text}</p>
                   <div className="r-by">&mdash; {r.by}</div>
-                  {"date" in r && <div className="r-date" style={{ fontSize: "12px", color: "var(--mute)", marginTop: "4px" }}>{(r as typeof TRUSTPILOT_REVIEWS[number] & { date?: string; location?: string }).date} &middot; {(r as typeof TRUSTPILOT_REVIEWS[number] & { date?: string; location?: string }).location}</div>}
+                  <div className="r-date" style={{ fontSize: "12px", color: "var(--mute)", marginTop: "4px" }}>{r.date} &middot; {r.location}</div>
                 </div>
               ))}
             </div>
