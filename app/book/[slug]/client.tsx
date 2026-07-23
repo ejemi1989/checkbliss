@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { formatMinor, type CurrencyCode } from "@/lib/currency";
@@ -47,9 +47,6 @@ export function BookingFlow(props: Props) {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => { setMounted(true); }, []);
 
   const steps: Step[] = ["dates", "guest", "payment"];
   const currentIndex = steps.indexOf(step);
@@ -123,10 +120,6 @@ export function BookingFlow(props: Props) {
   }
 
   const totalAfterCredit = Math.max(0, chargeTotal - 4000);
-
-  if (!mounted) {
-    return <div className="min-h-screen bg-bone" />;
-  }
 
   const stepInfo = [
     { label: "Dates", num: 1 },
