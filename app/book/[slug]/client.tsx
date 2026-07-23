@@ -74,12 +74,14 @@ export function BookingFlow(props: Props) {
   const [error, setError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
-  const [minDateStr] = useState(() => {
+  const [minDateStr, setMinDateStr] = useState("");
+  useEffect(() => {
     const today = new Date();
-    const minDate = new Date(today);
-    minDate.setDate(minDate.getDate() + 14);
-    return `${minDate.getFullYear()}-${String(minDate.getMonth() + 1).padStart(2, "0")}-${String(minDate.getDate()).padStart(2, "0")}`;
-  });
+    today.setDate(today.getDate() + 14);
+    setMinDateStr(
+      `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`
+    );
+  }, []);
 
   const nights = checkIn && checkOut
     ? Math.max(1, Math.round((new Date(checkOut).getTime() - new Date(checkIn).getTime()) / (1000 * 60 * 60 * 24)))
