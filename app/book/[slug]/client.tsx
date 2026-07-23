@@ -75,7 +75,7 @@ export function BookingFlow(props: Props) {
 
   function stepLabel(s: Step) {
     if (s === "dates") return "Guest info";
-    if (s === "checkout") return "Checkout option";
+    if (s === "checkout") return "Checkout";
     return "Payment";
   }
 
@@ -144,18 +144,18 @@ export function BookingFlow(props: Props) {
           <div className="min-w-0">
             {/* Step indicator */}
             <div className="flex items-center gap-3 mb-10 font-sans text-sm text-mute">
-              <div className={`w-7 h-7 rounded-full border-[1.5px] flex items-center justify-center text-[13px] font-semibold shrink-0 ${currentIndex >= 0 ? "bg-brass border-brass text-soft" : "border-line"}`}>
+              <div className={`w-7 h-7 rounded-full border-[1.5px] flex items-center justify-center text-[13px] font-semibold shrink-0 ${currentIndex > 0 ? "bg-brass border-brass text-soft" : currentIndex === 0 ? "bg-brass border-brass text-soft" : "border-line"}`}>
                 {currentIndex > 0 ? "✓" : "1"}
               </div>
-              <span className="font-sans text-xs font-semibold uppercase tracking-[0.1em]">Dates</span>
+              <span className="font-sans text-xs font-semibold uppercase tracking-[0.1em]">Guest info</span>
               <div className="w-6 h-px bg-line shrink-0" />
               <div className={`w-7 h-7 rounded-full border-[1.5px] flex items-center justify-center text-[13px] font-semibold shrink-0 ${currentIndex >= 1 ? "bg-brass border-brass text-soft" : "border-line"}`}>
                 {currentIndex > 1 ? "✓" : "2"}
               </div>
-              <span className="font-sans text-xs font-semibold uppercase tracking-[0.1em]">Guest info</span>
+              <span className="font-sans text-xs font-semibold uppercase tracking-[0.1em]">Checkout</span>
               <div className="w-6 h-px bg-line shrink-0" />
               <div className={`w-7 h-7 rounded-full border-[1.5px] flex items-center justify-center text-[13px] font-semibold shrink-0 ${currentIndex >= 2 ? "bg-brass border-brass text-soft" : "border-line"}`}>
-                3
+                {currentIndex > 2 ? "✓" : "3"}
               </div>
               <span className="font-sans text-xs font-semibold uppercase tracking-[0.1em]">Payment</span>
             </div>
@@ -396,7 +396,8 @@ export function BookingFlow(props: Props) {
                 <div className="p-5 bg-soft rounded-none mt-5">
                   <div className="font-sans text-sm font-semibold text-ink mb-2">Free cancellation</div>
                   <p className="font-sans text-[13px] leading-relaxed text-ink-secondary">
-                    Cancel up to 48 hours before check-in for a full refund. After that, the first night is non-refundable.
+                    Cancel up to 48 hours before check-in for a full refund. After that, the first night is non-refundable. Date changes are free up to 7 days before check-in.{" "}
+                    <Link href="/policy" className="text-link">Read the full policy →</Link>
                   </p>
                 </div>
 
@@ -412,13 +413,13 @@ export function BookingFlow(props: Props) {
                     onClick={handleSubmit}
                     className="flex-1 py-3.5 rounded-sm bg-brass text-soft text-sm font-semibold transition-all hover:bg-brass-dark disabled:opacity-50 disabled:cursor-wait cursor-pointer border-none"
                   >
-                    {submitting ? "Processing..." : `Confirm and pay`}
+                    {submitting ? "Processing..." : `Confirm and pay ${chargeTotal > 0 ? formatMinor(Math.max(0, chargeTotal - 4000), currency as CurrencyCode) : ""}`}
                   </button>
                 </div>
 
                 <p className="font-sans text-xs text-center mt-4 text-mute">
                   <strong className="text-ink-secondary">You won&rsquo;t be charged yet.</strong><br />
-                  Your card will be charged 48 hours before check-in.
+                  Your card will be charged 48 hours before check-in. Free cancellation until then.
                 </p>
               </div>
             )}
@@ -506,6 +507,9 @@ function BookingSidebar({
         <div>
           <div className="font-display text-lg font-medium text-ink leading-tight mb-1">{propertyName}</div>
           <div className="font-sans text-[13px] text-mute mb-1">{neighbourhood}, {city}</div>
+          <div className="flex items-center gap-1.5 text-xs text-ink-secondary">
+            <span className="text-brass">★</span> 4.9 · <span className="text-success">✓</span> Verified
+          </div>
         </div>
       </div>
 

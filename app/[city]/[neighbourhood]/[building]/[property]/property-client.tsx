@@ -470,7 +470,7 @@ export function PropertyClient({ property: prop, formattedNightly, formattedDepo
                   <li><span>Payment</span><strong>Card, in USD, charged in full</strong></li>
                   <li><span>Security deposit</span><strong>{formattedDeposit} card hold</strong></li>
                 </ul>
-                <a className="text-link" href="policy.html#deposit">View terms</a>
+                <Link href="/policy#deposit" className="text-link">View terms</Link>
               </div>
               <div className="pol-col">
                 <h3 className="sub-h">Cancellation</h3>
@@ -488,7 +488,7 @@ export function PropertyClient({ property: prop, formattedNightly, formattedDepo
                     <p>No refund once check-in is less than 7 days away.</p>
                   </li>
                 </ul>
-                <a className="text-link" href="policy.html#cancellation">View full terms</a>
+                <Link href="/policy#cancellation" className="text-link">View full terms</Link>
               </div>
             </div>
           </section>
@@ -528,7 +528,7 @@ export function PropertyClient({ property: prop, formattedNightly, formattedDepo
           <div className="nl-text">
             <div className="eyebrow nl-eyebrow">The Insider List</div>
             <h2>New homes, exclusive offers,<br />and early access.</h2>
-            <p className="nl-legal">No spam. Unsubscribe anytime. <a href="policy.html">Privacy Policy</a>.</p>
+            <p className="nl-legal">No spam. Unsubscribe anytime. <Link href="/policy">Privacy Policy</Link>.</p>
           </div>
           <form className="nl-form" onSubmit={(e) => e.preventDefault()} aria-label="Newsletter sign-up">
             <input type="email" placeholder="Enter your email address" aria-label="Email address" />
