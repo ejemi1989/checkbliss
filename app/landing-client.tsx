@@ -163,28 +163,52 @@ export function HomePageClient() {
   }, [menuOpen]);
 
   useEffect(() => {
-    function makeDraggable(track: HTMLElement) {
-      let down = false, startX = 0, scrollLeft = 0, moved = 0;
-      track.addEventListener("mousedown", (e) => {
-        down = true; moved = 0; track.classList.add("dragging");
-        startX = e.pageX - track.offsetLeft;
-        scrollLeft = track.scrollLeft;
-      });
-      const up = () => { down = false; track.classList.remove("dragging"); };
-      window.addEventListener("mouseup", up);
-      track.addEventListener("mouseleave", up);
-      track.addEventListener("mousemove", (e) => {
+    const tracks = document.querySelectorAll("#staysTrack, .cats-grid");
+    if (!tracks.length) return;
+
+    const cleanups: (() => void)[] = [];
+
+    tracks.forEach((track) => {
+      const el = track as HTMLElement;
+      let down = false, startX = 0, scrollStart = 0, didDrag = false;
+
+      const onDown = (e: Event) => {
+        down = true; didDrag = false;
+        el.classList.add("dragging");
+        startX = (e as MouseEvent).pageX - el.offsetLeft;
+        scrollStart = el.scrollLeft;
+      };
+      const onUp = () => {
+        down = false; el.classList.remove("dragging");
+      };
+      const onMove = (e: Event) => {
         if (!down) return;
         e.preventDefault();
-        const x = e.pageX - track.offsetLeft;
-        moved = Math.abs(x - startX);
-        track.scrollLeft = scrollLeft - (x - startX);
+        const x = (e as MouseEvent).pageX - el.offsetLeft;
+        if (Math.abs(x - startX) > 3) didDrag = true;
+        el.scrollLeft = scrollStart - (x - startX);
+      };
+      const onClick = (e: Event) => {
+        if (didDrag) e.preventDefault();
+      };
+
+      el.addEventListener("mousedown", onDown);
+      window.addEventListener("mouseup", onUp);
+      el.addEventListener("mouseleave", onUp);
+      el.addEventListener("mousemove", onMove);
+      el.querySelectorAll("a").forEach((a) => a.addEventListener("click", onClick));
+
+      cleanups.push(() => {
+        el.removeEventListener("mousedown", onDown);
+        window.removeEventListener("mouseup", onUp);
+        el.removeEventListener("mouseleave", onUp);
+        el.removeEventListener("mousemove", onMove);
+        el.querySelectorAll("a").forEach((a) => a.removeEventListener("click", onClick));
+        el.classList.remove("dragging");
       });
-      track.querySelectorAll("a").forEach((a) => {
-        a.addEventListener("click", (e) => { if (moved > 6) e.preventDefault(); });
-      });
-    }
-    document.querySelectorAll("#staysTrack, .cats-grid").forEach((el) => makeDraggable(el as HTMLElement));
+    });
+
+    return () => cleanups.forEach((fn) => fn());
   }, [mounted]);
 
   useEffect(() => {
