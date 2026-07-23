@@ -150,7 +150,7 @@ export function HomePageClient() {
       revealObs.disconnect();
       activeObs.disconnect();
     };
-  }, []);
+  }, [mounted]);
 
   useEffect(() => {
     function handleClickOutside(e: MouseEvent) {
@@ -185,7 +185,7 @@ export function HomePageClient() {
       });
     }
     document.querySelectorAll("#staysTrack, .cats-grid").forEach((el) => makeDraggable(el as HTMLElement));
-  }, []);
+  }, [mounted]);
 
   useEffect(() => {
     const interval = setInterval(() => {
