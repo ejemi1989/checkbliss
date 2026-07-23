@@ -24,7 +24,7 @@ interface Props {
   coverPhotoUrl?: string | null;
 }
 
-type Step = "dates" | "checkout" | "payment";
+type Step = "dates" | "guest" | "payment";
 
 export function BookingFlow(props: Props) {
   const router = useRouter();
@@ -51,15 +51,13 @@ export function BookingFlow(props: Props) {
 
   useEffect(() => { setMounted(true); }, []);
 
-  const steps: Step[] = ["dates", "checkout", "payment"];
+  const steps: Step[] = ["dates", "guest", "payment"];
   const currentIndex = steps.indexOf(step);
 
-  const [minDateStr] = useState(() => {
-    const today = new Date();
-    const minDate = new Date(today);
-    minDate.setDate(minDate.getDate() + 14);
-    return minDate.toISOString().split("T")[0];
-  });
+  const today = new Date();
+  const minDate = new Date(today);
+  minDate.setDate(minDate.getDate() + 14);
+  const minDateStr = minDate.toISOString().split("T")[0];
 
   const nights = checkIn && checkOut
     ? Math.max(1, Math.round((new Date(checkOut).getTime() - new Date(checkIn).getTime()) / (1000 * 60 * 60 * 24)))
@@ -70,32 +68,35 @@ export function BookingFlow(props: Props) {
   const chargeTotal = accommodationTotal + extendedFee;
   const nightlyLabel = formatMinor(nightlyRateMinor, currency as CurrencyCode);
   const depositLabel = formatMinor(depositMinor, currency as CurrencyCode);
-  const chargeLabel = formatMinor(chargeTotal, currency as CurrencyCode);
-  const extendedFeeLabel = extendedFee > 0 ? formatMinor(extendedFee, currency as CurrencyCode) : null;
 
-  function stepLabel(s: Step) {
-    if (s === "dates") return "Guest info";
-    if (s === "checkout") return "Checkout";
-    return "Payment";
+  function formatCheckinDate(d: string) {
+    if (!d) return "";
+    const dt = new Date(d + "T12:00:00");
+    return dt.toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" });
   }
 
-  function validateStep() {
+  function validateStep(s: Step) {
     const errors: Record<string, string> = {};
-    if (step === "dates") {
-      if (!checkIn) errors.checkIn = "Required";
-      if (!checkOut) errors.checkOut = "Required";
+    if (s === "dates") {
+      if (!checkIn) errors.checkIn = "Select a check-in date";
+      if (!checkOut) errors.checkOut = "Select a check-out date";
       else if (checkOut <= checkIn) errors.checkOut = "Must be after check-in";
+      if (nights < 2) errors.nights = "Minimum 2 nights";
+    }
+    if (s === "guest") {
       if (!guestName.trim()) errors.name = "Required";
       if (!guestEmail.trim()) errors.email = "Required";
+      else if (!/\S+@\S+\.\S+/.test(guestEmail)) errors.email = "Invalid email";
       if (!guestPhone.trim()) errors.phone = "Required";
     }
     setFieldErrors(errors);
     return Object.keys(errors).length === 0;
   }
 
-  function handleContinue() {
-    if (validateStep()) {
-      setStep("checkout");
+  function handleContinue(from: Step, to: Step) {
+    if (validateStep(from)) {
+      setStep(to);
+      setError(null);
     }
   }
 
@@ -121,20 +122,26 @@ export function BookingFlow(props: Props) {
     }
   }
 
+  const totalAfterCredit = Math.max(0, chargeTotal - 4000);
+
   if (!mounted) {
     return <div className="min-h-screen bg-bone" />;
   }
 
+  const stepInfo = [
+    { label: "Dates", num: 1 },
+    { label: "Guest info", num: 2 },
+    { label: "Payment", num: 3 },
+  ];
+
   return (
     <div className="min-h-screen bg-bone">
-      <header className="bg-card border-b border-line sticky top-0 z-50">
+      <header className="bg-card border-b border-hairline sticky top-0 z-50">
         <div className="max-w-[1240px] mx-auto px-8 py-4 flex items-center gap-5 max-sm:px-5">
           <Link href={propertyHref({ city, neighbourhood_slug: neighbourhoodSlug, building_slug: buildingSlug, slug: propertySlug })} className="font-sans text-sm font-medium text-ink-secondary no-underline hover:text-green-soft transition-colors shrink-0">
             &#8592; Back to property
           </Link>
-          <Link href="/" className="shrink-0 no-underline">
-            <img src="/assets/images/logo/logo-wrd.png" alt="CheckinBliss" className="h-7 w-auto" />
-          </Link>
+          <span className="font-display text-xl font-medium text-ink tracking-[-0.01em]">CheckinBliss</span>
         </div>
       </header>
 
@@ -143,210 +150,171 @@ export function BookingFlow(props: Props) {
           {/* Main */}
           <div className="min-w-0">
             {/* Step indicator */}
-            <div className="flex items-center gap-3 mb-10 font-sans text-sm text-mute">
-              <div className={`w-7 h-7 rounded-full border-[1.5px] flex items-center justify-center text-[13px] font-semibold shrink-0 ${currentIndex > 0 ? "bg-brass border-brass text-soft" : currentIndex === 0 ? "bg-brass border-brass text-soft" : "border-line"}`}>
-                {currentIndex > 0 ? "✓" : "1"}
-              </div>
-              <span className="font-sans text-xs font-semibold uppercase tracking-[0.1em]">Guest info</span>
-              <div className="w-6 h-px bg-line shrink-0" />
-              <div className={`w-7 h-7 rounded-full border-[1.5px] flex items-center justify-center text-[13px] font-semibold shrink-0 ${currentIndex >= 1 ? "bg-brass border-brass text-soft" : "border-line"}`}>
-                {currentIndex > 1 ? "✓" : "2"}
-              </div>
-              <span className="font-sans text-xs font-semibold uppercase tracking-[0.1em]">Checkout</span>
-              <div className="w-6 h-px bg-line shrink-0" />
-              <div className={`w-7 h-7 rounded-full border-[1.5px] flex items-center justify-center text-[13px] font-semibold shrink-0 ${currentIndex >= 2 ? "bg-brass border-brass text-soft" : "border-line"}`}>
-                {currentIndex > 2 ? "✓" : "3"}
-              </div>
-              <span className="font-sans text-xs font-semibold uppercase tracking-[0.1em]">Payment</span>
+            <div className="flex items-center gap-3 mb-10 font-sans">
+              {stepInfo.map((si, i) => {
+                const isDone = currentIndex > i;
+                const isActive = currentIndex === i;
+                return (
+                  <div key={si.label} className="flex items-center gap-3">
+                    <div className={`w-7 h-7 rounded-full border-[1.5px] flex items-center justify-center text-[13px] font-semibold shrink-0 ${
+                      isDone ? "bg-green-soft border-green-soft text-bone" :
+                      isActive ? "bg-brass border-brass text-bone" :
+                      "border-hairline text-mute"
+                    }`}>
+                      {isDone ? "✓" : si.num}
+                    </div>
+                    <span className={`font-sans text-xs font-semibold uppercase tracking-[0.1em] ${isActive ? "text-ink" : "text-mute"}`}>{si.label}</span>
+                    {i < 2 && <div className="w-6 h-px bg-hairline shrink-0" />}
+                  </div>
+                );
+              })}
             </div>
 
             {/* Error */}
             {error && (
-              <div className="mb-6 p-4 rounded-[var(--radius-md)] bg-danger/5 border border-danger/20 text-sm text-danger font-medium font-sans">
+              <div className="mb-6 p-4 rounded-[var(--radius-md)] bg-error/5 border border-error/20 text-sm text-error font-medium font-sans">
                 {error}
               </div>
             )}
 
-            {/* Sidebar (mobile only — shown before form on small screens) */}
+            {/* Sidebar (mobile only) */}
             <div className="hidden max-lg:block mb-8">
               <BookingSidebar
-                propertyName={propertyName}
-                neighbourhood={neighbourhood}
-                city={city}
-                coverPhotoUrl={coverPhotoUrl}
-                checkIn={checkIn}
-                checkOut={checkOut}
-                nights={nights}
-                accommodationTotal={accommodationTotal}
-                extendedFee={extendedFee}
-                chargeTotal={chargeTotal}
-                depositMinor={depositMinor}
-                nightlyLabel={nightlyLabel}
-                depositLabel={depositLabel}
-                chargeLabel={chargeLabel}
-                extendedFeeLabel={extendedFeeLabel}
-                currency={currency as CurrencyCode}
-                step={step}
+                propertyName={propertyName} neighbourhood={neighbourhood} city={city}
+                coverPhotoUrl={coverPhotoUrl} checkIn={checkIn} checkOut={checkOut}
+                formatCheckinDate={formatCheckinDate}
+                nights={nights} accommodationTotal={accommodationTotal}
+                extendedFee={extendedFee} chargeTotal={chargeTotal}
+                depositMinor={depositMinor} nightlyLabel={nightlyLabel}
+                depositLabel={depositLabel} currency={currency as CurrencyCode}
+                step={step} totalAfterCredit={totalAfterCredit}
               />
             </div>
 
-            {/* STEP 1 — Guest details */}
+            {/* STEP 1 — Dates */}
             {step === "dates" && (
-              <div className="bg-card rounded-[var(--radius-lg)] border border-line p-7">
-                <h2 className="font-display text-[22px] font-medium text-ink mb-5">Guest details</h2>
-                <div className="grid grid-cols-2 gap-4 mb-4 max-sm:grid-cols-1">
-                  <div className="flex flex-col gap-1">
-                    <label className="font-sans text-xs font-semibold uppercase tracking-[0.1em] text-mute">First name</label>
-                    <input
-                      type="text"
-                      placeholder="Temi"
-                      value={guestName}
-                      onChange={(e) => { setGuestName(e.target.value); setFieldErrors((f) => ({ ...f, name: "" })); }}
-                      className={`px-4 py-3 rounded-[var(--radius-md)] border bg-card font-sans text-[15px] text-ink outline-none transition-colors ${fieldErrors.name ? "border-danger" : "border-line focus:border-green-soft"}`}
-                    />
-                    {fieldErrors.name && <p className="font-sans text-[10px] text-danger mt-0.5">Required</p>}
+              <div>
+                <div className="form-section" style={{ marginBottom: "var(--s10, 48px)" }}>
+                  <h2 className="font-display text-[22px] font-medium text-ink mb-5">Choose your dates</h2>
+                  <div className="grid grid-cols-2 gap-4 mb-5 max-sm:grid-cols-1">
+                    <div className="flex flex-col gap-1">
+                      <label className="font-sans text-xs font-semibold uppercase tracking-[0.1em] text-mute">Check-in</label>
+                      <input
+                        type="date"
+                        min={minDateStr}
+                        value={checkIn}
+                        onChange={(e) => { setCheckIn(e.target.value); setFieldErrors((f) => ({ ...f, checkIn: "", checkOut: "", nights: "" })); }}
+                        className={`px-4 py-3 rounded-[var(--radius-md)] border bg-card font-sans text-[15px] text-ink outline-none transition-colors ${fieldErrors.checkIn ? "border-error" : "border-hairline focus:border-green-soft"}`}
+                      />
+                      {fieldErrors.checkIn && <p className="font-sans text-[10px] text-error mt-0.5">{fieldErrors.checkIn}</p>}
+                    </div>
+                    <div className="flex flex-col gap-1">
+                      <label className="font-sans text-xs font-semibold uppercase tracking-[0.1em] text-mute">Check-out</label>
+                      <input
+                        type="date"
+                        min={checkIn || minDateStr}
+                        value={checkOut}
+                        onChange={(e) => { setCheckOut(e.target.value); setFieldErrors((f) => ({ ...f, checkOut: "", nights: "" })); }}
+                        className={`px-4 py-3 rounded-[var(--radius-md)] border bg-card font-sans text-[15px] text-ink outline-none transition-colors ${fieldErrors.checkOut || fieldErrors.nights ? "border-error" : "border-hairline focus:border-green-soft"}`}
+                      />
+                      {fieldErrors.checkOut && <p className="font-sans text-[10px] text-error mt-0.5">{fieldErrors.checkOut}</p>}
+                      {fieldErrors.nights && !fieldErrors.checkOut && <p className="font-sans text-[10px] text-error mt-0.5">{fieldErrors.nights}</p>}
+                    </div>
                   </div>
-                  <div className="flex flex-col gap-1">
-                    <label className="font-sans text-xs font-semibold uppercase tracking-[0.1em] text-mute">Last name</label>
-                    <input
-                      type="text"
-                      placeholder="Adetola"
-                      className="px-4 py-3 rounded-[var(--radius-md)] border border-line bg-card font-sans text-[15px] text-ink outline-none focus:border-green-soft transition-colors"
-                    />
-                  </div>
-                </div>
-                <div className="grid grid-cols-2 gap-4 mb-4 max-sm:grid-cols-1">
-                  <div className="flex flex-col gap-1">
-                    <label className="font-sans text-xs font-semibold uppercase tracking-[0.1em] text-mute">Email address</label>
-                    <input
-                      type="email"
-                      placeholder="temi@email.com"
-                      value={guestEmail}
-                      onChange={(e) => { setGuestEmail(e.target.value); setFieldErrors((f) => ({ ...f, email: "" })); }}
-                      className={`px-4 py-3 rounded-[var(--radius-md)] border bg-card font-sans text-[15px] text-ink outline-none transition-colors ${fieldErrors.email ? "border-danger" : "border-line focus:border-green-soft"}`}
-                    />
-                    {fieldErrors.email && <p className="font-sans text-[10px] text-danger mt-0.5">Required</p>}
-                  </div>
-                  <div className="flex flex-col gap-1">
-                    <label className="font-sans text-xs font-semibold uppercase tracking-[0.1em] text-mute">Phone number</label>
-                    <input
-                      type="tel"
-                      placeholder="+234 801 234 5678"
-                      value={guestPhone}
-                      onChange={(e) => { setGuestPhone(e.target.value); setFieldErrors((f) => ({ ...f, phone: "" })); }}
-                      className={`px-4 py-3 rounded-[var(--radius-md)] border bg-card font-sans text-[15px] text-ink outline-none transition-colors ${fieldErrors.phone ? "border-danger" : "border-line focus:border-green-soft"}`}
-                    />
-                    {fieldErrors.phone && <p className="font-sans text-[10px] text-danger mt-0.5">Required</p>}
-                  </div>
-                </div>
 
-                <h2 className="font-display text-[22px] font-medium text-ink mb-5 mt-8">Trip details</h2>
-                <div className="flex flex-col gap-1 mb-4">
-                  <label className="font-sans text-xs font-semibold uppercase tracking-[0.1em] text-mute">What brings you to {city}?</label>
-                  <select className="px-4 py-3 rounded-[var(--radius-md)] border border-line bg-card font-sans text-[15px] text-ink outline-none cursor-pointer appearance-none focus:border-green-soft transition-colors">
-                    <option>Business travel</option>
-                    <option>Leisure / holiday</option>
-                    <option>Relocation</option>
-                    <option>Visiting family</option>
-                    <option>Other</option>
-                  </select>
-                </div>
-                <div className="flex flex-col gap-1 mb-4">
-                  <label className="font-sans text-xs font-semibold uppercase tracking-[0.1em] text-mute">Special requests (optional)</label>
-                  <input type="text" placeholder="Early check-in, airport transfer, dietary needs…" className="px-4 py-3 rounded-[var(--radius-md)] border border-line bg-card font-sans text-[15px] text-ink outline-none focus:border-green-soft transition-colors" />
-                </div>
-
-                <hr className="border-none border-t border-line my-6" />
-
-                <h2 className="font-display text-[22px] font-medium text-ink mb-5">Choose your dates</h2>
-                <div className="grid grid-cols-2 gap-4 mb-5 max-sm:grid-cols-1">
-                  <div className="flex flex-col gap-1">
-                    <label className="font-sans text-xs font-medium text-mute">Check-in</label>
-                    <input
-                      type="date"
-                      min={minDateStr}
-                      value={checkIn}
-                      onChange={(e) => { setCheckIn(e.target.value); setFieldErrors((f) => ({ ...f, checkIn: "", checkOut: "" })); }}
-                      className={`px-4 py-3 rounded-[var(--radius-md)] border bg-card font-sans text-[15px] text-ink outline-none transition-colors ${fieldErrors.checkIn ? "border-danger" : "border-line focus:border-green-soft"}`}
-                    />
-                    {fieldErrors.checkIn && <p className="font-sans text-[10px] text-danger mt-0.5">{fieldErrors.checkIn}</p>}
+                  <div className="flex flex-col gap-1 mb-5">
+                    <label className="font-sans text-xs font-semibold uppercase tracking-[0.1em] text-mute">Guests</label>
+                    <select
+                      value={guestCount}
+                      onChange={(e) => setGuestCount(parseInt(e.target.value))}
+                      className="w-32 px-4 py-3 rounded-[var(--radius-md)] border border-hairline bg-card font-sans text-[15px] text-ink outline-none cursor-pointer appearance-none"
+                    >
+                      {Array.from({ length: sleeps }, (_, i) => i + 1).map((n) => (
+                        <option key={n} value={n}>{n} guest{n > 1 ? "s" : ""}</option>
+                      ))}
+                    </select>
                   </div>
-                  <div className="flex flex-col gap-1">
-                    <label className="font-sans text-xs font-medium text-mute">Check-out</label>
-                    <input
-                      type="date"
-                      min={checkIn || minDateStr}
-                      value={checkOut}
-                      onChange={(e) => { setCheckOut(e.target.value); setFieldErrors((f) => ({ ...f, checkOut: "" })); }}
-                      className={`px-4 py-3 rounded-[var(--radius-md)] border bg-card font-sans text-[15px] text-ink outline-none transition-colors ${fieldErrors.checkOut ? "border-danger" : "border-line focus:border-green-soft"}`}
-                    />
-                    {fieldErrors.checkOut && <p className="font-sans text-[10px] text-danger mt-0.5">{fieldErrors.checkOut}</p>}
-                  </div>
-                </div>
 
-                <div className="flex flex-col gap-1 mb-5">
-                  <label className="font-sans text-xs font-medium text-mute">Guests</label>
-                  <select
-                    value={guestCount}
-                    onChange={(e) => setGuestCount(parseInt(e.target.value))}
-                    className="w-32 px-4 py-3 rounded-[var(--radius-md)] border border-line bg-card font-sans text-[15px] text-ink outline-none cursor-pointer"
+                  <p className="font-sans text-xs text-mute mb-5">Bookings open 14+ days ahead. 2 nights minimum.</p>
+
+                  <button
+                    onClick={() => handleContinue("dates", "guest")}
+                    className="w-full py-4 rounded-[var(--radius-sm)] bg-brass text-bone font-sans text-base font-semibold transition-all hover:bg-brass-dark cursor-pointer border-none"
                   >
-                    {Array.from({ length: sleeps }, (_, i) => i + 1).map((n) => (
-                      <option key={n} value={n}>{n} guest{n > 1 ? "s" : ""}</option>
-                    ))}
-                  </select>
+                    Continue
+                  </button>
                 </div>
-
-                <button
-                  onClick={handleContinue}
-                  className="w-full py-4 rounded-sm bg-brass text-soft font-sans text-base font-semibold transition-all hover:bg-brass-dark cursor-pointer border-none"
-                >
-                  Continue
-                </button>
               </div>
             )}
 
-            {/* STEP 2 — Checkout option */}
-            {step === "checkout" && (
-              <div className="bg-card rounded-[var(--radius-lg)] border border-line p-7">
-                <h2 className="font-display text-[22px] font-medium text-ink mb-1">Checkout preference</h2>
-                <p className="font-sans text-xs text-ink-secondary mb-5">
-                  Choose how late you&rsquo;d like to check out. Standard checkout at 11:00 is included.
-                </p>
-
-                <div className="space-y-3 mb-6">
-                  <label className={`flex items-center justify-between p-4 rounded-[var(--radius-md)] border cursor-pointer transition-colors ${!extendedCheckout ? "border-brass bg-soft" : "border-line hover:bg-soft"}`}>
-                    <div>
-                      <p className="font-sans text-sm font-semibold text-ink">Standard checkout — 11:00</p>
-                      <p className="font-sans text-xs text-ink-secondary mt-0.5">Included with every booking.</p>
+            {/* STEP 2 — Guest info */}
+            {step === "guest" && (
+              <div>
+                <div className="form-section" style={{ marginBottom: "var(--s10, 48px)" }}>
+                  <h2 className="font-display text-[22px] font-medium text-ink mb-5">Guest details</h2>
+                  <div className="grid grid-cols-2 gap-4 mb-4 max-sm:grid-cols-1">
+                    <div className="flex flex-col gap-1">
+                      <label className="font-sans text-xs font-semibold uppercase tracking-[0.1em] text-mute">First name</label>
+                      <input
+                        type="text" placeholder="Temi"
+                        value={guestName}
+                        onChange={(e) => { setGuestName(e.target.value); setFieldErrors((f) => ({ ...f, name: "" })); }}
+                        className={`px-4 py-3 rounded-[var(--radius-md)] border bg-card font-sans text-[15px] text-ink outline-none transition-colors placeholder:text-mute ${fieldErrors.name ? "border-error" : "border-hairline focus:border-green-soft"}`}
+                      />
+                      {fieldErrors.name && <p className="font-sans text-[10px] text-error mt-0.5">Required</p>}
                     </div>
-                    <input type="radio" name="checkout" checked={!extendedCheckout} onChange={() => setExtendedCheckout(false)} className="accent-brass" />
-                  </label>
+                    <div className="flex flex-col gap-1">
+                      <label className="font-sans text-xs font-semibold uppercase tracking-[0.1em] text-mute">Last name</label>
+                      <input type="text" placeholder="Adetola" className="px-4 py-3 rounded-[var(--radius-md)] border border-hairline bg-card font-sans text-[15px] text-ink outline-none focus:border-green-soft transition-colors placeholder:text-mute" />
+                    </div>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4 mb-4 max-sm:grid-cols-1">
+                    <div className="flex flex-col gap-1">
+                      <label className="font-sans text-xs font-semibold uppercase tracking-[0.1em] text-mute">Email address</label>
+                      <input
+                        type="email" placeholder="temi@email.com"
+                        value={guestEmail}
+                        onChange={(e) => { setGuestEmail(e.target.value); setFieldErrors((f) => ({ ...f, email: "" })); }}
+                        className={`px-4 py-3 rounded-[var(--radius-md)] border bg-card font-sans text-[15px] text-ink outline-none transition-colors placeholder:text-mute ${fieldErrors.email ? "border-error" : "border-hairline focus:border-green-soft"}`}
+                      />
+                      {fieldErrors.email && <p className="font-sans text-[10px] text-error mt-0.5">{fieldErrors.email}</p>}
+                    </div>
+                    <div className="flex flex-col gap-1">
+                      <label className="font-sans text-xs font-semibold uppercase tracking-[0.1em] text-mute">Phone number</label>
+                      <input
+                        type="tel" placeholder="+234 801 234 5678"
+                        value={guestPhone}
+                        onChange={(e) => { setGuestPhone(e.target.value); setFieldErrors((f) => ({ ...f, phone: "" })); }}
+                        className={`px-4 py-3 rounded-[var(--radius-md)] border bg-card font-sans text-[15px] text-ink outline-none transition-colors placeholder:text-mute ${fieldErrors.phone ? "border-error" : "border-hairline focus:border-green-soft"}`}
+                      />
+                      {fieldErrors.phone && <p className="font-sans text-[10px] text-error mt-0.5">Required</p>}
+                    </div>
+                  </div>
+                </div>
 
-                  {extendedCheckoutOffered && extendedCheckoutPriceMinor && (
-                    <label className={`flex items-center justify-between p-4 rounded-[var(--radius-md)] border cursor-pointer transition-colors ${extendedCheckout ? "border-brass bg-soft" : "border-line hover:bg-soft"}`}>
-                      <div>
-                        <p className="font-sans text-sm font-semibold text-ink">Extended checkout — 18:00</p>
-                        <p className="font-sans text-xs text-ink-secondary mt-0.5">
-                          +{formatMinor(extendedCheckoutPriceMinor, currency as CurrencyCode)}. Request at least 48 hours before check-out.
-                        </p>
-                      </div>
-                      <input type="radio" name="checkout" checked={extendedCheckout} onChange={() => setExtendedCheckout(true)} className="accent-brass" />
-                    </label>
-                  )}
+                <div className="form-section" style={{ marginBottom: "var(--s10, 48px)" }}>
+                  <h2 className="font-display text-[22px] font-medium text-ink mb-5">Trip details</h2>
+                  <div className="flex flex-col gap-1 mb-4">
+                    <label className="font-sans text-xs font-semibold uppercase tracking-[0.1em] text-mute">What brings you to {city}?</label>
+                    <select className="px-4 py-3 rounded-[var(--radius-md)] border border-hairline bg-card font-sans text-[15px] text-ink outline-none cursor-pointer appearance-none focus:border-green-soft transition-colors">
+                      <option>Business travel</option>
+                      <option>Leisure / holiday</option>
+                      <option>Relocation</option>
+                      <option>Visiting family</option>
+                      <option>Other</option>
+                    </select>
+                  </div>
+                  <div className="flex flex-col gap-1">
+                    <label className="font-sans text-xs font-semibold uppercase tracking-[0.1em] text-mute">Special requests (optional)</label>
+                    <input type="text" placeholder="Early check-in, airport transfer, dietary needs…" className="px-4 py-3 rounded-[var(--radius-md)] border border-hairline bg-card font-sans text-[15px] text-ink outline-none focus:border-green-soft transition-colors placeholder:text-mute" />
+                  </div>
                 </div>
 
                 <div className="flex gap-3">
-                  <button
-                    onClick={() => setStep("dates")}
-                    className="flex-1 py-3 rounded-sm border border-line text-sm font-medium text-ink-secondary hover:bg-soft transition-colors cursor-pointer"
-                  >
+                  <button onClick={() => { setStep("dates"); setError(null); }} className="flex-1 py-3 rounded-[var(--radius-sm)] border border-hairline text-sm font-medium text-ink-secondary hover:bg-soft transition-colors cursor-pointer">
                     Back
                   </button>
-                  <button
-                    onClick={() => setStep("payment")}
-                    className="flex-1 py-3 rounded-sm bg-brass text-soft text-sm font-semibold transition-all hover:bg-brass-dark cursor-pointer border-none"
-                  >
+                  <button onClick={() => handleContinue("guest", "payment")} className="flex-1 py-3 rounded-[var(--radius-sm)] bg-brass text-bone text-sm font-semibold transition-all hover:bg-brass-dark cursor-pointer border-none">
                     Continue to payment
                   </button>
                 </div>
@@ -355,69 +323,84 @@ export function BookingFlow(props: Props) {
 
             {/* STEP 3 — Payment */}
             {step === "payment" && (
-              <div className="bg-card rounded-[var(--radius-lg)] border border-line p-7">
-                <h2 className="font-display text-[22px] font-medium text-ink mb-1">Payment method</h2>
-                <p className="font-sans text-xs text-ink-secondary mb-5">Your card won&rsquo;t be charged until 48 hours before check-in.</p>
+              <div>
+                <div className="form-section" style={{ marginBottom: "40px" }}>
+                  <h2 className="font-display text-[22px] font-medium text-ink mb-1">Payment method</h2>
+                  <p className="font-sans text-xs text-ink-secondary mb-5">Your card won&rsquo;t be charged until 48 hours before check-in.</p>
 
-                <div className="space-y-3 mb-6">
-                  <label className="flex items-center gap-4 p-5 rounded-[var(--radius-md)] border cursor-pointer border-brass bg-soft hover:border-green-soft transition-colors">
-                    <div className="w-[18px] h-[18px] rounded-full border-[1.5px] border-brass shrink-0 flex items-center justify-center">
-                      <div className="w-[9px] h-[9px] rounded-full bg-brass" />
+                  <div className="space-y-3 mb-5">
+                    <label className="flex items-center gap-4 p-5 rounded-[var(--radius-md)] border cursor-pointer border-brass bg-bone-secondary hover:border-green-soft transition-colors">
+                      <div className="w-[18px] h-[18px] rounded-full border-[1.5px] border-brass shrink-0 flex items-center justify-center">
+                        <div className="w-[9px] h-[9px] rounded-full bg-brass" />
+                      </div>
+                      <svg className="w-6 h-6 text-mute shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+                      <span className="font-sans text-sm font-medium text-ink">Credit or debit card</span>
+                    </label>
+                    <label className="flex items-center gap-4 p-5 rounded-[var(--radius-md)] border cursor-pointer border-hairline hover:border-green-soft transition-colors">
+                      <div className="w-[18px] h-[18px] rounded-full border-[1.5px] border-hairline shrink-0" />
+                      <svg className="w-6 h-6 text-mute shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M8 12h8M12 8v8"/></svg>
+                      <span className="font-sans text-sm font-medium text-ink">Bank transfer</span>
+                    </label>
+                  </div>
+
+                  <div className="flex flex-col gap-1 mb-4">
+                    <label className="font-sans text-xs font-semibold uppercase tracking-[0.1em] text-mute">Card number</label>
+                    <input type="text" placeholder="1234 5678 9012 3456" className="px-4 py-3 rounded-[var(--radius-md)] border border-hairline bg-card font-sans text-[15px] text-ink outline-none focus:border-green-soft transition-colors placeholder:text-mute" />
+                  </div>
+                  <div className="grid grid-cols-2 gap-4 mb-4 max-sm:grid-cols-1">
+                    <div className="flex flex-col gap-1">
+                      <label className="font-sans text-xs font-semibold uppercase tracking-[0.1em] text-mute">Expiry date</label>
+                      <input type="text" placeholder="MM / YY" className="px-4 py-3 rounded-[var(--radius-md)] border border-hairline bg-card font-sans text-[15px] text-ink outline-none focus:border-green-soft transition-colors placeholder:text-mute" />
                     </div>
-                    <svg className="w-6 h-6 text-mute shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
-                    <span className="font-sans text-sm font-medium text-ink">Credit or debit card</span>
-                  </label>
-                  <label className="flex items-center gap-4 p-5 rounded-[var(--radius-md)] border cursor-pointer border-line hover:border-green-soft transition-colors">
-                    <div className="w-[18px] h-[18px] rounded-full border-[1.5px] border-line shrink-0" />
-                    <svg className="w-6 h-6 text-mute shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M8 12h8M12 8v8"/></svg>
-                    <span className="font-sans text-sm font-medium text-ink">Bank transfer</span>
-                  </label>
-                </div>
-
-                <div className="flex flex-col gap-1 mb-4">
-                  <label className="font-sans text-xs font-semibold uppercase tracking-[0.1em] text-mute">Card number</label>
-                  <input type="text" placeholder="1234 5678 9012 3456" className="px-4 py-3 rounded-[var(--radius-md)] border border-line bg-card font-sans text-[15px] text-ink outline-none focus:border-green-soft transition-colors" />
-                </div>
-                <div className="grid grid-cols-2 gap-4 mb-4 max-sm:grid-cols-1">
-                  <div className="flex flex-col gap-1">
-                    <label className="font-sans text-xs font-semibold uppercase tracking-[0.1em] text-mute">Expiry date</label>
-                    <input type="text" placeholder="MM / YY" className="px-4 py-3 rounded-[var(--radius-md)] border border-line bg-card font-sans text-[15px] text-ink outline-none focus:border-green-soft transition-colors" />
+                    <div className="flex flex-col gap-1">
+                      <label className="font-sans text-xs font-semibold uppercase tracking-[0.1em] text-mute">CVC</label>
+                      <input type="text" placeholder="123" className="px-4 py-3 rounded-[var(--radius-md)] border border-hairline bg-card font-sans text-[15px] text-ink outline-none focus:border-green-soft transition-colors placeholder:text-mute" />
+                    </div>
                   </div>
-                  <div className="flex flex-col gap-1">
-                    <label className="font-sans text-xs font-semibold uppercase tracking-[0.1em] text-mute">CVC</label>
-                    <input type="text" placeholder="123" className="px-4 py-3 rounded-[var(--radius-md)] border border-line bg-card font-sans text-[15px] text-ink outline-none focus:border-green-soft transition-colors" />
+                  <div className="flex flex-col gap-1 mb-4">
+                    <label className="font-sans text-xs font-semibold uppercase tracking-[0.1em] text-mute">Cardholder name</label>
+                    <input type="text" placeholder="Temi Adetola" className="px-4 py-3 rounded-[var(--radius-md)] border border-hairline bg-card font-sans text-[15px] text-ink outline-none focus:border-green-soft transition-colors placeholder:text-mute" />
                   </div>
                 </div>
-                <div className="flex flex-col gap-1 mb-4">
-                  <label className="font-sans text-xs font-semibold uppercase tracking-[0.1em] text-mute">Cardholder name</label>
-                  <input type="text" placeholder="Temi Adetola" className="px-4 py-3 rounded-[var(--radius-md)] border border-line bg-card font-sans text-[15px] text-ink outline-none focus:border-green-soft transition-colors" />
-                </div>
 
-                <div className="p-5 bg-soft rounded-none mt-5">
+                {/* Extended checkout option */}
+                {extendedCheckoutOffered && extendedCheckoutPriceMinor && (
+                  <div className="p-5 rounded-[var(--radius-md)] border border-hairline mb-5">
+                    <label className="flex items-center justify-between cursor-pointer">
+                      <div>
+                        <p className="font-sans text-sm font-semibold text-ink">Extended checkout — 18:00</p>
+                        <p className="text-xs text-ink-secondary mt-0.5">
+                          +{formatMinor(extendedCheckoutPriceMinor, currency as CurrencyCode)}
+                        </p>
+                      </div>
+                      <input type="checkbox" checked={extendedCheckout} onChange={(e) => setExtendedCheckout(e.target.checked)} className="accent-brass w-4 h-4" />
+                    </label>
+                  </div>
+                )}
+
+                {/* Cancellation policy */}
+                <div className="p-5 bg-bone-secondary rounded-[var(--radius-sm)] mb-5">
                   <div className="font-sans text-sm font-semibold text-ink mb-2">Free cancellation</div>
                   <p className="font-sans text-[13px] leading-relaxed text-ink-secondary">
                     Cancel up to 48 hours before check-in for a full refund. After that, the first night is non-refundable. Date changes are free up to 7 days before check-in.{" "}
-                    <Link href="/policy" className="text-link">Read the full policy →</Link>
+                    <Link href="/policy" className="text-green-soft hover:text-green-dark no-underline">Read the full policy →</Link>
                   </p>
                 </div>
 
-                <div className="flex gap-3 mt-6">
-                  <button
-                    onClick={() => setStep("checkout")}
-                    className="flex-1 py-3 rounded-sm border border-line text-sm font-medium text-ink-secondary hover:bg-soft transition-colors cursor-pointer"
-                  >
+                <div className="flex gap-3">
+                  <button onClick={() => { setStep("guest"); setError(null); }} className="flex-1 py-3 rounded-[var(--radius-sm)] border border-hairline text-sm font-medium text-ink-secondary hover:bg-soft transition-colors cursor-pointer">
                     Back
                   </button>
                   <button
                     disabled={submitting}
                     onClick={handleSubmit}
-                    className="flex-1 py-3.5 rounded-sm bg-brass text-soft text-sm font-semibold transition-all hover:bg-brass-dark disabled:opacity-50 disabled:cursor-wait cursor-pointer border-none"
+                    className="flex-1 py-3.5 rounded-[var(--radius-sm)] bg-brass text-bone text-sm font-semibold transition-all hover:bg-brass-dark disabled:opacity-50 disabled:cursor-wait cursor-pointer border-none"
                   >
-                    {submitting ? "Processing..." : `Confirm and pay ${chargeTotal > 0 ? formatMinor(Math.max(0, chargeTotal - 4000), currency as CurrencyCode) : ""}`}
+                    {submitting ? "Processing..." : "Confirm and pay"}
                   </button>
                 </div>
 
-                <p className="font-sans text-xs text-center mt-4 text-mute">
+                <p className="font-sans text-xs text-center mt-5 text-mute">
                   <strong className="text-ink-secondary">You won&rsquo;t be charged yet.</strong><br />
                   Your card will be charged 48 hours before check-in. Free cancellation until then.
                 </p>
@@ -428,23 +411,14 @@ export function BookingFlow(props: Props) {
           {/* Sidebar (desktop) */}
           <aside className="relative max-lg:hidden">
             <BookingSidebar
-              propertyName={propertyName}
-              neighbourhood={neighbourhood}
-              city={city}
-              coverPhotoUrl={coverPhotoUrl}
-              checkIn={checkIn}
-              checkOut={checkOut}
-              nights={nights}
-              accommodationTotal={accommodationTotal}
-              extendedFee={extendedFee}
-              chargeTotal={chargeTotal}
-              depositMinor={depositMinor}
-              nightlyLabel={nightlyLabel}
-              depositLabel={depositLabel}
-              chargeLabel={chargeLabel}
-              extendedFeeLabel={extendedFeeLabel}
-              currency={currency as CurrencyCode}
-              step={step}
+              propertyName={propertyName} neighbourhood={neighbourhood} city={city}
+              coverPhotoUrl={coverPhotoUrl} checkIn={checkIn} checkOut={checkOut}
+              formatCheckinDate={formatCheckinDate}
+              nights={nights} accommodationTotal={accommodationTotal}
+              extendedFee={extendedFee} chargeTotal={chargeTotal}
+              depositMinor={depositMinor} nightlyLabel={nightlyLabel}
+              depositLabel={depositLabel} currency={currency as CurrencyCode}
+              step={step} totalAfterCredit={totalAfterCredit}
             />
           </aside>
         </div>
@@ -456,51 +430,30 @@ export function BookingFlow(props: Props) {
 }
 
 function BookingSidebar({
-  propertyName,
-  neighbourhood,
-  city,
-  coverPhotoUrl,
-  checkIn,
-  checkOut,
-  nights,
-  accommodationTotal,
-  extendedFee,
-  chargeTotal,
-  depositMinor,
-  nightlyLabel,
-  depositLabel,
-  chargeLabel,
-  extendedFeeLabel,
-  currency,
-  step,
+  propertyName, neighbourhood, city, coverPhotoUrl,
+  checkIn, checkOut, formatCheckinDate,
+  nights, accommodationTotal, extendedFee, chargeTotal,
+  depositMinor, nightlyLabel, depositLabel,
+  currency, step, totalAfterCredit,
 }: {
-  propertyName: string;
-  neighbourhood: string;
-  city: string;
-  coverPhotoUrl?: string | null;
-  checkIn: string;
-  checkOut: string;
-  nights: number;
-  accommodationTotal: number;
-  extendedFee: number;
-  chargeTotal: number;
-  depositMinor: number;
-  nightlyLabel: string;
-  depositLabel: string;
-  chargeLabel: string;
-  extendedFeeLabel: string | null;
-  currency: CurrencyCode;
-  step: Step;
+  propertyName: string; neighbourhood: string; city: string;
+  coverPhotoUrl?: string | null; checkIn: string; checkOut: string;
+  formatCheckinDate: (d: string) => string;
+  nights: number; accommodationTotal: number; extendedFee: number;
+  chargeTotal: number; depositMinor: number;
+  nightlyLabel: string; depositLabel: string;
+  currency: CurrencyCode; step: Step; totalAfterCredit: number;
 }) {
   return (
-    <div className="p-7 bg-card rounded-[var(--radius-lg)] border border-line sticky top-[80px]">
-      <div className="flex gap-4 mb-5 pb-5 border-b border-line">
+    <div className="p-7 bg-card rounded-[var(--radius-lg)] border border-hairline sticky top-[80px]">
+      {/* Property info */}
+      <div className="flex gap-4 mb-5 pb-5 border-b border-hairline">
         {coverPhotoUrl ? (
-          <div className="w-[100px] h-20 rounded-[var(--radius-md)] overflow-hidden shrink-0 bg-soft">
+          <div className="w-[100px] h-20 rounded-[var(--radius-md)] overflow-hidden shrink-0 bg-bone-secondary">
             <img src={coverPhotoUrl} alt={propertyName} className="w-full h-full object-cover" />
           </div>
         ) : (
-          <div className="w-[100px] h-20 rounded-[var(--radius-md)] overflow-hidden bg-soft shrink-0 flex items-center justify-center text-mute/40">
+          <div className="w-[100px] h-20 rounded-[var(--radius-md)] overflow-hidden bg-bone-secondary shrink-0 flex items-center justify-center text-mute/40">
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1"><rect x="3" y="3" width="18" height="18" rx="2" ry="2" /><circle cx="8.5" cy="8.5" r="1.5" /><polyline points="21 15 16 10 5 21" /></svg>
           </div>
         )}
@@ -508,27 +461,29 @@ function BookingSidebar({
           <div className="font-display text-lg font-medium text-ink leading-tight mb-1">{propertyName}</div>
           <div className="font-sans text-[13px] text-mute mb-1">{neighbourhood}, {city}</div>
           <div className="flex items-center gap-1.5 text-xs text-ink-secondary">
-            <span className="text-brass">★</span> 4.9 · <span className="text-success">✓</span> Verified
+            <span className="text-brass">★</span> 4.9 · <span className="text-green-soft">✓</span> Verified
           </div>
         </div>
       </div>
 
+      {/* Dates (shown from step 2 onwards) */}
       {step !== "dates" && checkIn && checkOut && (
-        <div className="flex gap-4 mb-5 pb-5 border-b border-line">
+        <div className="flex gap-4 mb-5 pb-5 border-b border-hairline">
           <div className="flex-1">
             <div className="font-sans text-[11px] font-semibold uppercase tracking-[0.1em] text-mute mb-1">Check-in</div>
-            <div className="font-sans text-sm font-medium text-ink">{checkIn}</div>
+            <div className="font-sans text-sm font-medium text-ink">{formatCheckinDate(checkIn)}</div>
             <div className="font-sans text-xs text-mute">After 2:00 PM</div>
           </div>
           <div className="flex-1 text-right">
             <div className="font-sans text-[11px] font-semibold uppercase tracking-[0.1em] text-mute mb-1">Check-out</div>
-            <div className="font-sans text-sm font-medium text-ink">{checkOut}</div>
+            <div className="font-sans text-sm font-medium text-ink">{formatCheckinDate(checkOut)}</div>
             <div className="font-sans text-xs text-mute">Before 11:00 AM</div>
           </div>
         </div>
       )}
 
-      {nights > 0 && (
+      {/* Price breakdown (shown from step 2 onwards) */}
+      {step !== "dates" && nights > 0 && (
         <>
           <div className="font-sans text-sm flex justify-between py-1">
             <span className="text-ink-secondary">{nightlyLabel} × {nights} night{nights > 1 ? "s" : ""}</span>
@@ -545,16 +500,16 @@ function BookingSidebar({
           {extendedFee > 0 && (
             <div className="font-sans text-sm flex justify-between py-1">
               <span className="text-ink-secondary">Extended checkout</span>
-              <span className="font-semibold tabular-nums text-ink">{extendedFeeLabel}</span>
+              <span className="font-semibold tabular-nums text-ink">{formatMinor(extendedFee, currency)}</span>
             </div>
           )}
           <div className="font-sans text-sm flex justify-between py-1 text-green-soft">
             <span>First-time guest credit</span>
             <span className="font-semibold">&minus;{formatMinor(4000, currency)}</span>
           </div>
-          <div className="font-sans text-[15px] flex justify-between pt-3 mt-3 border-t border-line font-semibold text-ink">
-            <span>Total</span>
-            <span>{formatMinor(Math.max(0, chargeTotal - 4000), currency)}</span>
+          <div className="font-sans text-[15px] flex justify-between pt-3 mt-3 border-t border-hairline font-semibold text-ink">
+            <span>Total ({currency})</span>
+            <span className="tabular-nums">{formatMinor(totalAfterCredit, currency)}</span>
           </div>
         </>
       )}
