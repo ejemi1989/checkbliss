@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { formatMinor } from "@/lib/currency";
 import { getAdminClaims, getAdminOperators, getAdminAudit, getAdminStats } from "@/lib/data";
 
@@ -11,6 +11,32 @@ export function AdminOverview() {
   const [operators] = useState(() => getAdminOperators());
   const [audit] = useState(() => getAdminAudit());
   const [stats] = useState(() => getAdminStats());
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => setMounted(true), []);
+
+  if (!mounted) {
+    return (
+      <div className="space-y-6">
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          {[1, 2, 3, 4].map((i) => (
+            <div key={i} className="p-4 rounded-xl border border-hairline bg-white animate-pulse">
+              <div className="h-3 bg-hairline rounded w-1/2" />
+              <div className="h-6 bg-hairline rounded w-1/3 mt-2" />
+            </div>
+          ))}
+        </div>
+        <div className="bg-white border border-hairline rounded-xl p-5 animate-pulse">
+          <div className="h-4 bg-hairline rounded w-1/4 mb-4" />
+          <div className="space-y-3">
+            {[1, 2, 3].map((i) => (
+              <div key={i} className="h-10 bg-hairline rounded" />
+            ))}
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">

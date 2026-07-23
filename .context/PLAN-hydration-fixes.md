@@ -106,3 +106,19 @@ Multiple client components have hydration-prone patterns causing blank flashes, 
 4. Manual test: Booking flow — navigate to step 2, refresh page, step 2 should persist
 5. Manual test: Search page — no price flash on load
 6. Manual test: Hero search — date inputs show correct minimum on both server and client
+
+## Status
+
+All code changes complete. Typecheck + build pass clean. Pushed to GitHub (`b06fa8b`).
+
+| Item | Status |
+|------|--------|
+| `mounted` guard removal — `landing-client.tsx` | **done** |
+| `mounted` guard removal — 6 admin/CRM pages | **done** |
+| Booking flow — URL-based step state | **done** |
+| Booking flow — `Suspense` wrapper | **done** |
+| `hero-search.tsx` — timezone-safe `minDate` | **done** |
+| Search page — remove dead `hydrated` state | **done** |
+| Typecheck + build verification | **done** |
+| Push to GitHub | **done** |
+| Deploy + manual verification | **pending** |

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useState, useCallback, useEffect } from "react";
 import Link from "next/link";
 import { logoutAction } from "@/actions/auth";
 import { formatMinor } from "@/lib/currency";
@@ -60,6 +60,7 @@ function statusColor(s: string) {
 
 export function OperatorDashboard({ user, initialTab }: { user: AuthUser | null; initialTab?: string }) {
   const [tab, setTab] = useState(initialTab ?? "today");
+  const [mounted, setMounted] = useState(false);
 
   /* structure.md: operators are city-scoped. Pull the assigned cities
      from the session, and filter every data list by them so a Lagos
@@ -186,6 +187,25 @@ export function OperatorDashboard({ user, initialTab }: { user: AuthUser | null;
 
   const [today] = useState(() => new Date());
   const todayStr = today.toISOString().slice(0, 10);
+
+  useEffect(() => setMounted(true), []);
+
+  if (!mounted) {
+    return (
+      <div className="min-h-screen bg-bone p-6">
+        <div className="max-w-7xl mx-auto space-y-6">
+          <div className="h-8 bg-hairline rounded w-1/4 animate-pulse" />
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            {[1, 2, 3, 4].map((i) => (
+              <div key={i} className="h-24 bg-hairline rounded-xl animate-pulse" />
+            ))}
+          </div>
+          <div className="h-64 bg-hairline rounded-xl animate-pulse" />
+        </div>
+      </div>
+    );
+  }
+
   const todayInspections = inspections.filter((i) => i.checkout_date === todayStr);
   const pendingInspections = inspections.filter((i) => i.status === "pending");
 

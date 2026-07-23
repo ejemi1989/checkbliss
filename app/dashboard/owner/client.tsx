@@ -54,6 +54,7 @@ export function OwnerDashboard({ user, initialTab }: { user: AuthUser | null; in
   const [blockEnd, setBlockEnd] = useState("");
   const [notification, setNotification] = useState<{ message: string; type: "success" | "error" } | null>(null);
   const [pendingBlock, setPendingBlock] = useState<string | null>(null);
+  const [mounted, setMounted] = useState(false);
 
   const notify = (message: string, type: "success" | "error" = "success") => {
     setNotification({ message, type });
@@ -61,6 +62,25 @@ export function OwnerDashboard({ user, initialTab }: { user: AuthUser | null; in
   };
 
   const [today] = useState(() => new Date());
+
+  useEffect(() => setMounted(true), []);
+
+  if (!mounted) {
+    return (
+      <div className="min-h-screen bg-bone p-6">
+        <div className="max-w-7xl mx-auto space-y-6">
+          <div className="h-8 bg-hairline rounded w-1/4 animate-pulse" />
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+            {[1, 2, 3, 4].map((i) => (
+              <div key={i} className="h-24 bg-hairline rounded-xl animate-pulse" />
+            ))}
+          </div>
+          <div className="h-64 bg-hairline rounded-xl animate-pulse" />
+        </div>
+      </div>
+    );
+  }
+
   const displayName = user?.role === "owner" ? (user?.name ?? "Adaora Mensah") : "Adaora Mensah";
   const firstName = displayName.split(" ")[0];
   const hour = today.getHours();

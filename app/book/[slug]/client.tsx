@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { formatMinor, type CurrencyCode } from "@/lib/currency";
@@ -29,6 +29,7 @@ type Step = "dates" | "guest" | "payment";
 export function BookingFlow(props: Props) {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const [mounted, setMounted] = useState(false);
   const {
     propertyId, propertySlug, propertyName, city, neighbourhood,
     neighbourhoodSlug, buildingSlug,
@@ -36,6 +37,21 @@ export function BookingFlow(props: Props) {
     extendedCheckoutOffered, extendedCheckoutPriceMinor,
     sleeps, coverPhotoUrl,
   } = props;
+
+  useEffect(() => setMounted(true), []);
+
+  if (!mounted) {
+    return (
+      <div className="min-h-screen bg-bone flex items-center justify-center">
+        <div className="w-full max-w-md space-y-4 p-8">
+          <div className="h-6 bg-hairline rounded w-1/3 animate-pulse" />
+          <div className="h-4 bg-hairline rounded w-2/3 animate-pulse" />
+          <div className="h-48 bg-hairline rounded-xl animate-pulse" />
+          <div className="h-10 bg-hairline rounded-xl animate-pulse" />
+        </div>
+      </div>
+    );
+  }
 
   const steps: Step[] = ["dates", "guest", "payment"];
   const rawStep = searchParams.get("step");
