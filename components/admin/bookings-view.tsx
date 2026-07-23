@@ -7,10 +7,10 @@ import { formatMinor } from "@/lib/currency";
 export function BookingsView() {
   const [bookings] = useState(() => getAdminBookings());
   const [calendarBookings] = useState(() => getCalendarBookings());
-  const [month, setMonth] = useState(new Date().getMonth());
-  const [year, setYear] = useState(new Date().getFullYear());
+  const [month, setMonth] = useState(() => new Date().getMonth());
+  const [year, setYear] = useState(() => new Date().getFullYear());
   const [bookingModal, setBookingModal] = useState<typeof bookings[0] | null>(null);
-  const today = new Date();
+  const [today] = useState(() => new Date());
 
   const bookingsByDate: Record<string, (typeof calendarBookings)[0]> = {};
   calendarBookings.forEach((b) => b.dates.forEach((d) => { bookingsByDate[d] = b; }));
