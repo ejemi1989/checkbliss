@@ -154,20 +154,7 @@ export function BookingFlow(props: Props) {
 
   return (
     <>
-      <style>{`
-        :root {
-          --color-bone: #E9ECE2; --color-ink: #171915; --color-ink-secondary: #44483D;
-          --color-card: #FCFDFB; --color-mute: #6A6E63; --color-hairline: #D8DBCF;
-          --color-soft: #F4F6F0; --color-brass: #2F3D2C; --color-brass-dark: #232E22;
-          --color-green-soft: #5C6B4F; --color-bone-secondary: #F4F6F0;
-          --color-primary-bg: #F4F6F0; --color-primary: #5C6B4F;
-          --color-error: #C62828;
-          --font-display: var(--font-newsreader), Georgia, serif;
-          --font-sans: var(--font-inter), system-ui, sans-serif;
-          --radius-sm: 3px; --radius-md: 10px; --radius-lg: 18px; --radius-xl: 28px; --radius-full: 9999px;
-        }
-      `}</style>
-      <div className="min-h-screen bg-bone">
+      <div className="min-h-screen bg-bone" suppressHydrationWarning>
       <header className="bg-card border-b border-hairline sticky top-0 z-50">
         <div className="max-w-[1240px] mx-auto px-8 py-4 flex items-center gap-5 max-sm:px-5">
           <Link href={propertyHref({ city, neighbourhood_slug: neighbourhoodSlug, building_slug: buildingSlug, slug: propertySlug })} className="font-sans text-sm font-medium text-ink-secondary no-underline hover:text-green-soft transition-colors shrink-0">
