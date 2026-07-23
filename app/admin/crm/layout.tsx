@@ -1,6 +1,4 @@
 import Link from "next/link";
-import { redirect } from "next/navigation";
-import { getSession } from "@/actions/auth";
 
 const NAV = [
   { href: "/admin/crm/inbox", label: "Inbox" },
@@ -12,12 +10,7 @@ const NAV = [
   { href: "/admin/crm/analytics", label: "Analytics" },
 ];
 
-export default async function CrmLayout({ children }: { children: React.ReactNode }) {
-  const user = await getSession();
-  if (!user || user.role !== "admin") {
-    redirect("/login");
-  }
-
+export default function CrmLayout({ children }: { children: React.ReactNode }) {
   return (
     <div>
       <div className="flex items-center gap-2 mb-6">
