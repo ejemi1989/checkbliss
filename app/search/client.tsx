@@ -31,10 +31,8 @@ export function SearchResultsClient({
   const defaultCurrency: CurrencyCode = displayCurrency !== "GBP" ? displayCurrency : "GBP";
   const [currency, setCurrency] = useState<CurrencyCode>(defaultCurrency);
   const [hydrated, setHydrated] = useState(false);
-  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    setMounted(true);
     try {
       const v = localStorage.getItem("checkbliss_currency");
       if (v === "USD" || v === "EUR") setCurrency(v);
@@ -95,10 +93,6 @@ export function SearchResultsClient({
   const sortLabel = sort
     ? { "price-asc": "Price ↑", "price-desc": "Price ↓", "beds-asc": "Beds ↑", "beds-desc": "Beds ↓", "name": "Name" }[sort]
     : "Sort";
-
-  if (!mounted) {
-    return <div className="min-h-screen bg-canvas" />;
-  }
 
   return (
     <div className="min-h-screen bg-canvas">
