@@ -66,19 +66,19 @@ export default async function CrmClaimsPage({ searchParams }: { searchParams: Se
               </div>
 
               {c.admin_decision === "pending" && (
-                <div className="mt-4 pt-4 border-t border-hairline flex flex-wrap gap-2">
-                  <form action={decideCrmClaim} className="contents">
+                <div className="mt-4 pt-4 border-t border-hairline flex flex-wrap gap-2 items-center">
+                  <form action={decideCrmClaim} className="inline">
                     <input type="hidden" name="claimId" value={c.id} />
                     <input type="hidden" name="decision" value="approve" />
                     <input type="hidden" name="amountMinor" value={c.estimated_cost_minor} />
-                    <button className="px-4 py-2 rounded-xl bg-primary text-white text-xs font-semibold hover:bg-primary-dark transition-colors cursor-pointer border-none">
+                    <button type="submit" className="px-4 py-2 rounded-xl bg-primary text-white text-xs font-semibold hover:bg-primary-dark transition-colors cursor-pointer border-none">
                       Approve · {formatMinor(c.estimated_cost_minor, c.currency as CurrencyCode)}
                     </button>
                   </form>
-                  <form action={decideCrmClaim} className="contents">
+                  <form action={decideCrmClaim} className="inline">
                     <input type="hidden" name="claimId" value={c.id} />
                     <input type="hidden" name="decision" value="reject" />
-                    <button className="px-4 py-2 rounded-xl border border-hairline text-ink-secondary text-xs font-medium hover:bg-bone transition-colors cursor-pointer">
+                    <button type="submit" className="px-4 py-2 rounded-xl border border-hairline text-ink-secondary text-xs font-medium hover:bg-bone transition-colors cursor-pointer">
                       Reject · release hold
                     </button>
                   </form>
