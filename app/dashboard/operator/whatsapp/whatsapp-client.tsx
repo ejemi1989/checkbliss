@@ -2,26 +2,36 @@
 
 import type { OwnerDirectoryEntry } from "@/lib/data";
 
-export function CalendarSyncSection({ owners }: { owners: OwnerDirectoryEntry[] }) {
+export function WhatsAppOwnerList({ owners }: { owners: OwnerDirectoryEntry[] }) {
+  if (owners.length === 0) {
+    return (
+      <div className="bg-white rounded-xl border border-hairline p-6">
+        <h2 className="font-sans text-base font-semibold text-ink mb-2">Your property owners</h2>
+        <p className="text-sm text-mute">No owners in your assigned cities yet.</p>
+      </div>
+    );
+  }
+
   return (
     <div className="bg-white rounded-xl border border-hairline p-6">
-      <h2 className="font-sans text-base font-semibold text-ink mb-4">Property availability & calendar sync</h2>
-      <p className="text-xs text-ink-secondary mb-4">Owners can sync their CheckinBliss bookings to their personal calendar. Share these links with your owners.</p>
-      <div className="space-y-3">
-        {owners.slice(0, 3).map((o) => (
-          <div key={o.id} className="p-4 rounded-xl border border-hairline bg-primary-bg">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-ink">{o.name}</p>
-                <p className="text-xs text-ink-secondary mt-0.5">Calendar sync URL available for {o.properties_count ?? 0} properties</p>
-              </div>
-              <button
-                onClick={() => navigator.clipboard?.writeText(`https://checkinbliss.com/api/calendar/${o.id}`)}
-                className="px-3 py-1.5 rounded-lg text-xs font-medium border border-hairline text-ink-secondary hover:bg-white transition-colors cursor-pointer"
-              >
-                Copy sync link
-              </button>
+      <h2 className="font-sans text-base font-semibold text-ink mb-1">Your property owners</h2>
+      <p className="text-xs text-ink-secondary mb-5">Direct WhatsApp contact for each owner. Click to message them.</p>
+      <div className="space-y-2">
+        {owners.map((o) => (
+          <div key={o.id} className="flex items-center justify-between p-4 rounded-xl border border-hairline hover:bg-primary-bg transition-colors">
+            <div>
+              <p className="font-sans text-sm font-semibold text-ink">{o.name}</p>
+              <p className="text-xs text-ink-secondary">{o.whatsapp ?? "No phone"} · {o.email}</p>
+              <p className="text-xs text-mute mt-0.5">{o.properties_count ?? "—"} properties</p>
             </div>
+            <a
+              href={`https://wa.me/${(o.whatsapp ?? "").replace(/[^0-9]/g, "")}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="px-4 py-2 rounded-xl text-sm font-medium bg-success/10 text-success hover:bg-success/20 transition-colors no-underline shrink-0"
+            >
+              Message on WhatsApp
+            </a>
           </div>
         ))}
       </div>
