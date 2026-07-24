@@ -14,6 +14,22 @@ export function BookingsView() {
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
 
+  const bookingsByDate: Record<string, (typeof calendarBookings)[0]> = {};
+  calendarBookings.forEach((b) => b.dates.forEach((d) => { bookingsByDate[d] = b; }));
+
+  const calendar = useMemo(() => {
+    const firstDay = new Date(year, month, 1).getDay();
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    const rows: { day: number; dateStr: string; isToday: boolean; booking: (typeof calendarBookings)[0] | null }[] = [];
+    for (let i = 0; i < firstDay; i++) rows.push({ day: 0, dateStr: "", isToday: false, booking: null });
+    for (let d = 1; d <= daysInMonth; d++) {
+      const dateStr = `${year}-${String(month + 1).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
+      const isToday = today.getFullYear() === year && today.getMonth() === month && today.getDate() === d;
+      rows.push({ day: d, dateStr, isToday, booking: bookingsByDate[dateStr] ?? null });
+    }
+    return rows;
+  }, [month, year, today]);
+
   if (!mounted) {
     return (
       <div className="space-y-6">
@@ -33,22 +49,6 @@ export function BookingsView() {
       </div>
     );
   }
-
-  const bookingsByDate: Record<string, (typeof calendarBookings)[0]> = {};
-  calendarBookings.forEach((b) => b.dates.forEach((d) => { bookingsByDate[d] = b; }));
-
-  const calendar = useMemo(() => {
-    const firstDay = new Date(year, month, 1).getDay();
-    const daysInMonth = new Date(year, month + 1, 0).getDate();
-    const rows: { day: number; dateStr: string; isToday: boolean; booking: (typeof calendarBookings)[0] | null }[] = [];
-    for (let i = 0; i < firstDay; i++) rows.push({ day: 0, dateStr: "", isToday: false, booking: null });
-    for (let d = 1; d <= daysInMonth; d++) {
-      const dateStr = `${year}-${String(month + 1).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
-      const isToday = today.getFullYear() === year && today.getMonth() === month && today.getDate() === d;
-      rows.push({ day: d, dateStr, isToday, booking: bookingsByDate[dateStr] ?? null });
-    }
-    return rows;
-  }, [month, year, bookingsByDate, today]);
 
   function monthLabel() { return new Date(year, month).toLocaleString("default", { month: "long", year: "numeric" }); }
 

@@ -7,14 +7,13 @@ import { getOwnerBookings } from "@/lib/data";
 import { submitDispute } from "@/actions/disputes";
 import type { AuthUser } from "@/lib/auth";
 
-const bookings = getOwnerBookings().slice(0, 6);
-
 function fmt(n: number) { return formatMinor(n); }
 
 type GuestTab = "overview" | "bookings" | "history" | "claims" | "support" | "settings" | "notifications";
 
 export function GuestDashboard({ user, initialTab }: { user: AuthUser | null; initialTab?: GuestTab }) {
   const displayUser = { name: user?.name ?? "Guest", email: user?.email ?? "" };
+  const [bookings] = useState(() => getOwnerBookings().slice(0, 6));
   const [tab, setTab] = useState<GuestTab>(initialTab ?? "overview");
   const [bookingDetail, setBookingDetail] = useState<typeof bookings[0] | null>(null);
 

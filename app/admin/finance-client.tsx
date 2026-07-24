@@ -11,9 +11,9 @@ function fmt(n: number) { return formatMinor(n); }
 type FinanceTab = "overview" | "payouts" | "reconciliation";
 
 export function AdminFinanceView() {
-  const finance = getAdminFinance();
-  const payouts = getPendingPayouts();
-  const reconciliation = getReconciliation();
+  const [finance] = useState(() => getAdminFinance());
+  const [payouts] = useState(() => getPendingPayouts());
+  const [reconciliation] = useState(() => getReconciliation());
   const [tab, setTab] = useState<FinanceTab>("overview");
   const [rejectReason, setRejectReason] = useState("");
   const [rejectingId, setRejectingId] = useState<string | null>(null);

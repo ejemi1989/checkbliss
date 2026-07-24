@@ -17,9 +17,9 @@ import type {
   AdminBookingView,
 } from "./types";
 
-const today = new Date();
-const yyyy = today.getFullYear();
-const mm = String(today.getMonth() + 1).padStart(2, "0");
+const STATIC_DATE = new Date("2026-07-15");
+const yyyy = STATIC_DATE.getFullYear();
+const mm = String(STATIC_DATE.getMonth() + 1).padStart(2, "0");
 
 export function getOwnerBookings(): OwnerBookingView[] {
   return [

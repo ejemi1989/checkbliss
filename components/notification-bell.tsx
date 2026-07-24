@@ -42,24 +42,15 @@ export function NotificationBell({ role, userId, onViewAll }: { role: NotifRole;
     </svg>
   );
 
-  if (!mounted) {
-    return (
-      <div className="relative">
-        <div className="w-8 h-8 flex items-center justify-center rounded-lg text-ink-secondary">
-          {BellIcon}
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div id="notif-bell-container" className="relative">
       <button
-        onClick={() => { setOpen(!open); load(); }}
+        onClick={mounted ? () => { setOpen(!open); load(); } : undefined}
         className="relative w-8 h-8 flex items-center justify-center rounded-lg hover:bg-primary-bg transition-colors text-ink-secondary cursor-pointer border-none bg-transparent"
+        aria-label="Notifications"
       >
         {BellIcon}
-        {unread > 0 && (
+        {mounted && unread > 0 && (
           <span className="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 flex items-center justify-center rounded-full bg-danger text-white text-[9px] font-bold leading-none px-1">
             {unread > 9 ? "9+" : unread}
           </span>
