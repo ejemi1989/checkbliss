@@ -7,6 +7,7 @@ import { getNotifications, getUnreadCount, markRead, markAllRead } from "@/lib/n
 export function NotificationBell({ role, userId, onViewAll }: { role: NotifRole; userId?: string; onViewAll?: () => void }) {
   const [open, setOpen] = useState(false);
   const [tick, setTick] = useState(0);
+  const [mounted, setMounted] = useState(false);
 
   const uid = role === "admin" ? undefined : userId;
   const notifs = getNotifications(role, uid);
@@ -15,6 +16,7 @@ export function NotificationBell({ role, userId, onViewAll }: { role: NotifRole;
   function load() { setTick((t) => t + 1); }
 
   useEffect(() => {
+    setMounted(true);
     function onClick(e: MouseEvent) {
       const el = document.getElementById("notif-bell-container");
       if (el && !el.contains(e.target as Node)) setOpen(false);
@@ -39,6 +41,16 @@ export function NotificationBell({ role, userId, onViewAll }: { role: NotifRole;
       <path d="M13.73 21a2 2 0 0 1-3.46 0" />
     </svg>
   );
+
+  if (!mounted) {
+    return (
+      <div className="relative">
+        <div className="w-8 h-8 flex items-center justify-center rounded-lg text-ink-secondary">
+          {BellIcon}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div id="notif-bell-container" className="relative">
