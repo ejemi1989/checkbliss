@@ -1,5 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Inter, Playfair_Display, Newsreader, Hanken_Grotesk } from "next/font/google";
+import Script from "next/script";
+import { SCRIPT_URL, DEFAULT_SCRIPT_ID } from "@marsidev/react-turnstile";
 import "./globals.css";
 
 const inter = Inter({
@@ -50,6 +52,11 @@ export default function RootLayout({
       suppressHydrationWarning
     >
       <body suppressHydrationWarning>
+        <Script
+          id={DEFAULT_SCRIPT_ID}
+          src={SCRIPT_URL}
+          strategy="afterInteractive"
+        />
         {children}
       </body>
     </html>

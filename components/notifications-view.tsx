@@ -1,13 +1,15 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import type { NotifRole } from "@/lib/notifications";
 import { getNotifications, getUnreadCount, markRead, markAllRead } from "@/lib/notifications";
 
 export function NotificationsView({ role, userId }: { role: NotifRole; userId?: string }) {
   const [tick, setTick] = useState(0);
+  const [mounted, setMounted] = useState(false);
   const router = useRouter();
+  useEffect(() => setMounted(true), []);
 
   const uid = role === "admin" ? undefined : userId;
   const notifs = getNotifications(role, uid);
@@ -25,6 +27,19 @@ export function NotificationsView({ role, userId }: { role: NotifRole; userId?: 
     e.stopPropagation();
     markAllRead(role, uid);
     load();
+  }
+
+  if (!mounted) {
+    return (
+      <div className="space-y-4">
+        <div className="h-4 bg-hairline rounded w-48 animate-pulse mb-4" />
+        <div className="space-y-2">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <div key={i} className="h-20 bg-hairline rounded-xl animate-pulse" />
+          ))}
+        </div>
+      </div>
+    );
   }
 
   return (

@@ -6,6 +6,23 @@ import { createBookingCharge, createDepositHold } from "@/lib/stripe";
 import { sendWhatsApp, getTemplate } from "@/lib/whatsapp";
 import { getSeedProperties, getSeedReservations, getSeedBlocks } from "@/lib/seed-data";
 
+const TURNSTILE_SECRET = process.env.TURNSTILE_SECRET_KEY;
+
+async function verifyTurnstile(token: string): Promise<boolean> {
+  if (!TURNSTILE_SECRET) return true;
+  try {
+    const res = await fetch("https://challenges.cloudflare.com/turnstile/v0/siteverify", {
+      method: "POST",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: new URLSearchParams({ secret: TURNSTILE_SECRET, response: token }),
+    });
+    const data = await res.json();
+    return data.success === true;
+  } catch {
+    return false;
+  }
+}
+
 const BookingGuestSchema = z.object({
   name: z.string().min(1),
   email: z.string().email(),
@@ -23,6 +40,7 @@ const BookingItemSchema = z.object({
 const BookingRequestSchema = z.object({
   guest: BookingGuestSchema,
   items: z.array(BookingItemSchema).min(1).max(5),
+  turnstile_token: z.string().min(1, "CAPTCHA verification required"),
 });
 
 function validate14Days(checkIn: string): string | null {
@@ -56,7 +74,15 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     const parsed = BookingRequestSchema.parse(body);
-    const { guest, items } = parsed;
+    const { guest, items, turnstile_token } = parsed;
+
+    const captchaOk = await verifyTurnstile(turnstile_token);
+    if (!captchaOk) {
+      return NextResponse.json(
+        { code: "CAPTCHA_FAILED", message: "CAPTCHA verification failed. Please try again." },
+        { status: 403 },
+      );
+    }
 
     for (const item of items) {
       const r1 = validate14Days(item.check_in);

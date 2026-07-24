@@ -1,11 +1,14 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
+import { Turnstile, type TurnstileInstance } from "@marsidev/react-turnstile";
 import { formatMinor, type CurrencyCode } from "@/lib/currency";
 import { propertyHref } from "@/lib/slug";
 import { Footer } from "@/components/footer";
+
+const TURNSTILE_SITE_KEY = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY ?? "";
 
 interface Props {
   propertyId: string;
@@ -48,6 +51,8 @@ export function BookingFlow(props: Props) {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+  const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
+  const turnstileRef = useRef<TurnstileInstance>(null);
 
   const [minDateStr, setMinDateStr] = useState("");
   useEffect(() => {
@@ -125,11 +130,16 @@ export function BookingFlow(props: Props) {
   }
 
   async function handleSubmit() {
+    if (!turnstileToken) {
+      setError("Please complete the CAPTCHA verification.");
+      return;
+    }
     setSubmitting(true);
     setError(null);
     const body = {
       guest: { name: guestName, email: guestEmail, phone: guestPhone, guests: guestCount },
       items: [{ property_id: propertyId, check_in: checkIn, check_out: checkOut, extended_checkout: extendedCheckout }],
+      turnstile_token: turnstileToken,
     };
     try {
       const res = await fetch("/api/bookings", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
@@ -407,6 +417,20 @@ export function BookingFlow(props: Props) {
                     <Link href="/policy" className="text-green-soft hover:text-green-dark no-underline">Read the full policy →</Link>
                   </p>
                 </div>
+
+                {/* Turnstile CAPTCHA */}
+                {TURNSTILE_SITE_KEY && (
+                  <div className="mb-5">
+                    <Turnstile
+                      ref={turnstileRef}
+                      siteKey={TURNSTILE_SITE_KEY}
+                      injectScript={false}
+                      onSuccess={(token) => setTurnstileToken(token)}
+                      onExpire={() => setTurnstileToken(null)}
+                      options={{ theme: "light", size: "normal" }}
+                    />
+                  </div>
+                )}
 
                 <div className="flex gap-3">
                   <button onClick={() => { setStep("guest"); setError(null); }} className="flex-1 py-3 rounded-[var(--radius-sm)] border border-hairline text-sm font-medium text-ink-secondary hover:bg-soft transition-colors cursor-pointer">
