@@ -38,7 +38,26 @@ export function BookingFlow(props: Props) {
     sleeps, coverPhotoUrl,
   } = props;
 
-  useEffect(() => setMounted(true), []);
+  const [checkIn, setCheckIn] = useState("");
+  const [checkOut, setCheckOut] = useState("");
+  const [guestName, setGuestName] = useState("");
+  const [guestEmail, setGuestEmail] = useState("");
+  const [guestPhone, setGuestPhone] = useState("");
+  const [guestCount, setGuestCount] = useState(1);
+  const [extendedCheckout, setExtendedCheckout] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
+
+  const [minDateStr, setMinDateStr] = useState("");
+  useEffect(() => {
+    setMounted(true);
+    const today = new Date();
+    today.setDate(today.getDate() + 14);
+    setMinDateStr(
+      `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`
+    );
+  }, []);
 
   if (!mounted) {
     return (
@@ -63,25 +82,6 @@ export function BookingFlow(props: Props) {
     params.set("step", s);
     router.push(`?${params.toString()}`, { scroll: false });
   }
-  const [checkIn, setCheckIn] = useState("");
-  const [checkOut, setCheckOut] = useState("");
-  const [guestName, setGuestName] = useState("");
-  const [guestEmail, setGuestEmail] = useState("");
-  const [guestPhone, setGuestPhone] = useState("");
-  const [guestCount, setGuestCount] = useState(1);
-  const [extendedCheckout, setExtendedCheckout] = useState(false);
-  const [submitting, setSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
-
-  const [minDateStr, setMinDateStr] = useState("");
-  useEffect(() => {
-    const today = new Date();
-    today.setDate(today.getDate() + 14);
-    setMinDateStr(
-      `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`
-    );
-  }, []);
 
   const nights = checkIn && checkOut
     ? Math.max(1, Math.round((new Date(checkOut).getTime() - new Date(checkIn).getTime()) / (1000 * 60 * 60 * 24)))
