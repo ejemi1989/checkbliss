@@ -271,6 +271,7 @@ export interface SearchOpts {
   where?: string;
   checkIn?: string;
   checkOut?: string;
+  amenities?: string;
 }
 
 function mapRowToSeedProperty(row: Record<string, unknown>): SeedProperty {
@@ -336,6 +337,12 @@ export function searchProperties(opts: SearchOpts): SeedProperty[] {
           );
         return !hasOverlap;
       });
+    }
+    if (opts.amenities) {
+      const amenity = opts.amenities.toLowerCase();
+      results = results.filter((p) =>
+        p.amenities?.some((a) => a.toLowerCase().includes(amenity)),
+      );
     }
     return results;
   }
@@ -405,6 +412,13 @@ export async function searchPropertiesAsync(opts: SearchOpts): Promise<SeedPrope
         results = results.filter((p) => !blockedIds.has(p.id));
       }
 
+      if (opts.amenities) {
+        const amenity = opts.amenities.toLowerCase();
+        results = results.filter((p) =>
+          p.amenities?.some((a) => a.toLowerCase().includes(amenity)),
+        );
+      }
+
       if (results.length > 0) return results;
     }
   }
@@ -428,6 +442,12 @@ export async function searchPropertiesAsync(opts: SearchOpts): Promise<SeedPrope
         blocks.some((b) => b.property_id === p.id && new Date(b.starts) < outDate && new Date(b.ends) > inDate);
       return !hasOverlap;
     });
+  }
+  if (opts.amenities) {
+    const amenity = opts.amenities.toLowerCase();
+    results = results.filter((p) =>
+      p.amenities?.some((a) => a.toLowerCase().includes(amenity)),
+    );
   }
   return results;
 }

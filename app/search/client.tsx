@@ -18,12 +18,14 @@ export function SearchResultsClient({
   checkIn,
   checkOut,
   displayCurrency = "GBP",
+  activeAmenity = "",
 }: {
   properties: SeedProperty[];
   activeWhere: string;
   checkIn: string;
   checkOut: string;
   displayCurrency?: CurrencyCode;
+  activeAmenity?: string;
 }) {
   const hasSearch = !!(activeWhere || checkIn || checkOut);
   const displayWhere = activeWhere || "Lagos";
@@ -147,9 +149,21 @@ export function SearchResultsClient({
       {hasSearch && (
         <div className="px-8 py-4 max-sm:px-5">
           <div className="max-w-[1240px] mx-auto flex items-center justify-between">
-            <p className="font-sans text-[13px] text-mute font-medium">
-              {filtered.length} {filtered.length === 1 ? "stay" : "stays"}
-            </p>
+            <div className="flex items-center gap-3">
+              <p className="font-sans text-[13px] text-mute font-medium">
+                {filtered.length} {filtered.length === 1 ? "stay" : "stays"}
+              </p>
+              {activeAmenity && (
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-green-soft/10 text-green-soft text-[12px] font-medium">
+                  {activeAmenity}
+                  <Link href={`/search?where=${activeWhere}${checkIn ? `&in=${checkIn}` : ""}${checkOut ? `&out=${checkOut}` : ""}`} className="hover:text-ink transition-colors">
+                    <svg className="w-3 h-3" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="2">
+                      <path d="M3 3l6 6M9 3l-6 6"/>
+                    </svg>
+                  </Link>
+                </span>
+              )}
+            </div>
             <div className="relative">
               <button
                 onClick={() => setSortOpen(!sortOpen)}
