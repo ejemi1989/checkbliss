@@ -4,10 +4,10 @@ import { useEffect } from "react";
 
 export default function BookingError({
   error,
-  reset,
+  unstable_retry,
 }: {
   error: Error & { digest?: string };
-  reset: () => void;
+  unstable_retry: () => void;
 }) {
   useEffect(() => {
     console.error("Booking page error:", error);
@@ -20,12 +20,10 @@ export default function BookingError({
         <p className="font-sans text-sm text-ink-secondary">
           We couldn&apos;t load this booking page. Please try again.
         </p>
-        {error.digest && (
-          <p className="font-sans text-xs text-mute">Error: {error.digest}</p>
-        )}
+        <p className="font-sans text-xs text-mute break-all">Error: {error.message || error.digest || "Unknown"}</p>
         <div className="flex gap-3 justify-center pt-4">
           <button
-            onClick={() => reset()}
+            onClick={() => unstable_retry()}
             className="px-6 py-3 rounded-[var(--radius-sm)] bg-brass text-bone font-sans text-sm font-semibold hover:bg-brass-dark transition-colors cursor-pointer border-none"
           >
             Try again
