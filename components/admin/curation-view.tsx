@@ -13,7 +13,7 @@ interface Props {
 export function CurationView({ notify }: Props) {
   const [items, setItems] = useState(() => getCurationQueue());
   const [pipeline] = useState(() => getPipeline());
-  const pendingAction = null;
+  const [pendingAction, setPendingAction] = useState<string | null>(null);
   const [confirm, setConfirm] = useState<{
     type: "approve" | "reject" | "request_changes";
     itemId: string;
@@ -93,9 +93,11 @@ export function CurationView({ notify }: Props) {
           confirmLabel="Approve"
           variant="primary"
           onConfirm={async () => {
+            setPendingAction(`approve-${confirm.itemId}`);
             const r = await decideCuration({ propertyId: confirm.itemId, action: "approve" });
             if (r.ok) setItems((prev) => prev.filter((i) => i.id !== confirm.itemId));
             notify(r.ok ? `${confirm.itemName} approved.` : r.message, r.ok ? "success" : "error");
+            setPendingAction(null);
             setConfirm(null);
           }}
           onCancel={() => setConfirm(null)}
@@ -111,9 +113,11 @@ export function CurationView({ notify }: Props) {
           variant="danger"
           placeholder="Reason for rejection..."
           onConfirm={async (reason) => {
+            setPendingAction(`reject-${confirm.itemId}`);
             const r = await decideCuration({ propertyId: confirm.itemId, action: "reject", reason });
             if (r.ok) setItems((prev) => prev.filter((i) => i.id !== confirm.itemId));
             notify(r.ok ? `${confirm.itemName} rejected.` : r.message, r.ok ? "success" : "error");
+            setPendingAction(null);
             setConfirm(null);
           }}
           onCancel={() => setConfirm(null)}
@@ -129,9 +133,11 @@ export function CurationView({ notify }: Props) {
           variant="primary"
           placeholder="Describe what needs to change..."
           onConfirm={async (reason) => {
+            setPendingAction(`request-${confirm.itemId}`);
             const r = await decideCuration({ propertyId: confirm.itemId, action: "request_changes", reason });
             if (r.ok) setItems((prev) => prev.filter((i) => i.id !== confirm.itemId));
             notify(r.ok ? `Changes requested for ${confirm.itemName}.` : r.message, r.ok ? "success" : "error");
+            setPendingAction(null);
             setConfirm(null);
           }}
           onCancel={() => setConfirm(null)}

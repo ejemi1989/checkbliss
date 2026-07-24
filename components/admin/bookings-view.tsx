@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { getAdminBookings, getCalendarBookings } from "@/lib/data";
 import { formatMinor } from "@/lib/currency";
 
@@ -11,6 +11,28 @@ export function BookingsView() {
   const [year, setYear] = useState(() => new Date().getFullYear());
   const [bookingModal, setBookingModal] = useState<typeof bookings[0] | null>(null);
   const [today] = useState(() => new Date());
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+
+  if (!mounted) {
+    return (
+      <div className="space-y-6">
+        <div className="bg-white border border-hairline rounded-xl p-5">
+          <div className="h-5 bg-hairline rounded w-40 animate-pulse mb-4" />
+          <div className="grid grid-cols-7 gap-1">
+            {Array.from({ length: 35 }).map((_, i) => (
+              <div key={i} className="h-8 bg-hairline rounded-lg animate-pulse" />
+            ))}
+          </div>
+        </div>
+        <div className="space-y-3">
+          {Array.from({ length: 3 }).map((_, i) => (
+            <div key={i} className="h-16 bg-hairline rounded-xl animate-pulse" />
+          ))}
+        </div>
+      </div>
+    );
+  }
 
   const bookingsByDate: Record<string, (typeof calendarBookings)[0]> = {};
   calendarBookings.forEach((b) => b.dates.forEach((d) => { bookingsByDate[d] = b; }));

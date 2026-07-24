@@ -11,7 +11,7 @@ interface Props {
 
 export function InspectionsView({ notify }: Props) {
   const [inspections, setInspections] = useState(() => getInspections());
-  const pendingAction = null;
+  const [pendingAction, setPendingAction] = useState<string | null>(null);
   const [confirmDialog, setConfirmDialog] = useState<{
     type: "start" | "complete";
     inspectionId: string;
@@ -89,9 +89,11 @@ export function InspectionsView({ notify }: Props) {
           confirmLabel="Start"
           onConfirm={async () => {
             const id = confirmDialog.inspectionId;
+            setPendingAction(`start-${id}`);
             const r = await startInspection({ inspectionId: id });
             if (r.ok) setInspections((prev) => prev.map((i) => i.id === id ? { ...i, status: "in_progress" } : i));
             notify(r.ok ? "Inspection started." : r.message, r.ok ? "success" : "error");
+            setPendingAction(null);
             setConfirmDialog(null);
           }}
           onCancel={() => setConfirmDialog(null)}
@@ -107,9 +109,11 @@ export function InspectionsView({ notify }: Props) {
           placeholder="Optional notes on condition..."
           onConfirm={async (notes) => {
             const id = confirmDialog.inspectionId;
+            setPendingAction(`complete-${id}`);
             const r = await completeInspection({ inspectionId: id, notes });
             if (r.ok) setInspections((prev) => prev.map((i) => i.id === id ? { ...i, status: "completed" } : i));
             notify(r.ok ? "Inspection completed." : r.message, r.ok ? "success" : "error");
+            setPendingAction(null);
             setConfirmDialog(null);
           }}
           onCancel={() => setConfirmDialog(null)}
