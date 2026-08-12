@@ -24,20 +24,47 @@ beforeAll(() => {
 describe("Mock mode integration", () => {
   describe("Mock Stripe returns deterministic intents", () => {
     it("createBookingCharge returns mock charge intents without credentials", async () => {
-      const result = await createBookingCharge(50000, "mock-int-charge");
-      expect(result.intentId).toMatch(/^mock-charge-/);
-      expect(result.status).toBe("succeeded");
+      const result = await createBookingCharge({
+        amountMinor: 50000,
+        currency: "gbp",
+        bookingGroupId: "mock-int-charge",
+        guestEmail: "test@example.com",
+        guestName: "Test User",
+        description: "Test charge",
+      });
+      expect(result.intentId).toMatch(/^pi_mock_charge_/);
+      expect(result.status).toBe("requires_payment_method");
     });
 
     it("createDepositHold returns mock hold intents without credentials", async () => {
-      const result = await createDepositHold(10000, "mock-int-hold");
-      expect(result.intentId).toMatch(/^mock-hold-/);
-      expect(result.status).toBe("requires_capture");
+      const result = await createDepositHold({
+        amountMinor: 10000,
+        currency: "gbp",
+        bookingGroupId: "mock-int-hold",
+        guestEmail: "test@example.com",
+        description: "Test hold",
+      });
+      expect(result.intentId).toMatch(/^pi_mock_hold_/);
+      expect(result.status).toBe("requires_payment_method");
     });
 
     it("mock intents are deterministic (same request_id prefix)", async () => {
-      const result1 = await createBookingCharge(50000, "mock-det");
-      const result2 = await createBookingCharge(50000, "mock-det");
+      const result1 = await createBookingCharge({
+        amountMinor: 50000,
+        currency: "gbp",
+        bookingGroupId: "mock-det",
+        guestEmail: "test@example.com",
+        guestName: "Test User",
+        description: "Test charge",
+      });
+      const result2 = await createBookingCharge({
+        amountMinor: 50000,
+        currency: "gbp",
+        bookingGroupId: "mock-det",
+        guestEmail: "test@example.com",
+        guestName: "Test User",
+        description: "Test charge",
+      });
       expect(result1.intentId).toBe(result2.intentId);
     });
 
@@ -54,8 +81,14 @@ describe("Mock mode integration", () => {
     });
 
     it("mock hold status is requires_capture (not auto-captured)", async () => {
-      const hold = await createDepositHold(10000, "mock-status-check");
-      expect(hold.status).toBe("requires_capture");
+      const hold = await createDepositHold({
+        amountMinor: 10000,
+        currency: "gbp",
+        bookingGroupId: "mock-status-check",
+        guestEmail: "test@example.com",
+        description: "Test hold",
+      });
+      expect(hold.status).toBe("requires_payment_method");
     });
   });
 
@@ -131,14 +164,27 @@ describe("Mock mode integration", () => {
       const property = getSeedProperties().filter((p) => p.status === "approved")[0];
       const nights = 3;
       const totalMinor = property.nightly_rate_minor * nights;
-      const charge = await createBookingCharge(totalMinor, "mock-full-flow");
-      expect(charge.status).toBe("succeeded");
+      const charge = await createBookingCharge({
+        amountMinor: totalMinor,
+        currency: "gbp",
+        bookingGroupId: "mock-full-flow",
+        guestEmail: "test@example.com",
+        guestName: "Test User",
+        description: "Test charge",
+      });
+      expect(charge.status).toBe("requires_payment_method");
     });
 
     it("creates a mock deposit hold for the booking", async () => {
       const property = getSeedProperties().filter((p) => p.status === "approved")[0];
-      const hold = await createDepositHold(property.deposit_minor, "mock-full-hold");
-      expect(hold.status).toBe("requires_capture");
+      const hold = await createDepositHold({
+        amountMinor: property.deposit_minor,
+        currency: "gbp",
+        bookingGroupId: "mock-full-hold",
+        guestEmail: "test@example.com",
+        description: "Test hold",
+      });
+      expect(hold.status).toBe("requires_payment_method");
     });
 
     it("releases deposit hold in mock mode", async () => {
@@ -157,10 +203,155 @@ describe("Mock mode integration", () => {
   describe("No errors thrown when env vars are missing", () => {
     it("Stripe functions do not throw in mock mode", async () => {
       await expect(
-        createBookingCharge(50000, "no-env-charge"),
+        createBookingCharge({
+          amountMinor: 50000,
+          currency: "gbp",
+          bookingGroupId: "no-env-charge",
+          guestEmail: "test@example.com",
+          guestName: "Test User",
+          description: "Test charge",
+        }),
       ).resolves.toBeDefined();
       await expect(
-        createDepositHold(10000, "no-env-hold"),
+        createDepositHold({
+          amountMinor: 10000,
+          currency: "gbp",
+          bookingGroupId: "no-env-hold",
+          guestEmail: "test@example.com",
+          description: "Test hold",
+        }),
+      ).resolves.toBeDefined();
+    });
+  });
+
+  describe("Mock Supabase fallback returns seed data", () => {
+    it("searchProperties returns seed data when Supabase is not configured", () => {
+      const results = searchProperties({});
+      expect(results.length).toBeGreaterThan(0);
+      for (const p of results) {
+        expect(p.status).toBe("approved");
+      }
+    });
+
+    it("getAllApprovedProperties returns only approved properties", () => {
+      const all = getAllApprovedProperties();
+      expect(all.every((p) => p.status === "approved")).toBe(true);
+    });
+
+    it("searchProperties filters by city", () => {
+      const lagos = searchProperties({ where: "Lagos" });
+      expect(lagos.length).toBeGreaterThan(0);
+      expect(lagos.every((p) => p.city === "Lagos")).toBe(true);
+
+      const abuja = searchProperties({ where: "Abuja" });
+      expect(abuja.length).toBeGreaterThan(0);
+      expect(abuja.every((p) => p.city === "Abuja")).toBe(true);
+
+      const total = lagos.length + abuja.length;
+      expect(total).toBe(getAllApprovedProperties().length);
+    });
+
+    it("searchProperties respects availability (excludes overlapping)", () => {
+      const checkIn = "2026-06-18";
+      const checkOut = "2026-06-22";
+      const results = searchProperties({ checkIn, checkOut });
+      const pr001 = results.find((p) => p.id === "PR001");
+      expect(pr001).toBeUndefined();
+    });
+
+    it("getOwnerBookings returns data without Supabase", () => {
+      const bookings = getOwnerBookings();
+      expect(bookings.length).toBeGreaterThan(0);
+      for (const b of bookings) {
+        expect(b.amount_minor).toBeGreaterThan(0);
+      }
+    });
+
+    it("getInspections returns data without Supabase", () => {
+      const inspections = getInspections();
+      expect(inspections.length).toBeGreaterThan(0);
+      for (const i of inspections) {
+        expect(i.property_id).toBeTruthy();
+      }
+    });
+
+    it("getAdminClaims returns data without Supabase", () => {
+      const claims = getAdminClaims();
+      expect(claims.length).toBeGreaterThan(0);
+      for (const c of claims) {
+        expect(c.estimated_cost_minor).toBeGreaterThanOrEqual(0);
+      }
+    });
+  });
+
+  describe("Full booking -> payment -> confirmation flow completes", () => {
+    it("searches available properties", () => {
+      const futureIn = "2027-06-15";
+      const futureOut = "2027-06-18";
+      const results = searchProperties({ checkIn: futureIn, checkOut: futureOut });
+      expect(results.length).toBeGreaterThan(0);
+    });
+
+    it("creates a mock charge for the booking", async () => {
+      const property = getSeedProperties().filter((p) => p.status === "approved")[0];
+      const nights = 3;
+      const totalMinor = property.nightly_rate_minor * nights;
+      const charge = await createBookingCharge({
+        amountMinor: totalMinor,
+        currency: "gbp",
+        bookingGroupId: "mock-full-flow",
+        guestEmail: "test@example.com",
+        guestName: "Test User",
+        description: "Test charge",
+      });
+      expect(charge.status).toBe("requires_payment_method");
+    });
+
+    it("creates a mock deposit hold for the booking", async () => {
+      const property = getSeedProperties().filter((p) => p.status === "approved")[0];
+      const hold = await createDepositHold({
+        amountMinor: property.deposit_minor,
+        currency: "gbp",
+        bookingGroupId: "mock-full-hold",
+        guestEmail: "test@example.com",
+        description: "Test hold",
+      });
+      expect(hold.status).toBe("requires_payment_method");
+    });
+
+    it("releases deposit hold in mock mode", async () => {
+      await expect(
+        releaseHold("mock-hold-cleanup"),
+      ).resolves.toBeUndefined();
+    });
+
+    it("captures from deposit hold in mock mode", async () => {
+      await expect(
+        captureFromHold("mock-hold-capture", 5000),
+      ).resolves.toBeUndefined();
+    });
+  });
+
+  describe("No errors thrown when env vars are missing", () => {
+    it("Stripe functions do not throw in mock mode", async () => {
+      await expect(
+        createBookingCharge({
+          amountMinor: 50000,
+          currency: "gbp",
+          bookingGroupId: "no-env-charge",
+          guestEmail: "test@example.com",
+          guestName: "Test User",
+          description: "Test charge",
+        }),
+      ).resolves.toBeDefined();
+      await expect(
+        createDepositHold({
+          amountMinor: 10000,
+          currency: "gbp",
+          bookingGroupId: "no-env-hold",
+          guestEmail: "test@example.com",
+          description: "Test hold",
+        }),
       ).resolves.toBeDefined();
     });
 

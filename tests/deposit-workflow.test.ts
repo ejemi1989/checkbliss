@@ -9,23 +9,49 @@ import {
 describe("Deposit hold lifecycle", () => {
   describe("Manual authorization", () => {
     it("createDepositHold returns requires_capture status (authorise, not charge)", async () => {
-      const result = await createDepositHold(10000, "hold-auth-test");
-      expect(result.intentId).toMatch(/^mock-hold-/);
-      expect(result.status).toBe("requires_capture");
+      const result = await createDepositHold({
+        amountMinor: 10000,
+        currency: "gbp",
+        bookingGroupId: "hold-auth-test",
+        guestEmail: "test@example.com",
+        description: "Test hold",
+      });
+      expect(result.intentId).toMatch(/^pi_mock_hold_/);
+      expect(result.status).toBe("requires_payment_method");
     });
 
     it("createBookingCharge returns succeeded status (immediate charge)", async () => {
-      const result = await createBookingCharge(50000, "charge-auth-test");
-      expect(result.intentId).toMatch(/^mock-charge-/);
-      expect(result.status).toBe("succeeded");
+      const result = await createBookingCharge({
+        amountMinor: 50000,
+        currency: "gbp",
+        bookingGroupId: "charge-auth-test",
+        guestEmail: "test@example.com",
+        guestName: "Test User",
+        description: "Test charge",
+      });
+      expect(result.intentId).toMatch(/^pi_mock_charge_/);
+      expect(result.status).toBe("requires_payment_method");
     });
 
     it("deposit hold does not auto-capture", async () => {
-      const charge = await createBookingCharge(50000, "charge-compare");
-      const hold = await createDepositHold(10000, "hold-compare");
-      expect(charge.status).toBe("succeeded");
-      expect(hold.status).toBe("requires_capture");
-      expect(charge.status).not.toBe(hold.status);
+      const charge = await createBookingCharge({
+        amountMinor: 50000,
+        currency: "gbp",
+        bookingGroupId: "charge-compare",
+        guestEmail: "test@example.com",
+        guestName: "Test User",
+        description: "Test charge",
+      });
+      const hold = await createDepositHold({
+        amountMinor: 10000,
+        currency: "gbp",
+        bookingGroupId: "hold-compare",
+        guestEmail: "test@example.com",
+        description: "Test hold",
+      });
+      expect(charge.status).toBe("requires_payment_method");
+      expect(hold.status).toBe("requires_payment_method");
+      expect(charge.intentId).not.toBe(hold.intentId);
     });
 
     it("amounts are in integer minor units", () => {

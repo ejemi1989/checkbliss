@@ -175,13 +175,84 @@ export interface VerificationRecord {
 
 export interface FinanceRecord {
   id: string;
-  type: "payment" | "payout" | "deposit_hold";
+  type: "payment" | "payout" | "deposit_hold" | "commission" | "refund";
   guest_or_owner: string;
   property: string;
   amount_minor: number;
   date: string;
   status: string;
   ref: string;
+}
+
+export interface PayoutLedgerEntry {
+  id: string;
+  bookingGroupId: string;
+  ownerId: string;
+  ownerName: string;
+  propertyName: string;
+  ownerShareMinor: number;
+  status: string;
+  payoutNgnMinor: number | null;
+  fxRate: number | null;
+  raenestReference: string | null;
+  requestedAt: string | null;
+  releasedAt: string | null;
+  paidAt: string | null;
+  attempts: number;
+  lastError: string | null;
+  createdAt: string;
+}
+
+export interface PayoutAlert {
+  id: string;
+  severity: "low" | "medium" | "high" | "critical";
+  kind: string;
+  message: string;
+  resolved: boolean;
+  createdAt: string;
+}
+
+export interface CommissionRecord {
+  id: string;
+  bookingGroupId: string;
+  propertyName: string;
+  commissionMinor: number;
+  totalMinor: number;
+  date: string;
+  status: string;
+}
+
+export interface FxRecord {
+  date: string;
+  rate: number;
+  bookingGroupId: string;
+  payoutReference: string;
+  ownerName: string;
+}
+
+export interface BookingTrace {
+  groupId: string;
+  chargeIntentId: string;
+  chargeId: string | null;
+  chargeStatus: string;
+  chargeTotalMinor: number;
+  commissionMinor: number;
+  ownerShareMinor: number;
+  refundedMinor: number;
+  platformPayoutStatus: string;
+  ownerPayoutStatus: string;
+  ownerPayoutReference: string | null;
+  ownerPayoutNgnMinor: number | null;
+  ownerPayoutFxRate: number | null;
+  ownerPayoutDate: string | null;
+  reservations: Array<{
+    property: string;
+    owner: string;
+    checkIn: string;
+    checkOut: string;
+    commissionMinor: number;
+    ownerShareMinor: number;
+  }>;
 }
 
 export interface UserRecord {

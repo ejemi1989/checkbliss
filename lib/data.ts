@@ -15,6 +15,11 @@ import type {
   UserRecord,
   AuditEntry,
   AdminBookingView,
+  PayoutLedgerEntry,
+  PayoutAlert,
+  CommissionRecord,
+  FxRecord,
+  BookingTrace,
 } from "./types";
 
 const STATIC_DATE = new Date("2026-07-15");
@@ -594,4 +599,130 @@ export function getReconciliation(): { records: ReconciliationRecord[]; matchedT
   const matchedTotal = records.filter(r => r.matched).reduce((s, r) => s + r.amount_minor, 0);
   const unmatchedTotal = records.filter(r => !r.matched).reduce((s, r) => s + r.amount_minor, 0);
   return { records, matchedTotal, unmatchedTotal };
+}
+
+/* ------------------------------------------------------------------ */
+/*  Payment Architecture (V2) — Payout Ledger & Reconciliation         */
+/* ------------------------------------------------------------------ */
+
+export function getPayoutLedger(): PayoutLedgerEntry[] {
+  return [
+    {
+      id: "OP-001", bookingGroupId: "BG-2026-0618-A", ownerId: "OW1", ownerName: "Adaora Mensah",
+      propertyName: "The Palms Maisonette", ownerShareMinor: 36960, status: "paid",
+      payoutNgnMinor: 9055200, fxRate: 2450, raenestReference: "rnst_001_adaora",
+      requestedAt: `${yyyy}-${mm}-22`, releasedAt: `${yyyy}-${mm}-23`, paidAt: `${yyyy}-${mm}-24`,
+      attempts: 1, lastError: null, createdAt: `${yyyy}-${mm}-22T10:00:00Z`,
+    },
+    {
+      id: "OP-002", bookingGroupId: "BG-2026-0620-B", ownerId: "OW1", ownerName: "Adaora Mensah",
+      propertyName: "Sunset Dove", ownerShareMinor: 28160, status: "eligible",
+      payoutNgnMinor: null, fxRate: null, raenestReference: null,
+      requestedAt: null, releasedAt: null, paidAt: null,
+      attempts: 0, lastError: null, createdAt: `${yyyy}-${mm}-24T11:00:00Z`,
+    },
+    {
+      id: "OP-003", bookingGroupId: "BG-2026-0628-C", ownerId: "OW4", ownerName: "Ngozi Okonkwo",
+      propertyName: "GRA Executive Suite", ownerShareMinor: 96800, status: "released",
+      payoutNgnMinor: 237160000, fxRate: 2450, raenestReference: "rnst_002_ngozi",
+      requestedAt: `${yyyy}-${mm}-28`, releasedAt: `${yyyy}-${mm}-28`, paidAt: null,
+      attempts: 1, lastError: null, createdAt: `${yyyy}-${mm}-28T09:00:00Z`,
+    },
+    {
+      id: "OP-004", bookingGroupId: "BG-2026-0705-D", ownerId: "OW6", ownerName: "Ibrahim Musa",
+      propertyName: "Transcorp Hilton Apartment", ownerShareMinor: 125400, status: "failed",
+      payoutNgnMinor: null, fxRate: 2450, raenestReference: "rnst_003_ibrahim",
+      requestedAt: `${yyyy}-07-08`, releasedAt: `${yyyy}-07-08`, paidAt: null,
+      attempts: 5, lastError: "bank_rejected: account number invalid", createdAt: `${yyyy}-07-08T14:30:00Z`,
+    },
+    {
+      id: "OP-005", bookingGroupId: "BG-2026-0701-E", ownerId: "OW1", ownerName: "Adaora Mensah",
+      propertyName: "The Palms Maisonette", ownerShareMinor: 42240, status: "pending",
+      payoutNgnMinor: null, fxRate: null, raenestReference: null,
+      requestedAt: null, releasedAt: null, paidAt: null,
+      attempts: 0, lastError: null, createdAt: `${yyyy}-07-05T15:00:00Z`,
+    },
+  ];
+}
+
+export function getPayoutAlerts(): PayoutAlert[] {
+  return [
+    { id: "PA-001", severity: "high", kind: "bank_rejected", message: "Ibrahim Musa — bank account invalid (5 attempts exceeded)", resolved: false, createdAt: `${yyyy}-07-08T15:00:00Z` },
+    { id: "PA-002", severity: "medium", kind: "raenest_unavailable", message: "Raenest API timeout — 3 payouts queued for retry", resolved: true, createdAt: `${yyyy}-07-06T22:15:00Z` },
+    { id: "PA-003", severity: "low", kind: "fx_out_of_range", message: "GBP→NGN rate at 1980 (below expected 2000)", resolved: true, createdAt: `${yyyy}-06-30T08:00:00Z` },
+  ];
+}
+
+export function getCommissionRecords(): CommissionRecord[] {
+  return [
+    { id: "CR-001", bookingGroupId: "BG-2026-0618-A", propertyName: "The Palms Maisonette", commissionMinor: 5040, totalMinor: 42000, date: `${yyyy}-${mm}-18`, status: "settled" },
+    { id: "CR-002", bookingGroupId: "BG-2026-0620-B", propertyName: "Sunset Dove", commissionMinor: 3840, totalMinor: 32000, date: `${yyyy}-${mm}-20`, status: "settled" },
+    { id: "CR-003", bookingGroupId: "BG-2026-0628-C", propertyName: "GRA Executive Suite", commissionMinor: 13200, totalMinor: 110000, date: `${yyyy}-${mm}-28`, status: "settled" },
+    { id: "CR-004", bookingGroupId: "BG-2026-0701-E", propertyName: "The Palms Maisonette", commissionMinor: 5760, totalMinor: 48000, date: `${yyyy}-07-01`, status: "settled" },
+  ];
+}
+
+export function getFxHistory(): FxRecord[] {
+  return [
+    { date: `${yyyy}-${mm}-22`, rate: 2450, bookingGroupId: "BG-2026-0618-A", payoutReference: "rnst_001_adaora", ownerName: "Adaora Mensah" },
+    { date: `${yyyy}-${mm}-28`, rate: 2450, bookingGroupId: "BG-2026-0628-C", payoutReference: "rnst_002_ngozi", ownerName: "Ngozi Okonkwo" },
+    { date: `${yyyy}-07-08`, rate: 2450, bookingGroupId: "BG-2026-0705-D", payoutReference: "rnst_003_ibrahim", ownerName: "Ibrahim Musa" },
+    { date: `${yyyy}-06-30`, rate: 1980, bookingGroupId: "BG-2026-0630-F", payoutReference: "rnst_004_fx_anomaly", ownerName: "Kola Ogun" },
+  ];
+}
+
+export function getBookingTrace(bookingGroupId: string): BookingTrace | null {
+  const traces: Record<string, BookingTrace> = {
+    "BG-2026-0618-A": {
+      groupId: "BG-2026-0618-A",
+      chargeIntentId: "pi_3QxYabc123",
+      chargeId: "ch_3QxYabc123",
+      chargeStatus: "succeeded",
+      chargeTotalMinor: 42000,
+      commissionMinor: 5040,
+      ownerShareMinor: 36960,
+      refundedMinor: 0,
+      platformPayoutStatus: "settled",
+      ownerPayoutStatus: "paid",
+      ownerPayoutReference: "rnst_001_adaora",
+      ownerPayoutNgnMinor: 9055200,
+      ownerPayoutFxRate: 2450,
+      ownerPayoutDate: `${yyyy}-${mm}-24`,
+      reservations: [
+        { property: "The Palms Maisonette", owner: "Adaora Mensah", checkIn: `${yyyy}-${mm}-18`, checkOut: `${yyyy}-${mm}-22`, commissionMinor: 5040, ownerShareMinor: 36960 },
+      ],
+    },
+    "BG-2026-0628-C": {
+      groupId: "BG-2026-0628-C",
+      chargeIntentId: "pi_3QxZcde456",
+      chargeId: "ch_3QxZcde456",
+      chargeStatus: "succeeded",
+      chargeTotalMinor: 110000,
+      commissionMinor: 13200,
+      ownerShareMinor: 96800,
+      refundedMinor: 0,
+      platformPayoutStatus: "settled",
+      ownerPayoutStatus: "released",
+      ownerPayoutReference: "rnst_002_ngozi",
+      ownerPayoutNgnMinor: 237160000,
+      ownerPayoutFxRate: 2450,
+      ownerPayoutDate: null,
+      reservations: [
+        { property: "GRA Executive Suite", owner: "Ngozi Okonkwo", checkIn: `${yyyy}-${mm}-28`, checkOut: `${yyyy}-07-04`, commissionMinor: 13200, ownerShareMinor: 96800 },
+      ],
+    },
+  };
+  return traces[bookingGroupId] ?? null;
+}
+
+export function getCommissionSummary(): { daily: number; weekly: number; monthly: number; totalPayouts: number } {
+  const records = getCommissionRecords();
+  const daily = records.filter(r => r.date === `${yyyy}-${mm}-${new Date().getDate().toString().padStart(2, "0")}`).reduce((s, r) => s + r.commissionMinor, 0);
+  const monthly = records.reduce((s, r) => s + r.commissionMinor, 0);
+  return {
+    daily,
+    weekly: monthly,
+    monthly,
+    totalPayouts: getPayoutLedger().filter(p => p.status === "paid").length,
+  };
 }

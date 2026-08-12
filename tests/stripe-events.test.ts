@@ -72,14 +72,18 @@ describe("Stripe event router — payment_intent.payment_failed", () => {
     });
   });
 
-  it("emits noop marker (caller enqueues email) when purpose is charge", () => {
+  it("emits charge-status-update marker when payment fails with intent", () => {
     const result = routeStripeEvent(
       evt("payment_intent.payment_failed", {
         id: "pi_charge_333",
         metadata: { purpose: "charge" },
       }),
     );
-    expect(result).toContainEqual({ kind: "noop" });
+    expect(result).toContainEqual({
+      kind: "update_booking_group_charge",
+      intentId: "pi_charge_333",
+      chargeStatus: "failed",
+    });
   });
 
   it("does NOT emit noop when purpose is hold (no email for hold failures)", () => {
@@ -146,6 +150,24 @@ describe("Stripe event router — unknown events", () => {
       evt("customer.subscription.created", { id: "sub_1" }),
     );
     expect(result).toEqual([{ kind: "ignore" }]);
+  });
+});
+
+describe("Stripe event router — checkout.session.completed", () => {
+  it("emits complete_one_time_payment with the session id", () => {
+    const result = routeStripeEvent(
+      evt("checkout.session.completed", { id: "cs_abc123" }),
+    );
+    expect(result).toEqual([
+      { kind: "complete_one_time_payment", sessionId: "cs_abc123" },
+    ]);
+  });
+
+  it("returns empty actions when session id is missing", () => {
+    const result = routeStripeEvent(
+      evt("checkout.session.completed", { id: null }),
+    );
+    expect(result).toEqual([]);
   });
 });
 

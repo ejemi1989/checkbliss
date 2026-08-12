@@ -11,6 +11,11 @@ import type {
   OwnerBookingView,
   AdminBookingView,
   AdminStat,
+  PayoutLedgerEntry,
+  PayoutAlert,
+  CommissionRecord,
+  FxRecord,
+  BookingTrace,
 } from "./types";
 import type { OwnerDirectoryEntry } from "./data";
 import {
@@ -25,6 +30,11 @@ import {
   getOperatorBookings as getMockOperatorBookings,
   getOwnersForCity as getMockOwnersForCity,
   getOwnerBookings as getMockOwnerBookings,
+  getPayoutLedger as getMockPayoutLedger,
+  getPayoutAlerts as getMockPayoutAlerts,
+  getCommissionRecords as getMockCommissionRecords,
+  getFxHistory as getMockFxHistory,
+  getCommissionSummary as getMockCommissionSummary,
 } from "./data";
 
 /* ------------------------------------------------------------------ */
@@ -596,3 +606,214 @@ export async function getAdminStatsFromDB(): Promise<AdminStat[]> {
 }
 
 import { getAdminStats as getMockAdminStats } from "./data";
+
+/* ------------------------------------------------------------------ */
+/*  Payment Architecture (V2) — Payout Ledger & Reconciliation         */
+/* ------------------------------------------------------------------ */
+
+export async function getPayoutLedgerFromDB(): Promise<PayoutLedgerEntry[]> {
+  if (!supabaseAdminConfigured) return getMockPayoutLedger();
+  try {
+    const db = createAdmin();
+    const { data, error } = await db
+      .from("owner_payouts")
+      .select(
+        `id, booking_group_id, owner_id, owner_share_minor, status,
+         payout_ngn_minor, fx_rate, raenest_reference,
+         requested_at, released_at, paid_at, attempts, last_error, created_at,
+         profiles!owner_id(full_name), properties(name)`
+      )
+      .order("created_at", { ascending: false })
+      .limit(100);
+
+    if (error || !data) return getMockPayoutLedger();
+
+    return data.map((r: Record<string, unknown>) => {
+      const profile = (r.profiles as Record<string, unknown>) ?? {};
+      const property = (r.properties as Record<string, unknown>) ?? {};
+      return {
+        id: r.id as string,
+        bookingGroupId: r.booking_group_id as string,
+        ownerId: (r.owner_id as string) ?? "",
+        ownerName: (profile.full_name as string) ?? "",
+        propertyName: (property.name as string) ?? "",
+        ownerShareMinor: (r.owner_share_minor as number) ?? 0,
+        status: (r.status as string) ?? "pending",
+        payoutNgnMinor: (r.payout_ngn_minor as number) ?? null,
+        fxRate: (r.fx_rate as number) ?? null,
+        raenestReference: (r.raenest_reference as string) ?? null,
+        requestedAt: (r.requested_at as string) ?? null,
+        releasedAt: (r.released_at as string) ?? null,
+        paidAt: (r.paid_at as string) ?? null,
+        attempts: (r.attempts as number) ?? 0,
+        lastError: (r.last_error as string) ?? null,
+        createdAt: (r.created_at as string) ?? "",
+      };
+    });
+  } catch {
+    return getMockPayoutLedger();
+  }
+}
+
+export async function getPayoutAlertsFromDB(): Promise<PayoutAlert[]> {
+  if (!supabaseAdminConfigured) return getMockPayoutAlerts();
+  try {
+    const db = createAdmin();
+    const { data, error } = await db
+      .from("payout_alerts")
+      .select("id, severity, kind, message, resolved, created_at")
+      .order("created_at", { ascending: false })
+      .limit(50);
+
+    if (error || !data) return getMockPayoutAlerts();
+
+    return data.map((r: Record<string, unknown>) => ({
+      id: r.id as string,
+      severity: (r.severity as PayoutAlert["severity"]) ?? "medium",
+      kind: (r.kind as string) ?? "",
+      message: (r.message as string) ?? "",
+      resolved: (r.resolved as boolean) ?? false,
+      createdAt: (r.created_at as string) ?? "",
+    }));
+  } catch {
+    return getMockPayoutAlerts();
+  }
+}
+
+export async function getCommissionRecordsFromDB(): Promise<CommissionRecord[]> {
+  if (!supabaseAdminConfigured) return getMockCommissionRecords();
+  try {
+    const db = createAdmin();
+    const { data, error } = await db
+      .from("booking_groups")
+      .select("id, commission_minor, charge_total_minor, status, created_at, reservations(properties(name))")
+      .order("created_at", { ascending: false })
+      .limit(50);
+
+    if (error || !data) return getMockCommissionRecords();
+
+    return data.map((r: Record<string, unknown>) => {
+      const reservations = (r.reservations as Array<Record<string, unknown>>) ?? [];
+      const property = (reservations[0]?.properties as Record<string, unknown>) ?? {};
+      return {
+        id: `CR-${r.id}`,
+        bookingGroupId: r.id as string,
+        propertyName: (property.name as string) ?? "",
+        commissionMinor: (r.commission_minor as number) ?? 0,
+        totalMinor: (r.charge_total_minor as number) ?? 0,
+        date: ((r.created_at as string) ?? "").slice(0, 10),
+        status: (r.status as string) ?? "pending",
+      };
+    });
+  } catch {
+    return getMockCommissionRecords();
+  }
+}
+
+export async function getFxHistoryFromDB(): Promise<FxRecord[]> {
+  if (!supabaseAdminConfigured) return getMockFxHistory();
+  try {
+    const db = createAdmin();
+    const { data, error } = await db
+      .from("owner_payouts")
+      .select("booking_group_id, fx_rate, requested_at, raenest_reference, owner_id, profiles!owner_id(full_name)")
+      .not("fx_rate", "is", null)
+      .order("requested_at", { ascending: false })
+      .limit(50);
+
+    if (error || !data) return getMockFxHistory();
+
+    return data.map((r: Record<string, unknown>) => {
+      const profile = (r.profiles as Record<string, unknown>) ?? {};
+      return {
+        date: ((r.requested_at as string) ?? "").slice(0, 10),
+        rate: (r.fx_rate as number) ?? 0,
+        bookingGroupId: (r.booking_group_id as string) ?? "",
+        payoutReference: (r.raenest_reference as string) ?? "",
+        ownerName: (profile.full_name as string) ?? "",
+      };
+    });
+  } catch {
+    return getMockFxHistory();
+  }
+}
+
+export async function getCommissionSummaryFromDB(): Promise<{ daily: number; weekly: number; monthly: number; totalPayouts: number }> {
+  if (!supabaseAdminConfigured) return getMockCommissionSummary();
+  try {
+    const db = createAdmin();
+    const now = new Date();
+    const d1 = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();
+    const w1 = new Date(now.getTime() - 7 * 24 * 3600_000).toISOString();
+    const m1 = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+
+    const [dailyRes, weeklyRes, monthlyRes, paidPayoutsRes] = await Promise.all([
+      db.from("booking_groups").select("commission_minor").gte("created_at", d1),
+      db.from("booking_groups").select("commission_minor").gte("created_at", w1),
+      db.from("booking_groups").select("commission_minor").gte("created_at", m1),
+      db.from("owner_payouts").select("*", { count: "exact", head: true }).eq("status", "paid"),
+    ]);
+
+    const sum = (rows: { commission_minor: number }[] | null | undefined) =>
+      (rows ?? []).reduce((s, r) => s + (r.commission_minor ?? 0), 0);
+
+    return {
+      daily: sum(dailyRes.data),
+      weekly: sum(weeklyRes.data),
+      monthly: sum(monthlyRes.data),
+      totalPayouts: paidPayoutsRes.count ?? 0,
+    };
+  } catch {
+    return getMockCommissionSummary();
+  }
+}
+
+export async function getBookingTraceFromDB(bookingGroupId: string): Promise<BookingTrace | null> {
+  if (!supabaseAdminConfigured) return null;
+  try {
+    const db = createAdmin();
+    const { data: group, error } = await db
+      .from("booking_groups")
+      .select("*")
+      .eq("id", bookingGroupId)
+      .maybeSingle();
+
+    if (error || !group) return null;
+
+    const { data: reservations } = await db
+      .from("reservations")
+      .select("id, property_id, commission_minor, owner_share_minor, check_in, check_out, properties(name, owner_id, profiles!owner_id(full_name))")
+      .eq("booking_group_id", bookingGroupId);
+
+    return {
+      groupId: group.id,
+      chargeIntentId: (group.charge_intent_id as string) ?? "",
+      chargeId: (group.stripe_charge_id as string) ?? null,
+      chargeStatus: (group.charge_status as string) ?? "pending",
+      chargeTotalMinor: (group.charge_total_minor as number) ?? 0,
+      commissionMinor: (group.commission_minor as number) ?? 0,
+      ownerShareMinor: (group.owner_share_minor as number) ?? 0,
+      refundedMinor: (group.refunded_minor as number) ?? 0,
+      platformPayoutStatus: (group.platform_payout_status as string) ?? "pending",
+      ownerPayoutStatus: (group.owner_payout_status as string) ?? "pending",
+      ownerPayoutReference: (group.owner_payout_reference as string) ?? null,
+      ownerPayoutNgnMinor: (group.owner_payout_ngn_minor as number) ?? null,
+      ownerPayoutFxRate: (group.owner_payout_fx_rate as number) ?? null,
+      ownerPayoutDate: (group.owner_payout_date as string) ?? null,
+      reservations: (reservations ?? []).map((r: Record<string, unknown>) => {
+        const property = (r.properties as Record<string, unknown>) ?? {};
+        const profile = (property.profiles as Record<string, unknown>) ?? {};
+        return {
+          property: (property.name as string) ?? "",
+          owner: (profile.full_name as string) ?? "",
+          checkIn: (r.check_in as string) ?? "",
+          checkOut: (r.check_out as string) ?? "",
+          commissionMinor: (r.commission_minor as number) ?? 0,
+          ownerShareMinor: (r.owner_share_minor as number) ?? 0,
+        };
+      }),
+    };
+  } catch {
+    return null;
+  }
+}

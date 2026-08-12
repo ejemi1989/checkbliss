@@ -11,7 +11,10 @@ export type StripeRouteAction =
       holdStatus: "held" | "released";
       releasedAt?: string;
     }
+  | { kind: "cancel_booking_group"; groupId: string }
   | { kind: "log_dispute"; disputeId: string; chargeId: string | null }
+  | { kind: "complete_one_time_payment"; sessionId: string }
+  | { kind: "record_refund"; chargeId: string; refundAmount: number; bookingGroupId: string }
   | { kind: "ignore" };
 
 export interface StripeEventLike {
@@ -45,7 +48,7 @@ export function routeStripeEvent(event: StripeEventLike): StripeRouteAction[] {
     }
 
     case "payment_intent.payment_failed": {
-      const purpose = event.data.object.metadata?.purpose;
+      const groupId = event.data.object.metadata?.booking_group_id;
       const actions: StripeRouteAction[] = [];
       if (intentId) {
         actions.push({
@@ -54,8 +57,8 @@ export function routeStripeEvent(event: StripeEventLike): StripeRouteAction[] {
           chargeStatus: "failed",
         });
       }
-      if (purpose === "charge") {
-        actions.push({ kind: "noop" });
+      if (groupId) {
+        actions.push({ kind: "cancel_booking_group", groupId });
       }
       return actions;
     }
@@ -92,6 +95,30 @@ export function routeStripeEvent(event: StripeEventLike): StripeRouteAction[] {
           chargeId: obj.charge ?? null,
         },
       ];
+    }
+
+    case "charge.refunded": {
+      const obj = event.data.object as unknown as {
+        id?: string;
+        amount_refunded?: number;
+        metadata?: Record<string, string> | null;
+      };
+      const groupId = obj.metadata?.booking_group_id ?? null;
+      if (!groupId) return [{ kind: "ignore" }];
+      return [
+        {
+          kind: "record_refund",
+          chargeId: obj.id ?? "",
+          refundAmount: obj.amount_refunded ?? 0,
+          bookingGroupId: groupId,
+        },
+      ];
+    }
+
+    case "checkout.session.completed": {
+      const sessionId = event.data.object.id ?? null;
+      if (!sessionId) return [];
+      return [{ kind: "complete_one_time_payment", sessionId }];
     }
 
     default:

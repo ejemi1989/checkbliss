@@ -5,6 +5,7 @@ import { createAdmin, supabaseAdminConfigured } from "@/lib/supabase/admin";
 import { createBookingCharge, createDepositHold } from "@/lib/stripe";
 import { sendWhatsApp, getTemplate } from "@/lib/whatsapp";
 import { getSeedProperties, getSeedReservations, getSeedBlocks } from "@/lib/seed-data";
+import { computeSplit, createOwnerPayoutRows } from "@/lib/payouts";
 
 const TURNSTILE_SECRET = process.env.TURNSTILE_SECRET_KEY;
 
@@ -141,12 +142,14 @@ export async function POST(request: NextRequest) {
 
       const totalMinor = accommodationMinor + (lateCheckoutFeeMinor ?? 0);
       const depositMinor = property.deposit_minor ?? 10000;
+      const split = computeSplit(totalMinor);
 
       reservations.push({
         id: crypto.randomUUID(),
         booking_group_id: groupId,
         property_id: item.property_id,
         property_name: property.name,
+        owner_id: property.owner_id,
         guest_name: guest.name,
         guest_email: guest.email,
         guest_phone: guest.phone,
@@ -157,7 +160,9 @@ export async function POST(request: NextRequest) {
         late_checkout_fee_minor: lateCheckoutFeeMinor,
         total_minor: totalMinor,
         deposit_hold_minor: depositMinor,
-        status: "confirmed",
+        commission_minor: split.commissionMinor,
+        owner_share_minor: split.ownerShareMinor,
+        status: "pending_payment",
         nights,
         created_at: new Date().toISOString(),
         currency,
@@ -167,24 +172,62 @@ export async function POST(request: NextRequest) {
       depositHoldTotalMinor += depositMinor;
     }
 
-    const charge = await createBookingCharge(chargeTotalMinor, `charge-${groupId}`);
-    const hold = await createDepositHold(depositHoldTotalMinor, `hold-${groupId}`);
+    const totalSplit = computeSplit(chargeTotalMinor);
+    const connectAccountId = process.env.STRIPE_CONNECT_ACCOUNT_ID || undefined;
+
+    const charge = await createBookingCharge({
+      amountMinor: chargeTotalMinor,
+      currency: "gbp",
+      bookingGroupId: groupId,
+      guestEmail: guest.email,
+      guestName: guest.name,
+      description: `CheckinBliss: ${reservations.map((r) => r.property_name).join(", ")}`,
+      connectAccountId,
+      applicationFeeMinor: connectAccountId ? totalSplit.commissionMinor : undefined,
+    });
+    const hold = await createDepositHold({
+      amountMinor: depositHoldTotalMinor,
+      currency: "gbp",
+      bookingGroupId: groupId,
+      guestEmail: guest.email,
+      description: `Security deposit: ${reservations[0]?.property_name}`,
+    });
 
     const { error: groupError } = await db.from("booking_groups").insert({
       id: groupId,
       charge_intent_id: charge.intentId,
-      charge_status: charge.status,
+      charge_status: "pending",
       currency,
       charge_total_minor: chargeTotalMinor,
       deposit_hold_total_minor: depositHoldTotalMinor,
-      status: "confirmed",
+      commission_minor: totalSplit.commissionMinor,
+      owner_share_minor: totalSplit.ownerShareMinor,
+      status: "pending_payment",
     });
     if (groupError) throw new Error(`Failed to create group: ${groupError.message}`);
 
     for (const r of reservations) {
       const { error: resError } = await db.from("reservations").insert({
-        ...r,
+        id: r.id,
+        booking_group_id: r.booking_group_id,
+        property_id: r.property_id,
+        guest_name: r.guest_name,
+        guest_email: r.guest_email,
+        guest_phone: r.guest_phone,
+        guest_count: r.guest_count,
+        check_in: r.check_in,
+        check_out: r.check_out,
+        status: r.status,
+        confirmed_checkout_time: r.confirmed_checkout_time,
+        late_checkout_fee_minor: r.late_checkout_fee_minor,
+        accommodation_minor: r.total_minor - (r.late_checkout_fee_minor ?? 0),
+        total_minor: r.total_minor,
+        deposit_hold_minor: r.deposit_hold_minor,
+        commission_minor: r.commission_minor,
+        owner_share_minor: r.owner_share_minor,
+        currency: r.currency,
         payment_intent_id: charge.intentId,
+        reference: generateReference(),
       });
       if (resError) throw new Error(`Failed to create reservation: ${resError.message}`);
 
@@ -196,6 +239,23 @@ export async function POST(request: NextRequest) {
         console.warn(`Failed to create inspection for reservation ${r.id}: ${inspError.message}`);
       }
     }
+
+    const ownerMap = new Map<string, { ownerId: string; reservationId: string; propertyId: string; ownerShareMinor: number }>();
+    for (const r of reservations) {
+      const existing = ownerMap.get(r.owner_id ?? r.property_id);
+      if (existing) {
+        existing.ownerShareMinor += r.owner_share_minor;
+      } else {
+        ownerMap.set(r.owner_id ?? r.property_id, {
+          ownerId: r.owner_id ?? r.property_id,
+          reservationId: r.id,
+          propertyId: r.property_id,
+          ownerShareMinor: r.owner_share_minor,
+        });
+      }
+    }
+    const payoutEntries = [...ownerMap.values()];
+    await createOwnerPayoutRows(groupId, payoutEntries);
 
     const expiresAt = new Date();
     expiresAt.setDate(expiresAt.getDate() + 7);
@@ -219,11 +279,12 @@ export async function POST(request: NextRequest) {
     await db.from("audit_log").insert({
       action: "booking.confirmed",
       target_id: groupId,
-      detail: `Group ${groupId} — ${items.length} stay(s), charge ${chargeTotalMinor}, hold ${depositHoldTotalMinor}`,
+      detail: `Group ${groupId} — ${items.length} stay(s), charge ${chargeTotalMinor}, commission ${totalSplit.commissionMinor}, owner share ${totalSplit.ownerShareMinor}, hold ${depositHoldTotalMinor}`,
     });
 
     return NextResponse.json(
       {
+        ok: true,
         booking_group_id: groupId,
         reference,
         reservations: reservations.map((r) => ({
@@ -238,6 +299,8 @@ export async function POST(request: NextRequest) {
         charge_total_minor: chargeTotalMinor,
         deposit_hold_minor: depositHoldTotalMinor,
         currency,
+        chargeClientSecret: charge.clientSecret,
+        holdClientSecret: hold.clientSecret,
         deposit: {
           note: "Pre-authorisation hold — not a charge. Released within 7 days of a clean checkout.",
         },
@@ -330,6 +393,7 @@ async function handleMockBooking(
 
     const totalMinor = accommodationMinor + (lateCheckoutFeeMinor ?? 0);
     const depositMinor = prop.deposit_minor ?? 10000;
+    const split = computeSplit(totalMinor);
     const resId = crypto.randomUUID();
 
     chargeTotalMinor += totalMinor;
@@ -338,13 +402,39 @@ async function handleMockBooking(
     resultReservations.push({
       reservation_id: resId,
       property_name: prop.name,
+      property_id: prop.id,
+      owner_id: prop.owner_id ?? prop.id,
       check_in: item.check_in,
       check_out: item.check_out,
       total_minor: totalMinor,
       deposit_minor: depositMinor,
+      commission_minor: split.commissionMinor,
+      owner_share_minor: split.ownerShareMinor,
       checkout_time: confirmedCheckoutTime,
     });
   }
+
+  const totalSplit = computeSplit(chargeTotalMinor);
+  const payoutEntries: Array<{ ownerId: string; reservationId: string; propertyId: string; ownerShareMinor: number }> = [];
+  const ownerMap = new Map<string, typeof payoutEntries[0]>();
+  for (const r of resultReservations) {
+    const ownerId = r.owner_id as string;
+    const existing = ownerMap.get(ownerId);
+    if (existing) {
+      existing.ownerShareMinor += (r.owner_share_minor as number);
+    } else {
+      const propForPayout = properties.find((p) => p.id === (r.property_id as string));
+      const entry = {
+        ownerId,
+        reservationId: r.reservation_id as string,
+        propertyId: propForPayout?.id ?? ownerId,
+        ownerShareMinor: r.owner_share_minor as number,
+      };
+      ownerMap.set(ownerId, entry);
+      payoutEntries.push(entry);
+    }
+  }
+  await createOwnerPayoutRows(groupId, payoutEntries);
 
   console.log(`[mock bookings] Group ${groupId} (${reference}) created — ${items.length} stay(s), charge ${chargeTotalMinor}, hold ${depositHoldTotalMinor}`);
 
@@ -356,12 +446,15 @@ async function handleMockBooking(
 
   return NextResponse.json(
     {
+      ok: true,
       booking_group_id: groupId,
       reference,
       reservations: resultReservations,
       charge_total_minor: chargeTotalMinor,
       deposit_hold_minor: depositHoldTotalMinor,
       currency,
+      chargeClientSecret: `mock_charge_${groupId}_secret`,
+      holdClientSecret: `mock_hold_${groupId}_secret`,
       deposit: {
         note: "Pre-authorisation hold — not a charge. Released within 7 days of a clean checkout.",
       },
