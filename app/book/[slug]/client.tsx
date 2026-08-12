@@ -8,10 +8,8 @@ import { Elements, PaymentElement, useStripe, useElements } from "@stripe/react-
 import { Turnstile, type TurnstileInstance } from "@marsidev/react-turnstile";
 import { formatMinor, type CurrencyCode } from "@/lib/currency";
 import { propertyHref } from "@/lib/slug";
-import { Footer } from "@/components/footer";
 
 const TURNSTILE_SITE_KEY = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY ?? "";
-const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PK ?? "");
 
 const STRIPE_APPEARANCE = {
   variables: {
@@ -431,8 +429,6 @@ export function BookingFlow(props: Props) {
           </aside>
         </div>
       </div>
-
-      <Footer />
     </div>
     </>
   );
@@ -456,6 +452,11 @@ function PaymentStep({
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const [stripePromise, setStripePromise] = useState<ReturnType<typeof loadStripe> | null>(null);
+
+  useEffect(() => {
+    setStripePromise(loadStripe(process.env.NEXT_PUBLIC_STRIPE_PK ?? ""));
+  }, []);
 
   async function handlePay() {
     if (!stripe || !elements) return;
