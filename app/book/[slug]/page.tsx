@@ -1,9 +1,11 @@
 import type { Metadata } from "next";
+import dynamic from "next/dynamic";
 import { notFound } from "next/navigation";
 import { connection } from "next/server";
 import { getSeedProperties } from "@/lib/seed-data";
 import { Footer } from "@/components/footer";
-import { BookingFlow } from "./client";
+
+const BookingFlow = dynamic(() => import("./client").then((m) => ({ default: m.BookingFlow })), { ssr: false });
 
 export function generateMetadata(): Metadata {
   return { robots: { index: false, follow: false } };
