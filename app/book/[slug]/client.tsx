@@ -144,7 +144,7 @@ export function BookingFlow(props: Props) {
   }
 
   async function createBookingIntents() {
-    if (!turnstileToken) {
+    if (TURNSTILE_SITE_KEY && !turnstileToken) {
       setError("Please complete the CAPTCHA verification.");
       return;
     }
@@ -153,7 +153,7 @@ export function BookingFlow(props: Props) {
     const body = {
       guest: { name: guestName, email: guestEmail, phone: guestPhone, guests: guestCount },
       items: [{ property_id: propertyId, check_in: checkIn, check_out: checkOut, extended_checkout: extendedCheckout }],
-      turnstile_token: turnstileToken,
+      turnstile_token: turnstileToken || "mock-token",
     };
     try {
       const res = await fetch("/api/bookings", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) });
@@ -166,6 +166,7 @@ export function BookingFlow(props: Props) {
       setChargeClientSecret(data.chargeClientSecret);
       setHoldClientSecret(data.holdClientSecret);
       setBookingGroupId(data.booking_group_id);
+      setSubmitting(false);
     } catch {
       setError("Network error. Please try again.");
       setSubmitting(false);
