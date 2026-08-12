@@ -83,7 +83,7 @@ export function NotificationBell({ role, userId, onViewAll }: { role: NotifRole;
                     <div className="flex-1 min-w-0">
                       <p className="text-xs font-semibold text-ink truncate">{n.title}</p>
                       <p className="text-[11px] text-ink-secondary mt-0.5" style={{ display: "-webkit-box", WebkitLineClamp: 2, WebkitBoxOrient: "vertical", overflow: "hidden" }}>{n.body}</p>
-                      <p className="text-[10px] text-ink-tertiary mt-1">
+                        <p className="text-[10px] text-ink-tertiary mt-1" suppressHydrationWarning>
                         {new Date(n.created_at).toLocaleDateString("en-GB", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}
                       </p>
                     </div>

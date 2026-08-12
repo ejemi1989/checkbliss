@@ -8,7 +8,7 @@ function Bar({ value, max, label }: { value: number; max: number; label: string 
   return (
     <div>
       <div className="flex items-center justify-between text-[10px] text-ink-secondary mb-1">
-        <span>{label}</span>
+        <span suppressHydrationWarning>{label}</span>
         <span className="font-mono">{value}</span>
       </div>
       <div className="h-1.5 bg-bone rounded-full overflow-hidden">

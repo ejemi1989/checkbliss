@@ -3,12 +3,37 @@
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
+import { loadStripe } from "@stripe/stripe-js";
+import { Elements, PaymentElement, useStripe, useElements } from "@stripe/react-stripe-js";
 import { Turnstile, type TurnstileInstance } from "@marsidev/react-turnstile";
 import { formatMinor, type CurrencyCode } from "@/lib/currency";
 import { propertyHref } from "@/lib/slug";
 import { Footer } from "@/components/footer";
 
 const TURNSTILE_SITE_KEY = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY ?? "";
+const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PK ?? "");
+
+const STRIPE_APPEARANCE = {
+  variables: {
+    colorPrimary: "#0D3D56",
+    colorBackground: "#FAFAF5",
+    colorText: "#1A1A1A",
+    colorDanger: "#C0392B",
+    fontFamily: "var(--font-sans)",
+    borderRadius: "4px",
+  },
+  rules: {
+    ".Input": {
+      border: "1px solid #D8DBCF",
+      padding: "12px 16px",
+      fontSize: "15px",
+    },
+    ".Input:focus": {
+      border: "1px solid #5C6B4F",
+      boxShadow: "none",
+    },
+  },
+};
 
 interface Props {
   propertyId: string;
@@ -32,7 +57,6 @@ type Step = "dates" | "guest" | "payment";
 export function BookingFlow(props: Props) {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const [mounted, setMounted] = useState(false);
   const {
     propertyId, propertySlug, propertyName, city, neighbourhood,
     neighbourhoodSlug, buildingSlug,
@@ -54,28 +78,18 @@ export function BookingFlow(props: Props) {
   const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
   const turnstileRef = useRef<TurnstileInstance>(null);
 
+  const [chargeClientSecret, setChargeClientSecret] = useState<string | null>(null);
+  const [holdClientSecret, setHoldClientSecret] = useState<string | null>(null);
+  const [bookingGroupId, setBookingGroupId] = useState<string | null>(null);
+
   const [minDateStr, setMinDateStr] = useState("");
   useEffect(() => {
-    setMounted(true);
     const today = new Date();
     today.setDate(today.getDate() + 14);
     setMinDateStr(
       `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`
     );
   }, []);
-
-  if (!mounted) {
-    return (
-      <div className="min-h-screen bg-bone flex items-center justify-center">
-        <div className="w-full max-w-md space-y-4 p-8">
-          <div className="h-6 bg-hairline rounded w-1/3 animate-pulse" />
-          <div className="h-4 bg-hairline rounded w-2/3 animate-pulse" />
-          <div className="h-48 bg-hairline rounded-xl animate-pulse" />
-          <div className="h-10 bg-hairline rounded-xl animate-pulse" />
-        </div>
-      </div>
-    );
-  }
 
   const steps: Step[] = ["dates", "guest", "payment"];
   const rawStep = searchParams.get("step");
@@ -129,7 +143,7 @@ export function BookingFlow(props: Props) {
     }
   }
 
-  async function handleSubmit() {
+  async function createBookingIntents() {
     if (!turnstileToken) {
       setError("Please complete the CAPTCHA verification.");
       return;
@@ -149,7 +163,9 @@ export function BookingFlow(props: Props) {
         setSubmitting(false);
         return;
       }
-      router.push(`/confirmation/${data.reference}`);
+      setChargeClientSecret(data.chargeClientSecret);
+      setHoldClientSecret(data.holdClientSecret);
+      setBookingGroupId(data.booking_group_id);
     } catch {
       setError("Network error. Please try again.");
       setSubmitting(false);
@@ -201,143 +217,110 @@ export function BookingFlow(props: Props) {
               })}
             </div>
 
-            {/* Error */}
             {error && (
-              <div className="mb-6 p-4 rounded-[var(--radius-md)] bg-error/5 border border-error/20 text-sm text-error font-medium font-sans">
+              <div className="p-4 rounded-[var(--radius-md)] bg-red-50 border border-red-200 text-red-700 text-sm mb-6">
                 {error}
               </div>
             )}
 
-            {/* Sidebar (mobile only) */}
-            <div className="hidden max-lg:block mb-8">
-              <BookingSidebar
-                propertyName={propertyName} neighbourhood={neighbourhood} city={city}
-                coverPhotoUrl={coverPhotoUrl} checkIn={checkIn} checkOut={checkOut}
-                formatCheckinDate={formatCheckinDate}
-                nights={nights} accommodationTotal={accommodationTotal}
-                extendedFee={extendedFee} chargeTotal={chargeTotal}
-                depositMinor={depositMinor} nightlyLabel={nightlyLabel}
-                depositLabel={depositLabel} currency={currency as CurrencyCode}
-                step={step} totalAfterCredit={totalAfterCredit}
-              />
-            </div>
-
             {/* STEP 1 — Dates */}
             {step === "dates" && (
               <div>
-                <div className="form-section" style={{ marginBottom: "var(--s10, 48px)" }}>
-                  <h2 className="font-display text-[22px] font-medium text-ink mb-5">Choose your dates</h2>
-                  <div className="grid grid-cols-2 gap-4 mb-5 max-sm:grid-cols-1">
-                    <div className="flex flex-col gap-1">
-                      <label className="font-sans text-xs font-semibold uppercase tracking-[0.1em] text-mute">Check-in</label>
-                      <input
-                        type="date"
-                        min={minDateStr}
-                        value={checkIn}
-                        onChange={(e) => { setCheckIn(e.target.value); setFieldErrors((f) => ({ ...f, checkIn: "", checkOut: "", nights: "" })); }}
-                        className={`px-4 py-3 rounded-[var(--radius-md)] border bg-card font-sans text-[15px] text-ink outline-none transition-colors ${fieldErrors.checkIn ? "border-error" : "border-hairline focus:border-green-soft"}`}
-                      />
-                      {fieldErrors.checkIn && <p className="font-sans text-[10px] text-error mt-0.5">{fieldErrors.checkIn}</p>}
-                    </div>
-                    <div className="flex flex-col gap-1">
-                      <label className="font-sans text-xs font-semibold uppercase tracking-[0.1em] text-mute">Check-out</label>
-                      <input
-                        type="date"
-                        min={checkIn || minDateStr}
-                        value={checkOut}
-                        onChange={(e) => { setCheckOut(e.target.value); setFieldErrors((f) => ({ ...f, checkOut: "", nights: "" })); }}
-                        className={`px-4 py-3 rounded-[var(--radius-md)] border bg-card font-sans text-[15px] text-ink outline-none transition-colors ${fieldErrors.checkOut || fieldErrors.nights ? "border-error" : "border-hairline focus:border-green-soft"}`}
-                      />
-                      {fieldErrors.checkOut && <p className="font-sans text-[10px] text-error mt-0.5">{fieldErrors.checkOut}</p>}
-                      {fieldErrors.nights && !fieldErrors.checkOut && <p className="font-sans text-[10px] text-error mt-0.5">{fieldErrors.nights}</p>}
-                    </div>
+                <h2 className="font-display text-[22px] font-medium text-ink mb-6">Select your dates</h2>
+                <div className="grid grid-cols-2 gap-4 mb-4 max-sm:grid-cols-1">
+                  <div className="flex flex-col gap-1">
+                    <label className="font-sans text-xs font-semibold uppercase tracking-[0.1em] text-mute">Check-in</label>
+                    <input
+                      type="date"
+                      min={minDateStr}
+                      value={checkIn}
+                      onChange={(e) => setCheckIn(e.target.value)}
+                      className="px-4 py-3 rounded-[var(--radius-md)] border border-hairline bg-card font-sans text-[15px] text-ink outline-none focus:border-green-soft transition-colors"
+                    />
+                    {fieldErrors.checkIn && <span className="text-red-600 text-xs">{fieldErrors.checkIn}</span>}
                   </div>
-
-                  <div className="flex flex-col gap-1 mb-5">
-                    <label className="font-sans text-xs font-semibold uppercase tracking-[0.1em] text-mute">Guests</label>
-                    <select
-                      value={guestCount}
-                      onChange={(e) => setGuestCount(parseInt(e.target.value))}
-                      className="w-32 px-4 py-3 rounded-[var(--radius-md)] border border-hairline bg-card font-sans text-[15px] text-ink outline-none cursor-pointer appearance-none"
-                    >
-                      {Array.from({ length: sleeps }, (_, i) => i + 1).map((n) => (
-                        <option key={n} value={n}>{n} guest{n > 1 ? "s" : ""}</option>
-                      ))}
-                    </select>
+                  <div className="flex flex-col gap-1">
+                    <label className="font-sans text-xs font-semibold uppercase tracking-[0.1em] text-mute">Check-out</label>
+                    <input
+                      type="date"
+                      min={checkIn || minDateStr}
+                      value={checkOut}
+                      onChange={(e) => setCheckOut(e.target.value)}
+                      className="px-4 py-3 rounded-[var(--radius-md)] border border-hairline bg-card font-sans text-[15px] text-ink outline-none focus:border-green-soft transition-colors"
+                    />
+                    {fieldErrors.checkOut && <span className="text-red-600 text-xs">{fieldErrors.checkOut}</span>}
                   </div>
-
-                  <p className="font-sans text-xs text-mute mb-5">Bookings open 14+ days ahead. 2 nights minimum.</p>
-
-                  <button
-                    onClick={() => handleContinue("dates", "guest")}
-                    className="w-full py-4 rounded-[var(--radius-sm)] bg-brass text-bone font-sans text-base font-semibold transition-all hover:bg-brass-dark cursor-pointer border-none"
-                  >
-                    Continue
-                  </button>
                 </div>
+                {fieldErrors.nights && <p className="text-red-600 text-xs mb-4">{fieldErrors.nights}</p>}
+
+                <div className="flex flex-col gap-1 mb-6">
+                  <label className="font-sans text-xs font-semibold uppercase tracking-[0.1em] text-mute">Guests</label>
+                  <div className="flex items-center gap-3">
+                    <button
+                      onClick={() => setGuestCount((c) => Math.max(1, c - 1))}
+                      disabled={guestCount <= 1}
+                      className="w-9 h-9 rounded-full border border-hairline flex items-center justify-center text-ink disabled:opacity-30 cursor-pointer disabled:cursor-not-allowed"
+                    >
+                      −
+                    </button>
+                    <span className="font-sans text-[15px] font-medium text-ink min-w-[24px] text-center">{guestCount}</span>
+                    <button
+                      onClick={() => setGuestCount((c) => Math.min(sleeps, c + 1))}
+                      disabled={guestCount >= sleeps}
+                      className="w-9 h-9 rounded-full border border-hairline flex items-center justify-center text-ink disabled:opacity-30 cursor-pointer disabled:cursor-not-allowed"
+                    >
+                      +
+                    </button>
+                    <span className="font-sans text-xs text-mute ml-1">Max {sleeps} guests</span>
+                  </div>
+                </div>
+
+                <button
+                  onClick={() => handleContinue("dates", "guest")}
+                  className="w-full py-3.5 rounded-[var(--radius-sm)] bg-brass text-bone text-sm font-semibold transition-all hover:bg-brass-dark cursor-pointer border-none"
+                >
+                  Continue
+                </button>
               </div>
             )}
 
             {/* STEP 2 — Guest info */}
             {step === "guest" && (
               <div>
-                <div className="form-section" style={{ marginBottom: "var(--s10, 48px)" }}>
-                  <h2 className="font-display text-[22px] font-medium text-ink mb-5">Guest details</h2>
-                  <div className="grid grid-cols-2 gap-4 mb-4 max-sm:grid-cols-1">
-                    <div className="flex flex-col gap-1">
-                      <label className="font-sans text-xs font-semibold uppercase tracking-[0.1em] text-mute">First name</label>
-                      <input
-                        type="text" placeholder="Temi"
-                        value={guestName}
-                        onChange={(e) => { setGuestName(e.target.value); setFieldErrors((f) => ({ ...f, name: "" })); }}
-                        className={`px-4 py-3 rounded-[var(--radius-md)] border bg-card font-sans text-[15px] text-ink outline-none transition-colors placeholder:text-mute ${fieldErrors.name ? "border-error" : "border-hairline focus:border-green-soft"}`}
-                      />
-                      {fieldErrors.name && <p className="font-sans text-[10px] text-error mt-0.5">Required</p>}
-                    </div>
-                    <div className="flex flex-col gap-1">
-                      <label className="font-sans text-xs font-semibold uppercase tracking-[0.1em] text-mute">Last name</label>
-                      <input type="text" placeholder="Adetola" className="px-4 py-3 rounded-[var(--radius-md)] border border-hairline bg-card font-sans text-[15px] text-ink outline-none focus:border-green-soft transition-colors placeholder:text-mute" />
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-2 gap-4 mb-4 max-sm:grid-cols-1">
-                    <div className="flex flex-col gap-1">
-                      <label className="font-sans text-xs font-semibold uppercase tracking-[0.1em] text-mute">Email address</label>
-                      <input
-                        type="email" placeholder="temi@email.com"
-                        value={guestEmail}
-                        onChange={(e) => { setGuestEmail(e.target.value); setFieldErrors((f) => ({ ...f, email: "" })); }}
-                        className={`px-4 py-3 rounded-[var(--radius-md)] border bg-card font-sans text-[15px] text-ink outline-none transition-colors placeholder:text-mute ${fieldErrors.email ? "border-error" : "border-hairline focus:border-green-soft"}`}
-                      />
-                      {fieldErrors.email && <p className="font-sans text-[10px] text-error mt-0.5">{fieldErrors.email}</p>}
-                    </div>
-                    <div className="flex flex-col gap-1">
-                      <label className="font-sans text-xs font-semibold uppercase tracking-[0.1em] text-mute">Phone number</label>
-                      <input
-                        type="tel" placeholder="+234 801 234 5678"
-                        value={guestPhone}
-                        onChange={(e) => { setGuestPhone(e.target.value); setFieldErrors((f) => ({ ...f, phone: "" })); }}
-                        className={`px-4 py-3 rounded-[var(--radius-md)] border bg-card font-sans text-[15px] text-ink outline-none transition-colors placeholder:text-mute ${fieldErrors.phone ? "border-error" : "border-hairline focus:border-green-soft"}`}
-                      />
-                      {fieldErrors.phone && <p className="font-sans text-[10px] text-error mt-0.5">Required</p>}
-                    </div>
-                  </div>
-                </div>
-
-                <div className="form-section" style={{ marginBottom: "var(--s10, 48px)" }}>
-                  <h2 className="font-display text-[22px] font-medium text-ink mb-5">Trip details</h2>
-                  <div className="flex flex-col gap-1 mb-4">
-                    <label className="font-sans text-xs font-semibold uppercase tracking-[0.1em] text-mute">What brings you to {city}?</label>
-                    <select className="px-4 py-3 rounded-[var(--radius-md)] border border-hairline bg-card font-sans text-[15px] text-ink outline-none cursor-pointer appearance-none focus:border-green-soft transition-colors">
-                      <option>Business travel</option>
-                      <option>Leisure / holiday</option>
-                      <option>Relocation</option>
-                      <option>Visiting family</option>
-                      <option>Other</option>
-                    </select>
+                <h2 className="font-display text-[22px] font-medium text-ink mb-6">Guest information</h2>
+                <div className="space-y-4 mb-6">
+                  <div className="flex flex-col gap-1">
+                    <label className="font-sans text-xs font-semibold uppercase tracking-[0.1em] text-mute">Full name</label>
+                    <input
+                      type="text"
+                      value={guestName}
+                      onChange={(e) => setGuestName(e.target.value)}
+                      placeholder="Temi Adetola"
+                      className="px-4 py-3 rounded-[var(--radius-md)] border border-hairline bg-card font-sans text-[15px] text-ink outline-none focus:border-green-soft transition-colors placeholder:text-mute"
+                    />
+                    {fieldErrors.name && <span className="text-red-600 text-xs">{fieldErrors.name}</span>}
                   </div>
                   <div className="flex flex-col gap-1">
-                    <label className="font-sans text-xs font-semibold uppercase tracking-[0.1em] text-mute">Special requests (optional)</label>
-                    <input type="text" placeholder="Early check-in, airport transfer, dietary needs…" className="px-4 py-3 rounded-[var(--radius-md)] border border-hairline bg-card font-sans text-[15px] text-ink outline-none focus:border-green-soft transition-colors placeholder:text-mute" />
+                    <label className="font-sans text-xs font-semibold uppercase tracking-[0.1em] text-mute">Email</label>
+                    <input
+                      type="email"
+                      value={guestEmail}
+                      onChange={(e) => setGuestEmail(e.target.value)}
+                      placeholder="temi@example.com"
+                      className="px-4 py-3 rounded-[var(--radius-md)] border border-hairline bg-card font-sans text-[15px] text-ink outline-none focus:border-green-soft transition-colors placeholder:text-mute"
+                    />
+                    {fieldErrors.email && <span className="text-red-600 text-xs">{fieldErrors.email}</span>}
+                  </div>
+                  <div className="flex flex-col gap-1">
+                    <label className="font-sans text-xs font-semibold uppercase tracking-[0.1em] text-mute">Phone number</label>
+                    <input
+                      type="tel"
+                      value={guestPhone}
+                      onChange={(e) => setGuestPhone(e.target.value)}
+                      placeholder="+44 7700 900000"
+                      className="px-4 py-3 rounded-[var(--radius-md)] border border-hairline bg-card font-sans text-[15px] text-ink outline-none focus:border-green-soft transition-colors placeholder:text-mute"
+                    />
+                    {fieldErrors.phone && <span className="text-red-600 text-xs">{fieldErrors.phone}</span>}
                   </div>
                 </div>
 
@@ -345,7 +328,10 @@ export function BookingFlow(props: Props) {
                   <button onClick={() => { setStep("dates"); setError(null); }} className="flex-1 py-3 rounded-[var(--radius-sm)] border border-hairline text-sm font-medium text-ink-secondary hover:bg-soft transition-colors cursor-pointer">
                     Back
                   </button>
-                  <button onClick={() => handleContinue("guest", "payment")} className="flex-1 py-3 rounded-[var(--radius-sm)] bg-brass text-bone text-sm font-semibold transition-all hover:bg-brass-dark cursor-pointer border-none">
+                  <button
+                    onClick={() => handleContinue("guest", "payment")}
+                    className="flex-1 py-3.5 rounded-[var(--radius-sm)] bg-brass text-bone text-sm font-semibold transition-all hover:bg-brass-dark cursor-pointer border-none"
+                  >
                     Continue to payment
                   </button>
                 </div>
@@ -355,100 +341,76 @@ export function BookingFlow(props: Props) {
             {/* STEP 3 — Payment */}
             {step === "payment" && (
               <div>
-                <div className="form-section" style={{ marginBottom: "40px" }}>
-                  <h2 className="font-display text-[22px] font-medium text-ink mb-1">Payment method</h2>
-                  <p className="font-sans text-xs text-ink-secondary mb-5">Your card won&rsquo;t be charged until 48 hours before check-in.</p>
+                <h2 className="font-display text-[22px] font-medium text-ink mb-1">Payment method</h2>
+                <p className="font-sans text-xs text-ink-secondary mb-5">Your card won&rsquo;t be charged until 48 hours before check-in.</p>
 
-                  <div className="space-y-3 mb-5">
-                    <label className="flex items-center gap-4 p-5 rounded-[var(--radius-md)] border cursor-pointer border-brass bg-bone-secondary hover:border-green-soft transition-colors">
-                      <div className="w-[18px] h-[18px] rounded-full border-[1.5px] border-brass shrink-0 flex items-center justify-center">
-                        <div className="w-[9px] h-[9px] rounded-full bg-brass" />
+                {!chargeClientSecret ? (
+                  <>
+                    {/* Extended checkout option */}
+                    {extendedCheckoutOffered && extendedCheckoutPriceMinor && (
+                      <div className="p-5 rounded-[var(--radius-md)] border border-hairline mb-5">
+                        <label className="flex items-center justify-between cursor-pointer">
+                          <div>
+                            <p className="font-sans text-sm font-semibold text-ink">Extended checkout — 18:00</p>
+                            <p className="text-xs text-ink-secondary mt-0.5">
+                              +{formatMinor(extendedCheckoutPriceMinor, currency as CurrencyCode)}
+                            </p>
+                          </div>
+                          <input type="checkbox" checked={extendedCheckout} onChange={(e) => setExtendedCheckout(e.target.checked)} className="accent-brass w-4 h-4" />
+                        </label>
                       </div>
-                      <svg className="w-6 h-6 text-mute shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
-                      <span className="font-sans text-sm font-medium text-ink">Credit or debit card</span>
-                    </label>
-                    <label className="flex items-center gap-4 p-5 rounded-[var(--radius-md)] border cursor-pointer border-hairline hover:border-green-soft transition-colors">
-                      <div className="w-[18px] h-[18px] rounded-full border-[1.5px] border-hairline shrink-0" />
-                      <svg className="w-6 h-6 text-mute shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M8 12h8M12 8v8"/></svg>
-                      <span className="font-sans text-sm font-medium text-ink">Bank transfer</span>
-                    </label>
-                  </div>
+                    )}
 
-                  <div className="flex flex-col gap-1 mb-4">
-                    <label className="font-sans text-xs font-semibold uppercase tracking-[0.1em] text-mute">Card number</label>
-                    <input type="text" placeholder="1234 5678 9012 3456" className="px-4 py-3 rounded-[var(--radius-md)] border border-hairline bg-card font-sans text-[15px] text-ink outline-none focus:border-green-soft transition-colors placeholder:text-mute" />
-                  </div>
-                  <div className="grid grid-cols-2 gap-4 mb-4 max-sm:grid-cols-1">
-                    <div className="flex flex-col gap-1">
-                      <label className="font-sans text-xs font-semibold uppercase tracking-[0.1em] text-mute">Expiry date</label>
-                      <input type="text" placeholder="MM / YY" className="px-4 py-3 rounded-[var(--radius-md)] border border-hairline bg-card font-sans text-[15px] text-ink outline-none focus:border-green-soft transition-colors placeholder:text-mute" />
+                    {/* Cancellation policy */}
+                    <div className="p-5 bg-bone-secondary rounded-[var(--radius-sm)] mb-5">
+                      <div className="font-sans text-sm font-semibold text-ink mb-2">Free cancellation</div>
+                      <p className="font-sans text-[13px] leading-relaxed text-ink-secondary">
+                        Cancel up to 48 hours before check-in for a full refund. After that, the first night is non-refundable. Date changes are free up to 7 days before check-in.{" "}
+                        <Link href="/policy" className="text-green-soft hover:text-green-dark no-underline">Read the full policy →</Link>
+                      </p>
                     </div>
-                    <div className="flex flex-col gap-1">
-                      <label className="font-sans text-xs font-semibold uppercase tracking-[0.1em] text-mute">CVC</label>
-                      <input type="text" placeholder="123" className="px-4 py-3 rounded-[var(--radius-md)] border border-hairline bg-card font-sans text-[15px] text-ink outline-none focus:border-green-soft transition-colors placeholder:text-mute" />
-                    </div>
-                  </div>
-                  <div className="flex flex-col gap-1 mb-4">
-                    <label className="font-sans text-xs font-semibold uppercase tracking-[0.1em] text-mute">Cardholder name</label>
-                    <input type="text" placeholder="Temi Adetola" className="px-4 py-3 rounded-[var(--radius-md)] border border-hairline bg-card font-sans text-[15px] text-ink outline-none focus:border-green-soft transition-colors placeholder:text-mute" />
-                  </div>
-                </div>
 
-                {/* Extended checkout option */}
-                {extendedCheckoutOffered && extendedCheckoutPriceMinor && (
-                  <div className="p-5 rounded-[var(--radius-md)] border border-hairline mb-5">
-                    <label className="flex items-center justify-between cursor-pointer">
-                      <div>
-                        <p className="font-sans text-sm font-semibold text-ink">Extended checkout — 18:00</p>
-                        <p className="text-xs text-ink-secondary mt-0.5">
-                          +{formatMinor(extendedCheckoutPriceMinor, currency as CurrencyCode)}
-                        </p>
+                    {/* Turnstile CAPTCHA */}
+                    {TURNSTILE_SITE_KEY && (
+                      <div className="mb-5">
+                        <Turnstile
+                          ref={turnstileRef}
+                          siteKey={TURNSTILE_SITE_KEY}
+                          injectScript={false}
+                          onSuccess={(token) => setTurnstileToken(token)}
+                          onExpire={() => setTurnstileToken(null)}
+                          options={{ theme: "light", size: "normal" }}
+                        />
                       </div>
-                      <input type="checkbox" checked={extendedCheckout} onChange={(e) => setExtendedCheckout(e.target.checked)} className="accent-brass w-4 h-4" />
-                    </label>
-                  </div>
+                    )}
+
+                    <div className="flex gap-3">
+                      <button onClick={() => { setStep("guest"); setError(null); }} className="flex-1 py-3 rounded-[var(--radius-sm)] border border-hairline text-sm font-medium text-ink-secondary hover:bg-soft transition-colors cursor-pointer">
+                        Back
+                      </button>
+                      <button
+                        disabled={submitting}
+                        onClick={createBookingIntents}
+                        className="flex-1 py-3.5 rounded-[var(--radius-sm)] bg-brass text-bone text-sm font-semibold transition-all hover:bg-brass-dark disabled:opacity-50 disabled:cursor-wait cursor-pointer border-none"
+                      >
+                        {submitting ? "Processing..." : "Confirm and pay"}
+                      </button>
+                    </div>
+
+                    <p className="font-sans text-xs text-center mt-5 text-mute">
+                      <strong className="text-ink-secondary">You won&rsquo;t be charged yet.</strong><br />
+                      Your card will be charged 48 hours before check-in. Free cancellation until then.
+                    </p>
+                  </>
+                ) : (
+                  <PaymentStep
+                    chargeClientSecret={chargeClientSecret}
+                    holdClientSecret={holdClientSecret!}
+                    bookingGroupId={bookingGroupId!}
+                    depositMinor={depositMinor}
+                    onBack={() => { setStep("guest"); setChargeClientSecret(null); setError(null); }}
+                  />
                 )}
-
-                {/* Cancellation policy */}
-                <div className="p-5 bg-bone-secondary rounded-[var(--radius-sm)] mb-5">
-                  <div className="font-sans text-sm font-semibold text-ink mb-2">Free cancellation</div>
-                  <p className="font-sans text-[13px] leading-relaxed text-ink-secondary">
-                    Cancel up to 48 hours before check-in for a full refund. After that, the first night is non-refundable. Date changes are free up to 7 days before check-in.{" "}
-                    <Link href="/policy" className="text-green-soft hover:text-green-dark no-underline">Read the full policy →</Link>
-                  </p>
-                </div>
-
-                {/* Turnstile CAPTCHA */}
-                {TURNSTILE_SITE_KEY && (
-                  <div className="mb-5">
-                    <Turnstile
-                      ref={turnstileRef}
-                      siteKey={TURNSTILE_SITE_KEY}
-                      injectScript={false}
-                      onSuccess={(token) => setTurnstileToken(token)}
-                      onExpire={() => setTurnstileToken(null)}
-                      options={{ theme: "light", size: "normal" }}
-                    />
-                  </div>
-                )}
-
-                <div className="flex gap-3">
-                  <button onClick={() => { setStep("guest"); setError(null); }} className="flex-1 py-3 rounded-[var(--radius-sm)] border border-hairline text-sm font-medium text-ink-secondary hover:bg-soft transition-colors cursor-pointer">
-                    Back
-                  </button>
-                  <button
-                    disabled={submitting}
-                    onClick={handleSubmit}
-                    className="flex-1 py-3.5 rounded-[var(--radius-sm)] bg-brass text-bone text-sm font-semibold transition-all hover:bg-brass-dark disabled:opacity-50 disabled:cursor-wait cursor-pointer border-none"
-                  >
-                    {submitting ? "Processing..." : "Confirm and pay"}
-                  </button>
-                </div>
-
-                <p className="font-sans text-xs text-center mt-5 text-mute">
-                  <strong className="text-ink-secondary">You won&rsquo;t be charged yet.</strong><br />
-                  Your card will be charged 48 hours before check-in. Free cancellation until then.
-                </p>
               </div>
             )}
           </div>
@@ -472,6 +434,97 @@ export function BookingFlow(props: Props) {
       <Footer />
     </div>
     </>
+  );
+}
+
+function PaymentStep({
+  chargeClientSecret,
+  holdClientSecret,
+  bookingGroupId,
+  depositMinor,
+  onBack,
+}: {
+  chargeClientSecret: string;
+  holdClientSecret: string;
+  bookingGroupId: string;
+  depositMinor: number;
+  onBack: () => void;
+}) {
+  const stripe = useStripe();
+  const elements = useElements();
+  const router = useRouter();
+  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  async function handlePay() {
+    if (!stripe || !elements) return;
+    setLoading(true);
+    setError(null);
+
+    const { error: chargeError } = await stripe.confirmPayment({
+      elements,
+      clientSecret: chargeClientSecret,
+      confirmParams: { return_url: `${window.location.origin}/confirmation/${bookingGroupId}` },
+      redirect: "if_required",
+    });
+    if (chargeError) {
+      setError(chargeError.message ?? "Payment failed — nothing was charged.");
+      setLoading(false);
+      return;
+    }
+
+    const { error: holdError } = await stripe.confirmPayment({
+      elements,
+      clientSecret: holdClientSecret,
+      confirmParams: { return_url: `${window.location.origin}/confirmation/${bookingGroupId}` },
+      redirect: "if_required",
+    });
+    if (holdError) {
+      console.error("[booking-flow] deposit hold failed (non-fatal):", holdError.message);
+    }
+
+    setLoading(false);
+    router.push(`/confirmation/${bookingGroupId}`);
+  }
+
+  return (
+    <div>
+      <Elements
+        stripe={stripePromise}
+        options={{
+          clientSecret: chargeClientSecret,
+          appearance: STRIPE_APPEARANCE,
+        }}
+      >
+        <PaymentElement
+          options={{
+            layout: "tabs",
+            paymentMethodOrder: ["card", "apple_pay", "google_pay"],
+            wallets: { applePay: "auto", googlePay: "auto" },
+          }}
+        />
+      </Elements>
+
+      {error && <p className="text-sm text-red-600 mt-4">{error}</p>}
+
+      <div className="flex gap-3 mt-6">
+        <button onClick={onBack} className="flex-1 py-3 rounded-[var(--radius-sm)] border border-hairline text-sm font-medium text-ink-secondary hover:bg-soft transition-colors cursor-pointer">
+          Back
+        </button>
+        <button
+          onClick={handlePay}
+          disabled={!stripe || loading}
+          className="flex-1 py-3.5 rounded-[var(--radius-sm)] bg-brass text-bone text-sm font-semibold transition-all hover:bg-brass-dark disabled:opacity-50 disabled:cursor-wait cursor-pointer border-none"
+        >
+          {loading ? "Confirming…" : "Reserve instantly"}
+        </button>
+      </div>
+
+      <p className="font-sans text-xs text-center mt-5 text-mute">
+        Your {formatMinor(depositMinor, "GBP")} deposit is held, not charged.
+        Released within 7 days of a clean checkout.
+      </p>
+    </div>
   );
 }
 

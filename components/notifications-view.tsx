@@ -88,7 +88,7 @@ export function NotificationsView({ role, userId }: { role: NotifRole; userId?: 
                   <p className="text-sm font-semibold text-ink">{n.title}</p>
                   <p className="text-xs text-ink-secondary mt-1 leading-relaxed">{n.body}</p>
                   <div className="flex items-center gap-x-2 mt-2">
-                    <span className="text-[10px] text-ink-tertiary">
+                    <span className="text-[10px] text-ink-tertiary" suppressHydrationWarning>
                       {new Date(n.created_at).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" })}
                     </span>
                     {n.read ? (
