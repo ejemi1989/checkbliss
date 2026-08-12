@@ -215,11 +215,11 @@ export function BookingFlow(props: Props) {
               })}
             </div>
 
-            {error && (
+            {error ? (
               <div className="p-4 rounded-[var(--radius-md)] bg-red-50 border border-red-200 text-red-700 text-sm mb-6">
                 {error}
               </div>
-            )}
+            ) : null}
 
             {/* STEP 1 — Dates */}
             {step === "dates" && (
@@ -553,8 +553,8 @@ function BookingSidebar({
         ) : (
           <div className="w-[100px] h-20 rounded-[var(--radius-md)] overflow-hidden bg-bone-secondary shrink-0 flex items-center justify-center text-mute/40">
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1"><rect x="3" y="3" width="18" height="18" rx="2" ry="2" /><circle cx="8.5" cy="8.5" r="1.5" /><polyline points="21 15 16 10 5 21" /></svg>
-          </div>
-        )}
+              </div>
+            )}
         <div>
           <div className="font-display text-lg font-medium text-ink leading-tight mb-1">{propertyName}</div>
           <div className="font-sans text-[13px] text-mute mb-1">{neighbourhood}, {city}</div>
@@ -577,8 +577,8 @@ function BookingSidebar({
             <div className="font-sans text-sm font-medium text-ink" suppressHydrationWarning>{formatCheckinDate(checkOut)}</div>
             <div className="font-sans text-xs text-mute">Before 11:00 AM</div>
           </div>
-        </div>
-      )}
+              </div>
+            )}
 
       {/* Price breakdown (shown from step 2 onwards) */}
       {step !== "dates" && nights > 0 && (
