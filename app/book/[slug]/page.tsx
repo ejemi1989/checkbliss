@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { connection } from "next/server";
 import { getSeedProperties } from "@/lib/seed-data";
 import { Footer } from "@/components/footer";
 import { BookingFlow } from "./client";
@@ -18,7 +17,6 @@ export default async function BookPage({
   params: Promise<{ slug: string }>;
   searchParams: Promise<{ step?: string }>;
 }) {
-  await connection();
   const { slug } = await params;
   const sp = await searchParams;
   const prop = getSeedProperties().find((p) => p.slug === slug && p.status === "approved");
