@@ -5,6 +5,8 @@ import { getSeedProperties } from "@/lib/seed-data";
 import { Footer } from "@/components/footer";
 import { BookingFlow } from "./client";
 
+export const dynamic = "force-dynamic";
+
 export function generateMetadata(): Metadata {
   return { robots: { index: false, follow: false } };
 }
@@ -30,6 +32,7 @@ export default async function BookPage({
   return (
     <>
       <BookingFlow
+        key={prop.id}
         propertyId={prop.id}
         propertySlug={prop.slug}
         propertyName={prop.name}
