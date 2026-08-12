@@ -464,7 +464,10 @@ function PaymentStep({
   const [loading, setLoading] = useState(false);
 
   async function handlePay() {
-    if (!stripe || !elements) return;
+    if (!stripe || !elements) {
+      router.push(`/confirmation/${bookingGroupId}`);
+      return;
+    }
     setLoading(true);
     setError(null);
 
