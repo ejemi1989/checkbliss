@@ -7,7 +7,6 @@ import { getNotifications, getUnreadCount, markRead, markAllRead } from "@/lib/n
 export function NotificationBell({ role, userId, onViewAll }: { role: NotifRole; userId?: string; onViewAll?: () => void }) {
   const [open, setOpen] = useState(false);
   const [tick, setTick] = useState(0);
-  const [mounted, setMounted] = useState(false);
 
   const uid = role === "admin" ? undefined : userId;
   const notifs = getNotifications(role, uid);
@@ -16,7 +15,6 @@ export function NotificationBell({ role, userId, onViewAll }: { role: NotifRole;
   function load() { setTick((t) => t + 1); }
 
   useEffect(() => {
-    setMounted(true);
     function onClick(e: MouseEvent) {
       const el = document.getElementById("notif-bell-container");
       if (el && !el.contains(e.target as Node)) setOpen(false);
@@ -45,12 +43,12 @@ export function NotificationBell({ role, userId, onViewAll }: { role: NotifRole;
   return (
     <div id="notif-bell-container" className="relative">
       <button
-        onClick={mounted ? () => { setOpen(!open); load(); } : undefined}
+        onClick={() => { setOpen(!open); load(); }}
         className="relative w-8 h-8 flex items-center justify-center rounded-lg hover:bg-primary-bg transition-colors text-ink-secondary cursor-pointer border-none bg-transparent"
         aria-label="Notifications"
       >
         {BellIcon}
-        {mounted && unread > 0 && (
+        {unread > 0 && (
           <span className="absolute -top-0.5 -right-0.5 min-w-[16px] h-4 flex items-center justify-center rounded-full bg-danger text-white text-[9px] font-bold leading-none px-1">
             {unread > 9 ? "9+" : unread}
           </span>

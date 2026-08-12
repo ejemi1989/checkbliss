@@ -570,12 +570,12 @@ function BookingSidebar({
         <div className="flex gap-4 mb-5 pb-5 border-b border-hairline">
           <div className="flex-1">
             <div className="font-sans text-[11px] font-semibold uppercase tracking-[0.1em] text-mute mb-1">Check-in</div>
-            <div className="font-sans text-sm font-medium text-ink">{formatCheckinDate(checkIn)}</div>
+            <div className="font-sans text-sm font-medium text-ink" suppressHydrationWarning>{formatCheckinDate(checkIn)}</div>
             <div className="font-sans text-xs text-mute">After 2:00 PM</div>
           </div>
           <div className="flex-1 text-right">
             <div className="font-sans text-[11px] font-semibold uppercase tracking-[0.1em] text-mute mb-1">Check-out</div>
-            <div className="font-sans text-sm font-medium text-ink">{formatCheckinDate(checkOut)}</div>
+            <div className="font-sans text-sm font-medium text-ink" suppressHydrationWarning>{formatCheckinDate(checkOut)}</div>
             <div className="font-sans text-xs text-mute">Before 11:00 AM</div>
           </div>
         </div>

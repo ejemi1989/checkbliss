@@ -11,8 +11,6 @@ export function BookingsView() {
   const [year, setYear] = useState(() => new Date().getFullYear());
   const [bookingModal, setBookingModal] = useState<typeof bookings[0] | null>(null);
   const [today] = useState(() => new Date());
-  const [mounted, setMounted] = useState(false);
-  useEffect(() => setMounted(true), []);
 
   const bookingsByDate: Record<string, (typeof calendarBookings)[0]> = {};
   calendarBookings.forEach((b) => b.dates.forEach((d) => { bookingsByDate[d] = b; }));
@@ -30,26 +28,6 @@ export function BookingsView() {
     return rows;
   }, [month, year, today]);
 
-  if (!mounted) {
-    return (
-      <div className="space-y-6">
-        <div className="bg-white border border-hairline rounded-xl p-5">
-          <div className="h-5 bg-hairline rounded w-40 animate-pulse mb-4" />
-          <div className="grid grid-cols-7 gap-1">
-            {Array.from({ length: 35 }).map((_, i) => (
-              <div key={i} className="h-8 bg-hairline rounded-lg animate-pulse" />
-            ))}
-          </div>
-        </div>
-        <div className="space-y-3">
-          {Array.from({ length: 3 }).map((_, i) => (
-            <div key={i} className="h-16 bg-hairline rounded-xl animate-pulse" />
-          ))}
-        </div>
-      </div>
-    );
-  }
-
   function monthLabel() { return new Date(year, month).toLocaleString("default", { month: "long", year: "numeric" }); }
 
   const statusColor: Record<string, string> = {
@@ -66,7 +44,7 @@ export function BookingsView() {
           <h2 className="text-base font-bold text-ink">Booking Calendar</h2>
           <div className="flex items-center gap-x-2">
             <button onClick={() => { if (month === 0) { setYear((y) => y - 1); setMonth(11); } else setMonth((m) => m - 1); }} className="px-3 py-1.5 rounded-lg border border-hairline text-sm hover:bg-primary-bg cursor-pointer">&larr;</button>
-            <span className="text-sm font-semibold text-ink w-28 text-center">{monthLabel()}</span>
+            <span className="text-sm font-semibold text-ink w-28 text-center" suppressHydrationWarning>{monthLabel()}</span>
             <button onClick={() => { if (month === 11) { setYear((y) => y + 1); setMonth(0); } else setMonth((m) => m + 1); }} className="px-3 py-1.5 rounded-lg border border-hairline text-sm hover:bg-primary-bg cursor-pointer">&rarr;</button>
           </div>
         </div>
