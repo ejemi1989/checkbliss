@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 import { loadStripe } from "@stripe/stripe-js";
 import { Elements, PaymentElement, useStripe, useElements } from "@stripe/react-stripe-js";
 import { Turnstile, type TurnstileInstance } from "@marsidev/react-turnstile";
@@ -50,19 +50,19 @@ interface Props {
   extendedCheckoutPriceMinor: number | null;
   sleeps: number;
   coverPhotoUrl?: string | null;
+  initialStep?: string;
 }
 
 type Step = "dates" | "guest" | "payment";
 
 export function BookingFlow(props: Props) {
   const router = useRouter();
-  const searchParams = useSearchParams();
   const {
     propertyId, propertySlug, propertyName, city, neighbourhood,
     neighbourhoodSlug, buildingSlug,
     nightlyRateMinor, depositMinor, currency,
     extendedCheckoutOffered, extendedCheckoutPriceMinor,
-    sleeps, coverPhotoUrl,
+    sleeps, coverPhotoUrl, initialStep,
   } = props;
 
   const [checkIn, setCheckIn] = useState("");
@@ -92,12 +92,13 @@ export function BookingFlow(props: Props) {
   }, []);
 
   const steps: Step[] = ["dates", "guest", "payment"];
-  const rawStep = searchParams.get("step");
-  const step: Step = steps.includes(rawStep as Step) ? (rawStep as Step) : "dates";
+  const validStep = steps.includes(initialStep as Step) ? (initialStep as Step) : "dates";
+  const [step, setStepState] = useState<Step>(validStep);
   const currentIndex = steps.indexOf(step);
 
   function setStep(s: Step) {
-    const params = new URLSearchParams(searchParams.toString());
+    setStepState(s);
+    const params = new URLSearchParams(window.location.search);
     params.set("step", s);
     router.push(`?${params.toString()}`, { scroll: false });
   }
@@ -182,7 +183,7 @@ export function BookingFlow(props: Props) {
 
   return (
     <>
-      <div className="min-h-screen bg-bone" suppressHydrationWarning>
+      <div className="min-h-screen bg-bone">
       <header className="bg-card border-b border-hairline sticky top-0 z-50">
         <div className="max-w-[1240px] mx-auto px-8 py-4 flex items-center gap-5 max-sm:px-5">
           <Link href={propertyHref({ city, neighbourhood_slug: neighbourhoodSlug, building_slug: buildingSlug, slug: propertySlug })} className="font-sans text-sm font-medium text-ink-secondary no-underline hover:text-green-soft transition-colors shrink-0">
