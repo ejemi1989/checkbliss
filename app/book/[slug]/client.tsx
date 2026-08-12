@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useMemo } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { loadStripe } from "@stripe/stripe-js";
@@ -10,7 +10,6 @@ import { formatMinor, type CurrencyCode } from "@/lib/currency";
 import { propertyHref } from "@/lib/slug";
 
 const TURNSTILE_SITE_KEY = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY ?? "";
-const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PK ?? "");
 
 const STRIPE_APPEARANCE = {
   variables: {
@@ -83,6 +82,11 @@ export function BookingFlow(props: Props) {
   const [bookingGroupId, setBookingGroupId] = useState<string | null>(null);
 
   const minDateStr = minDate ?? "";
+
+  const stripePromise = useMemo(() => {
+    const pk = process.env.NEXT_PUBLIC_STRIPE_PK ?? "";
+    return pk ? loadStripe(pk) : null;
+  }, []);
 
   const steps: Step[] = ["dates", "guest", "payment"];
   const validStep = steps.includes(initialStep as Step) ? (initialStep as Step) : "dates";
