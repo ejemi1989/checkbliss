@@ -10,6 +10,7 @@ import { formatMinor, type CurrencyCode } from "@/lib/currency";
 import { propertyHref } from "@/lib/slug";
 
 const TURNSTILE_SITE_KEY = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY ?? "";
+const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PK ?? "");
 
 const STRIPE_APPEARANCE = {
   variables: {
@@ -402,13 +403,21 @@ export function BookingFlow(props: Props) {
                     </p>
                   </>
                 ) : (
-                  <PaymentStep
-                    chargeClientSecret={chargeClientSecret}
-                    holdClientSecret={holdClientSecret!}
-                    bookingGroupId={bookingGroupId!}
-                    depositMinor={depositMinor}
-                    onBack={() => { setStep("guest"); setChargeClientSecret(null); setError(null); }}
-                  />
+                  <Elements
+                    stripe={stripePromise}
+                    options={{
+                      clientSecret: chargeClientSecret,
+                      appearance: STRIPE_APPEARANCE,
+                    }}
+                  >
+                    <PaymentStep
+                      chargeClientSecret={chargeClientSecret}
+                      holdClientSecret={holdClientSecret!}
+                      bookingGroupId={bookingGroupId!}
+                      depositMinor={depositMinor}
+                      onBack={() => { setStep("guest"); setChargeClientSecret(null); setError(null); }}
+                    />
+                  </Elements>
                 )}
               </div>
             )}
@@ -452,11 +461,6 @@ function PaymentStep({
   const router = useRouter();
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
-  const [stripePromise, setStripePromise] = useState<ReturnType<typeof loadStripe> | null>(null);
-
-  useEffect(() => {
-    setStripePromise(loadStripe(process.env.NEXT_PUBLIC_STRIPE_PK ?? ""));
-  }, []);
 
   async function handlePay() {
     if (!stripe || !elements) return;
@@ -491,21 +495,13 @@ function PaymentStep({
 
   return (
     <div>
-      <Elements
-        stripe={stripePromise}
+      <PaymentElement
         options={{
-          clientSecret: chargeClientSecret,
-          appearance: STRIPE_APPEARANCE,
+          layout: "tabs",
+          paymentMethodOrder: ["card", "apple_pay", "google_pay"],
+          wallets: { applePay: "auto", googlePay: "auto" },
         }}
-      >
-        <PaymentElement
-          options={{
-            layout: "tabs",
-            paymentMethodOrder: ["card", "apple_pay", "google_pay"],
-            wallets: { applePay: "auto", googlePay: "auto" },
-          }}
-        />
-      </Elements>
+      />
 
       {error && <p className="text-sm text-red-600 mt-4">{error}</p>}
 
