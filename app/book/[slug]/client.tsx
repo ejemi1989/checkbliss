@@ -81,14 +81,11 @@ export function BookingFlow(props: Props) {
   const [holdClientSecret, setHoldClientSecret] = useState<string | null>(null);
   const [bookingGroupId, setBookingGroupId] = useState<string | null>(null);
 
-  const [minDateStr, setMinDateStr] = useState("");
-  useEffect(() => {
+  const [minDateStr] = useState(() => {
     const today = new Date();
     today.setDate(today.getDate() + 14);
-    setMinDateStr(
-      `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`
-    );
-  }, []);
+    return `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
+  });
 
   const steps: Step[] = ["dates", "guest", "payment"];
   const validStep = steps.includes(initialStep as Step) ? (initialStep as Step) : "dates";
