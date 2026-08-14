@@ -22,11 +22,18 @@ The core money-and-inventory flow is implemented, tested, and documented:
 
 | Command | Last run | Result |
 |---------|----------|--------|
-| `npm test` | 2026-08-14 | 18 files, **271 tests passing** |
+| `npm test` | 2026-08-14 | 21 files, **287 tests passing** |
 | `npm run typecheck` | 2026-08-14 | clean |
 | `npm run lint` | 2026-08-14 | 20 pre-existing errors (unrelated files); new code clean |
 
 ## Recently completed
+
+### Owner dashboard hydration fix + mock-mode login tooling (2026-08-14)
+- **Owner greeting hydration bug (root cause):** `app/dashboard/owner/client.tsx` created `today` via `useState(() => new Date())` — the initializer ran at SSR (server timezone) and again at hydration (client timezone). The hour-driven greeting ("Good morning/afternoon/evening") therefore mismatched whenever the server/client hour buckets differed (reproduced: server Europe/London 16:30 vs client Pacific/Auckland 03:30). Fixed with the repo's established deferral pattern (commit 11a38a4): `today` now starts `null`, is set in a ref-guarded `useEffect` post-mount, and the greeting + calendar `isToday` handle `null` before mount. SSR HTML and first client render now agree; the real local time is applied after hydration.
+- **Same-class audit:** `components/admin/bookings-view.tsx` (dead code, not imported) and `app/dashboard/operator/client.tsx` (`today.toISOString()` — UTC-based, timezone-immune) checked; `components/hero-search.tsx` `viewDate`/`minDate` only render after the calendar opens (not SSR). No further changes needed.
+- **`data-scroll-behavior="smooth"`** added to `<html>` in `app/layout.tsx` — silences the Next.js `missing-data-scroll-behavior` dev warning raised by `html { scroll-behavior: smooth }` (`app/landing.css`) with `experimental.scrollRestoration` enabled.
+- **Verification:** Playwright sweeps (direct loads + client navigation, en-GB locale, Africa/Lagos / Europe/London / Pacific/Auckland timezones) all clean except benign mapbox WebGL GPU-stall noise on `/search`; production sweep on `checkbliss-gamma.vercel.app` clean. 287 tests, typecheck, build green.
+- **Tooling note:** a full `.env` (Supabase + Stripe + WhatsApp) forces real mode locally, so mock login silently fails — the repo's own Phase 7 item (`country_of_residence` schema cache drift). Run `env NEXT_PUBLIC_SUPABASE_URL= NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY= SUPABASE_SECRET_KEY= npm run dev` to force mock mode for dashboard testing.
 
 ### Customer account + search filters + dashboards (2026-08-14)
 - **Customer account:** `guest@checkbliss.com` added to mock allowlist (mock login → `/account`); all `/account/*` server components redirect to `/login` when unauthenticated; bookings wired to `reservations` via `getGuestBookingsFromDB()` filtered by `guest_email`, with mock fallback for the seeded guest; upcoming vs. past split derived from `check_out >= today`. New actions: `updateProfileAction` (Zod-validated `full_name`/`phone`), `requestPasswordResetAction` (calls `supabase.auth.resetPasswordForEmail` in real mode, returns neutral success in mock). New page `/forgot-password`. Settings form posts to `updateProfileAction` and surfaces saved/error state.

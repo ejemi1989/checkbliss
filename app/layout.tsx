@@ -48,6 +48,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
+      data-scroll-behavior="smooth"
       className={`${inter.variable} ${playfair.variable} ${newsreader.variable} ${hankenGrotesk.variable}`}
       suppressHydrationWarning
     >

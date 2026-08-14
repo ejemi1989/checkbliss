@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import { formatMinor } from "@/lib/currency";
 import { getOwnerBookings, getOwnerPayouts, getCalendarBookings, getOwnerProperties } from "@/lib/data";
 import { blockDates, unblockDates } from "@/actions/properties";
@@ -60,7 +60,15 @@ export function OwnerDashboard({ user, initialTab }: { user: AuthUser | null; in
     setTimeout(() => setNotification(null), 3000);
   };
 
-  const [today] = useState(() => new Date());
+  const todayRef = useRef<Date | null>(null);
+  const [today, setToday] = useState<Date | null>(null);
+  useEffect(() => {
+    const next = new Date();
+    if (!todayRef.current || todayRef.current.getTime() !== next.getTime()) {
+      todayRef.current = next;
+      setToday(next);
+    }
+  }, []);
 
   useEffect(() => {
 
@@ -77,19 +85,19 @@ export function OwnerDashboard({ user, initialTab }: { user: AuthUser | null; in
   const calendar = useMemo(() => {
     const firstDay = new Date(year, month, 1).getDay();
     const daysInMonth = new Date(year, month + 1, 0).getDate();
-    const isCurrentMonth = today.getFullYear() === year && today.getMonth() === month;
+    const isCurrentMonth = !!today && today.getFullYear() === year && today.getMonth() === month;
     const cells: { day: number; isToday: boolean; hasBooking: boolean; bookingInfo?: { unit: string; guest: string } }[] = [];
     for (let i = 0; i < firstDay; i++) cells.push({ day: 0, isToday: false, hasBooking: false });
     for (let d = 1; d <= daysInMonth; d++) {
       const dateStr = `${year}-${String(month + 1).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
-      cells.push({ day: d, isToday: isCurrentMonth && today.getDate() === d, hasBooking: !!bookingsByDate[dateStr], bookingInfo: bookingsByDate[dateStr] });
+      cells.push({ day: d, isToday: !!today && isCurrentMonth && today.getDate() === d, hasBooking: !!bookingsByDate[dateStr], bookingInfo: bookingsByDate[dateStr] });
     }
     return cells;
   }, [month, year, today]);
 
   const displayName = user?.role === "owner" ? (user?.name ?? "Adaora Mensah") : "Adaora Mensah";
   const firstName = displayName.split(" ")[0];
-  const hour = today.getHours();
+  const hour = today?.getHours() ?? -1;
   const greet = hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
 
   const MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
