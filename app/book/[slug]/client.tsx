@@ -7,6 +7,7 @@ import { loadStripe } from "@stripe/stripe-js";
 import { Elements, PaymentElement, useStripe, useElements } from "@stripe/react-stripe-js";
 import { Turnstile, type TurnstileInstance } from "@marsidev/react-turnstile";
 import { formatMinor, type CurrencyCode } from "@/lib/currency";
+import { isReserveDisabled } from "@/lib/booking-ui";
 import { propertyHref } from "@/lib/slug";
 
 const TURNSTILE_SITE_KEY = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY ?? "";
@@ -87,6 +88,7 @@ export function BookingFlow(props: Props) {
     const pk = process.env.NEXT_PUBLIC_STRIPE_PK ?? "";
     return pk ? loadStripe(pk) : null;
   }, []);
+  const stripeConfigured = Boolean(process.env.NEXT_PUBLIC_STRIPE_PK);
 
   const steps: Step[] = ["dates", "guest", "payment"];
   const validStep = steps.includes(initialStep as Step) ? (initialStep as Step) : "dates";
@@ -414,6 +416,7 @@ export function BookingFlow(props: Props) {
                       holdClientSecret={holdClientSecret!}
                       bookingGroupId={bookingGroupId!}
                       depositMinor={depositMinor}
+                      stripeConfigured={stripeConfigured}
                       onBack={() => { setStep("guest"); setChargeClientSecret(null); setError(null); }}
                     />
                   </Elements>
@@ -447,12 +450,14 @@ function PaymentStep({
   holdClientSecret,
   bookingGroupId,
   depositMinor,
+  stripeConfigured,
   onBack,
 }: {
   chargeClientSecret: string;
   holdClientSecret: string;
   bookingGroupId: string;
   depositMinor: number;
+  stripeConfigured: boolean;
   onBack: () => void;
 }) {
   const stripe = useStripe();
@@ -513,7 +518,7 @@ function PaymentStep({
         </button>
         <button
           onClick={handlePay}
-          disabled={!stripe || loading}
+          disabled={isReserveDisabled({ stripeConfigured, stripeReady: Boolean(stripe), loading })}
           className="flex-1 py-3.5 rounded-[var(--radius-sm)] bg-brass text-bone text-sm font-semibold transition-all hover:bg-brass-dark disabled:opacity-50 disabled:cursor-wait cursor-pointer border-none"
         >
           {loading ? "Confirming…" : "Reserve instantly"}
