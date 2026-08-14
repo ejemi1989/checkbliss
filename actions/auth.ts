@@ -2,6 +2,7 @@
 
 import { redirect } from "next/navigation";
 import { cookies } from "next/headers";
+import { z } from "zod";
 import { createClient, supabaseServerConfigured } from "@/lib/supabase/server";
 import { createAdmin } from "@/lib/supabase/admin";
 import type { AuthUser, Role } from "@/lib/auth";
@@ -63,6 +64,7 @@ export async function loginAction(_prev: unknown, formData: FormData) {
       "operator-abuja@checkbliss.com",
       "operator@checkbliss.com",
       "owner@checkbliss.com",
+      "guest@checkbliss.com",
     ];
     if (!validEmails.includes(email) || password !== "checkbliss-demo-2026") {
       return { error: "Invalid email or password." };
@@ -83,6 +85,9 @@ export async function loginAction(_prev: unknown, formData: FormData) {
     }
     if (email === "owner@checkbliss.com") {
       redirect("/dashboard/owner");
+    }
+    if (email === "guest@checkbliss.com") {
+      redirect("/account");
     }
     redirect("/login");
   }
@@ -251,7 +256,7 @@ export async function getSession(): Promise<AuthUser | null> {
     const admin = createAdmin();
     const { data: profile } = await admin
       .from("profiles")
-      .select("role, full_name, email")
+      .select("role, full_name, email, whatsapp_e164")
       .eq("id", user.id)
       .single();
 
@@ -323,4 +328,100 @@ export async function signInWithGoogle() {
     return { error: error?.message ?? "Google sign-in failed." };
   }
   redirect(data.url);
+}
+
+const phoneSchema = z
+  .string()
+  .trim()
+  .refine((v) => v === "" || /^\+?[0-9 ()-]{7,20}$/.test(v), {
+    message: "Phone must be 7-20 digits, optional leading +",
+  });
+
+const nameSchema = z.string().trim().min(1).max(120);
+
+const profileUpdateSchema = z.object({
+  full_name: nameSchema,
+  whatsapp_e164: phoneSchema,
+});
+
+/**
+ * Update the signed-in guest's profile (name, WhatsApp number).
+ * Used by /account/settings — Zod-validated at the boundary, persisted via
+ * the service-role client so the update is not gated by RLS.
+ */
+export async function updateProfileAction(
+  _prev: unknown,
+  formData: FormData,
+): Promise<{ error?: string; success?: string }> {
+  const session = await getSession();
+  if (!session) return { error: "You must be signed in." };
+
+  const parsed = profileUpdateSchema.safeParse({
+    full_name: formData.get("full_name")?.toString() ?? "",
+    whatsapp_e164: formData.get("phone")?.toString() ?? "",
+  });
+  if (!parsed.success) {
+    return {
+      error: parsed.error.issues[0]?.message ?? "Invalid profile data.",
+    };
+  }
+
+  if (!supabaseServerConfigured) {
+    return { success: "Profile updated (mock mode)." };
+  }
+
+  try {
+    const admin = createAdmin();
+    const { error } = await admin
+      .from("profiles")
+      .update({
+        full_name: parsed.data.full_name,
+        whatsapp_e164: parsed.data.whatsapp_e164 || null,
+      })
+      .eq("id", session.id);
+    if (error) return { error: `Could not save profile: ${error.message}` };
+    return { success: "Profile saved." };
+  } catch (err) {
+    console.error("updateProfileAction exception:", err);
+    return { error: "Could not save profile. Please try again." };
+  }
+}
+
+const resetSchema = z.object({
+  email: z.string().trim().toLowerCase().email("Enter a valid email."),
+});
+
+/**
+ * Request a password-reset email. Always returns success to avoid leaking
+ * which addresses are registered; the email itself confirms the address.
+ */
+export async function requestPasswordResetAction(
+  _prev: unknown,
+  formData: FormData,
+): Promise<{ error?: string; success?: string }> {
+  const parsed = resetSchema.safeParse({
+    email: formData.get("email")?.toString() ?? "",
+  });
+  if (!parsed.success) {
+    return { error: parsed.error.issues[0]?.message ?? "Invalid email." };
+  }
+
+  if (!supabaseServerConfigured) {
+    return {
+      success: "If that email is registered, a reset link has been sent.",
+    };
+  }
+
+  try {
+    const supabase = await createClient();
+    await supabase.auth.resetPasswordForEmail(parsed.data.email, {
+      redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL ?? "http://localhost:3000"}/account/settings?reset=1`,
+    });
+  } catch (err) {
+    console.error("requestPasswordResetAction exception:", err);
+  }
+
+  return {
+    success: "If that email is registered, a reset link has been sent.",
+  };
 }

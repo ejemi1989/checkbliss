@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
+import { minCheckInDateStr } from "@/lib/booking-rules";
 
 interface LocationData {
   cities: string[];
@@ -15,6 +16,7 @@ export function SearchBar() {
   const [checkIn, setCheckIn] = useState(searchParams.get("in") ?? "");
   const [checkOut, setCheckOut] = useState(searchParams.get("out") ?? "");
   const [guests, setGuests] = useState(searchParams.get("guests") || "1");
+  const [rooms, setRooms] = useState(searchParams.get("rooms") || "1");
   const [locations, setLocations] = useState<LocationData>({ cities: [], neighbourhoods: [] });
   const [showSuggestions, setShowSuggestions] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
@@ -36,12 +38,7 @@ export function SearchBar() {
     return () => document.removeEventListener("mousedown", onClick);
   }, []);
 
-  const [minDateStr] = useState(() => {
-    const today = new Date();
-    const minDate = new Date(today);
-    minDate.setDate(minDate.getDate() + 14);
-    return minDate.toISOString().split("T")[0];
-  });
+  const [minDateStr] = useState(() => minCheckInDateStr());
 
   const suggestions = where.length > 0
     ? [
@@ -56,6 +53,7 @@ export function SearchBar() {
     if (checkIn) params.set("in", checkIn);
     if (checkOut) params.set("out", checkOut);
     if (guests && guests !== "1") params.set("guests", guests);
+    if (rooms && rooms !== "1") params.set("rooms", rooms);
     const qs = params.toString();
     router.push(qs ? `/search?${qs}` : "/search");
   }
@@ -176,6 +174,37 @@ export function SearchBar() {
               className="w-6 h-6 flex items-center justify-center rounded-full border border-hairline text-ink-tertiary text-sm bg-transparent cursor-pointer hover:border-ink-tertiary hover:text-ink transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
               disabled={parseInt(guests || "1") >= 16}
               aria-label="Increase guests"
+            >
+              +
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div className="w-px bg-hairline max-sm:hidden" />
+
+      {/* Rooms */}
+      <div className="flex flex-1 items-center gap-3 px-5 py-3.5 min-w-0 max-w-[160px]">
+        <svg className="w-[18px] h-[18px] text-ink-tertiary shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+          <path d="M3 18v-6a3 3 0 013-3h12a3 3 0 013 3v6"/><path d="M3 18h18"/><path d="M8 9V6a2 2 0 012-2h4a2 2 0 012 2v3"/>
+        </svg>
+        <div className="min-w-0 flex-1">
+          <div className="text-[11px] font-semibold uppercase tracking-[0.1em] text-ink-tertiary">Bedrooms</div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setRooms((r) => String(Math.max(1, parseInt(r || "1") - 1)))}
+              className="w-6 h-6 flex items-center justify-center rounded-full border border-hairline text-ink-tertiary text-sm bg-transparent cursor-pointer hover:border-ink-tertiary hover:text-ink transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+              disabled={parseInt(rooms || "1") <= 1}
+              aria-label="Decrease bedrooms"
+            >
+              −
+            </button>
+            <span className="text-[15px] font-medium text-ink font-sans min-w-[20px] text-center tabular-nums">{rooms}</span>
+            <button
+              onClick={() => setRooms((r) => String(Math.min(8, parseInt(r || "1") + 1)))}
+              className="w-6 h-6 flex items-center justify-center rounded-full border border-hairline text-ink-tertiary text-sm bg-transparent cursor-pointer hover:border-ink-tertiary hover:text-ink transition-colors disabled:opacity-30 disabled:cursor-not-allowed"
+              disabled={parseInt(rooms || "1") >= 8}
+              aria-label="Increase bedrooms"
             >
               +
             </button>

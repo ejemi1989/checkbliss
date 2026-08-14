@@ -8,9 +8,17 @@ Update this file after every completed feature. Any engineer reading this should
 
 **Phase:** Phase 7 — Polish; features 21, 23, 24, 25 complete (21 partially — see Payment Architecture V2 below)
 
+**Last completed:** Customer account + search filters + dashboards — wired `/account/*` to real `reservations` (filtered by `guest_email`, with mock fallback), added the `guest@checkbliss.com` mock allowlist, new Zod-validated `updateProfileAction` + `requestPasswordResetAction` Server Actions, new `/forgot-password` page, "Forgot password?" link on `/login`. Search now supports `guests` + `rooms` (bedrooms) filters end-to-end: `SearchOpts` (mock + Supabase paths), `SearchBar` Bedrooms stepper, active chips on the results page, `app/search/loading.tsx` skeleton for the `force-dynamic` route. New `lib/owner-gate.ts` mirroring `operator-gate.ts`; `/dashboard/owner/layout.tsx` and `/dashboard/operator/layout.tsx` now redirect unauthorised users to `/login?next=...`. 277 tests passing across 19 suites.
+
+**Last completed:** Property pages (PRD #4) — added a "Verified by us" panel (green check stamp + inspector name, inspection date, photo count, inspector experience, free-text notes) on every property page. Per-bedroom **room types** (Master suite / Guest room / Twin room / Bunk room / Single room) with bed configs and bath notes — fed into the configuration modal instead of generic placeholders. `SeedProperty` extended with `room_types[]` and `verification`; defaults generated deterministically by `defaultRoomTypes()` + `defaultVerification()`. New `tests/property-page-data.test.ts` (5 tests). 282 tests across 20 suites.
+
+**Last completed:** Payment reconciliation — implemented the paid-but-unconfirmed recovery + orphan-refund policy per `docs/payment-reconciliation.md`. `lib/reconciliation.ts` (pure `classifyPaymentIntent()` + mock/real orchestrator), `app/api/cron/reconcile/route.ts` now live (was a stub), mock payment-intent ledger in `lib/stripe.ts` so the whole story runs with zero credentials, migration `0016_reconciliation.sql` (`reconciliation_log` + real-mode drift the Stripe webhook already depended on: `inspection_schedule` table + `reservations.payment_intent_id`). 14 new tests (`tests/reconciliation.test.ts`). Recovery mirrors the webhook's `payment_intent.succeeded` branch exactly (confirm reservations + group, schedule inspection, notify owner).
+
+**Last completed:** 14-day advance booking rule + atomic mock booking — `lib/booking-rules.ts` is the single source of truth (`MIN_ADVANCE_DAYS=14`, Africa/Lagos date-only arithmetic; 13 days → rejected, 14 → earliest bookable). Enforced at all 4 layers: search bar min, booking page min, `POST /api/bookings` (422 `ADVANCE_14_DAYS`), `book_stays()` RPC (DB). Mock booking path made atomic — in-memory `mockPendingRanges` registry under a mutex — so duplicate-submit (PAY-PAY double-click) and simultaneous same-room races behave like the DB GiST EXCLUDE guard. Docs `docs/booking-rules.md`, migrations `0015_booking_rules.sql`, tests `tests/booking-rules.test.ts` (21) + `tests/booking-route.test.ts` (7).
+
 **Last completed:** Payment Architecture V2 — implemented the two-entity Stripe Connect + Raenest payment architecture per `.context/features/payment_1.md`.
 
-**Last completed:** Operator dashboard structural alignment — verified and completed the city operator dashboard against `.context/admin/operator.md`. The current 8-tab operator dashboard (Today, Curation, Inspections, Claims, Owners, Photos, Verification, Notifications) already covers the brief's day-to-day responsibilities (sourcing properties, inspections, damage claim submission, verification, owner directory, performance metrics, onboarding workflow, no cross-city data). Two gaps from the brief closed: (1) **Bookings tab** — new "Bookings" sidebar item + tab showing city-scoped guest stays grouped by In Progress / Upcoming / Pending Confirmation / Recent (last 30 days) for "first-line issue resolution during guest stays". Uses new `getOperatorBookings(assignedCities)` data helper that filters bookings by city via property_id → property.city lookup. (2) **Onboarding workflow** — added "+ Onboard new property" button + modal to the Curation tab so operators can source new properties (not just review existing submissions). Form captures property name, city (scoped to assigned cities), bedrooms, max guests, address, plus owner name/phone/email. New property is added to the operator's Curation queue in `pending` state with a prompt to schedule a physical inspection. Booking icon added to `I` (bed, inProgress, home). Verified the existing data layer helpers `getOperatorClaims(assignedCities)`, `getOwnersForCity(assignedCities)`, `operatorCanAccessCity`, `filterByAssignedCities` enforce city-scoping. Admin dashboard already excludes operational tasks (no Curation/Inspections/Photos/Verification tabs); admin focuses on Claims adjudication, Operators management, Finance, Properties suspension, Users, Audit, WhatsApp CRM. Owner dashboard remains lightweight (6 tabs: Home, Bookings, Claims, Payouts, Calendar, Notifications). Demo operator accounts `operator-lagos@checkbliss.com` (Lagos only), `operator-abuja@checkbliss.com` (Abuja only), `operator@checkbliss.com` (Lagos + Abuja multi-city) all route via middleware + server-side role check. 184/184 tests pass; `npm run typecheck` clean; `npm run build` succeeds; dev server returns 200 for `/dashboard/operator`.
+**Last completed:** Operator dashboard structural alignment — verified and completed the city operator dashboard against `.context/admin/operator.md`. The current 9-tab operator dashboard (Today, Curation, Inspections, Bookings, Claims, Owners, Photos, Verification, Notifications) covers the brief's day-to-day responsibilities (sourcing properties, inspections, damage claim submission, verification, owner directory, performance metrics, onboarding workflow, no cross-city data). The Bookings tab and Onboarding modal were added in this pass — see the Operator Dashboard section below. Verified the existing data layer helpers `getOperatorClaims(assignedCities)`, `getOwnersForCity(assignedCities)`, `operatorCanAccessCity`, `filterByAssignedCities` enforce city-scoping. Admin dashboard already excludes operational tasks (no Curation/Inspections/Photos/Verification tabs); admin focuses on Claims adjudication, Operators management, Finance, Properties suspension, Users, Audit, WhatsApp CRM. Owner dashboard remains lightweight (6 tabs: Home, Bookings, Claims, Payouts, Calendar, Notifications) and is now gated by `lib/owner-gate.ts` mirroring `operator-gate.ts`. Demo operator accounts `operator-lagos@checkbliss.com` (Lagos only), `operator-abuja@checkbliss.com` (Abuja only), `operator@checkbliss.com` (Lagos + Abuja multi-city).
 
 **Previous:** WhatsApp CRM (purpose-built, read layer) — replaced the previous wacrm-style CRM with the purpose-built version per `context/skills/newwhatsapp.md`. The CRM is a **read layer on top of the existing bot** — no webhook fan-out, no new WhatsApp tables, no schema collision. The existing `app/api/webhooks/whatsapp/route.ts` is **completely unchanged** (removed the previous fan-out). New Server-Component pages under `/admin/crm`: layout (admin auth + nav), `inbox` (reads `whatsapp_audit_log` — the table the bot already writes to), `inbox/[e164]` (thread detail + internal notes via `crm_notes`), `contacts` (owners + operators from `profiles` + `operator_assignments`), `claims` (damage claim queue with approve/adjust/reject actions wired to existing `decideClaim` + `captureFromHold`/`releaseHold`), `inspections` (kanban board from `inspections` + `reservations`), `broadcast` (template picker + segment + send via existing `sendWhatsAppTemplate`), `audit` (filterable `audit_log` viewer with action chips), `analytics` (metrics + bar charts from existing data). New migration `0012_crm_notes.sql` adds only **2 tables**: `crm_notes` (admin internal notes) and `crm_thread_status` (manual resolve/escalate). All other data reads from existing tables the bot already writes to. `lib/crm-admin.ts` provides the read-layer queries; `lib/crm-actions.ts` has the 4 server actions (`addCrmNote`, `setCrmThreadStatus`, `decideCrmClaim`, `sendCrmBroadcast`) that revalidate paths and redirect on broadcast. Mock-mode fallback for everything so the UI works without Supabase credentials. New `WhatsApp CRM` sidebar item in admin links to `/admin/crm/inbox`.
 
@@ -20,9 +28,9 @@ Update this file after every completed feature. Any engineer reading this should
 
 **Before that:** Notifications Click-to-Read + Navigate — updated `components/notifications-view.tsx` so clicking a notification marks it as read AND navigates to its `link` field (e.g. `/admin?view=claims`). Added keyboard support (`role="button"`, `tabIndex`, Enter/Space handlers) and `stopPropagation` on "Mark all as read" to prevent bubbling.
 
-**Next:** Wire admin finance UI + owner payouts tab to new data layer; confirm NGN payout partner for production activation
+**Next:** Phase 6 — WhatsApp owner LINK proof-of-ownership flow + owner-A-cannot-act-on-owner-B tests + owner notify number fix. Phase 7 — real-mode fixes (operators refs, assigned_cities, country_of_residence, booking reference). Phase 8 — final doc pass. Confirm NGN payout partner for production activation.
 
-**Features completed:** 25 / 25 (21 NGN Payout partially — backend complete, awaiting partner activation) + Admin Expansion + Inspection Flow Enhancement + WhatsApp CRM + Payment Architecture V2
+**Features completed:** 25 / 25 (21 NGN Payout partially — backend complete, awaiting partner activation) + Admin Expansion + Inspection Flow Enhancement + WhatsApp CRM + Payment Architecture V2 + 14-Day Booking Rule + Payment Reconciliation + Customer Account + Search Filters + Owner Gate + Property Verification Panel + Structured Room Types
 
 ---
 
@@ -130,7 +138,8 @@ Update this file after every completed feature. Any engineer reading this should
 | 5 — WhatsApp Bot | 3 | **3/3 complete** (production live) |
 | 6 — Admin | 2 | **2/2 complete** |
 | 7 — Feedback, Payout & Polish | 6 | 5/6 (feedback, calendar, seeding, testing, polish done; payout backend complete, partner pending) |
-| **TOTAL** | **25** | **25/25 (1 backend-complete-pending-activation)** |
+| **TOTAL (PRD scope)** | **25** | **25/25 (1 backend-complete-pending-activation)** |
+| **Beyond-spec** | +8 | Customer account, search filters, owner gate, verification panel, structured room types, payment reconciliation, 14-day rule, payment architecture v2 |
 
 ---
 
@@ -170,9 +179,14 @@ Update this file after every completed feature. Any engineer reading this should
 | Admin gate disabled | `lib/admin-gate.ts:42` `checkAdminGate()` always returns `{ ok: true }`. Removed `setAdminCookie()` from `app/admin/page.tsx` (cookies can only be set in Server Actions/Route Handlers). Admin dashboard now accessible simply by logging in as admin. |
 | WhatsApp CRM (admin layer) | In-app implementation of the wacrm.tech-style admin CRM, forked and adapted to the existing CheckinBliss bot + Supabase stack. New `/admin/crm` route with 5 sub-views (Shared Inbox, Contact Hub, Pipelines, Broadcasts, Templates) plus analytics strip. Webhook fan-out in `app/api/webhooks/whatsapp/route.ts` records every inbound message into `whatsapp_threads` + `whatsapp_messages` + `whatsapp_contacts` (non-fatal). Bot-handled commands auto-resolve in the inbox; messages the bot can't handle stay open for human follow-up. Supabase migration `0011_whatsapp_crm.sql` adds 8 tables (contacts, threads, messages, pipelines, deals, broadcasts, templates, automations) with RLS — admin role only. `lib/crm.ts` provides mock-mode fallback for all queries so the UI works without Supabase credentials. New `WhatsApp CRM` sidebar item in admin links to the new route. **Superseded by purpose-built CRM below.** |
 | Payment Architecture V2 | Stripe Connect split (12%/88%), Raenest NGN payout adapter, eligibility engine, settlement hold, retry-with-backoff, refund reversal, `owner_payouts` ledger, `payout_alerts` admin dashboard, payout lifecycle cron. 229/229 tests pass. Mock mode complete. |
+| 14-day advance booking rule | `lib/booking-rules.ts` — single source of truth (`MIN_ADVANCE_DAYS=14`, Africa/Lagos date-only arithmetic). Boundary made explicit: 13 days → rejected, 14 → earliest bookable. Enforced at 4 layers: search-bar `min`, booking-page `min`, `POST /api/bookings` server guard (422 `ADVANCE_14_DAYS`), `book_stays()` RPC (DB). Client-safe (no server-only import). `tests/booking-rules.test.ts` 21 tests (1/3/7/13/14/15/30/60-day matrix, timezone-determinism, month/year rollover). Docs `docs/booking-rules.md`. |
+| Atomic mock booking (race + duplicate protection) | Mock path now reserves dates in an in-memory `mockPendingRanges` registry under a mutex before returning — mirrors the DB GiST EXCLUDE guard so duplicate PAY-PAY double-clicks (2nd → 409 `DATES_UNAVAILABLE`) and simultaneous same-room requests (exactly one 201) behave correctly in mock mode. Fixed hidden mock-block bug (used `starts`/`ends` instead of `check_in`/`check_out`). `tests/booking-route.test.ts` 7 tests. |
+| Payment reconciliation | Answers "payment succeeds but booking creation fails — how do we know?" Policy: succeeded booking-charge intent + group confirmed = `ok`; group pending = **recover** (mirror webhook: confirm reservations + group, schedule inspection, notify owner, audit); no group = **refund**. Deposit holds & non-booking intents = skip. `lib/reconciliation.ts` (pure classifier + mock/real orchestrator), `app/api/cron/reconcile/route.ts` live (CRON_SECRET + hourly idempotency), mock intent ledger in `lib/stripe.ts` (`pi_mock_charge_<group>` / `pi_mock_hold_<group>`) so the full story is demonstrable with no creds. Migration `0016_reconciliation.sql` adds `reconciliation_log` + `inspection_schedule` + `reservations.payment_intent_id` (real-mode drift the Stripe webhook already depended on). Docs `docs/payment-reconciliation.md`. `tests/reconciliation.test.ts` 14 tests. |
 | WhatsApp CRM (purpose-built read layer) | Per `context/skills/newwhatsapp.md`. The CRM is a **read layer on top of the existing bot** — no webhook fan-out, no parallel data path, no schema collision with the bot's strict command parser. New Server-Component pages under `/admin/crm`: `layout` (admin auth + nav), `inbox` (reads `whatsapp_audit_log`), `inbox/[e164]` (thread detail + `crm_notes` internal notes), `contacts` (owners + operators from `profiles` + `operator_assignments`), `claims` (damage claim queue wired to existing `decideClaim` + `captureFromHold`/`releaseHold`), `inspections` (kanban from `inspections` + `reservations`), `broadcast` (template picker + segment + send via existing `sendWhatsAppTemplate`), `audit` (filterable `audit_log` viewer), `analytics` (metrics + bar charts). New migration `0012_crm_notes.sql` adds only **2 tables**: `crm_notes` (admin internal notes) and `crm_thread_status` (manual resolve/escalate). All other data reads from existing tables the bot already writes to. `lib/crm-admin.ts` provides read queries; `lib/crm-actions.ts` has the 4 server actions that revalidate paths. Mock-mode fallback for everything. Replaces the previous wacrm-style implementation; the existing `app/api/webhooks/whatsapp/route.ts` is **completely unchanged**. |
 | Landing page v3 — spec compliance | Full rebuild of `app/landing.css` (~870 lines) and `app/landing-client.tsx` (~410 lines) to match `public/css/main.md` exactly. Self-hosted Gallient/Playfair Display/DM Sans via `@font-face`, full token set, drag-to-scroll cats + stays carousels, dark `--green` "How it Works" band with IntersectionObserver step reveal, Trustpilot with arrow + dot nav, 3-up Promise with hairline dividers, "Our Standard" creed panel (dark gradient), closing band with full-width logo, side-by-side newsletter, 3-col footer with `.fcol-link--coming`/`.fcol-soon-badge`. Synced 16 Lagos + 14 Abuja listings to real seed-data slugs (was 20+9 fictional names that 404'd). Fixed critical route conflict: removed `app/[city]/page.tsx` (was a dynamic `redirect()` to `/search?where=Lagos` with `generateStaticParams` that pre-rendered 307 redirects and shadowed the static `(listings)/lagos` and `(listings)/abuja` pages in production with `x-nextjs-cache: HIT`). Body-class scoping: wrapped route trees in `.lst-body`/`.prop-body` divs and removed Tailwind utility classes from `<body>` so vanilla CSS body rules apply. All 11 local assets from `.context/landing/assets/images/` in use. 184/184 tests pass. |
-| Operator dashboard structural alignment | Verified and closed the 2 remaining gaps in `app/dashboard/operator/client.tsx` against `.context/admin/operator.md`. (1) **Bookings tab** — new sidebar item + tab showing city-scoped guest stays grouped by In Progress / Upcoming / Pending Confirmation / Recent (last 30 days) for first-line issue resolution. Backed by new `getOperatorBookings(assignedCities)` data helper that filters bookings by city via property_id → property.city lookup. (2) **Onboarding workflow** — added "+ Onboard new property" button + modal to the Curation tab. Form captures property name, city (scoped to assigned cities), bedrooms, max guests, address, plus owner name/phone/email. New property is added to the operator's Curation queue in `pending` state. Operator dashboard now 9 tabs: Today, Curation, Inspections, Bookings, Claims, Owners, Photos, Verification, Notifications. Admin dashboard already excludes operational tasks (no Curation/Inspections/Photos/Verification tabs); owner dashboard remains lightweight (6 tabs). Row-level city-scoping enforced via existing `getOperatorClaims(assignedCities)`, `getOwnersForCity(assignedCities)`, `operatorCanAccessCity`, `filterByAssignedCities` helpers + middleware. Demo operator accounts `operator-lagos@`, `operator-abuja@`, `operator@` (multi-city) all enforced via `mockOperatorCities()` + Supabase `operators.assigned_cities`. 184/184 tests pass. |
+| Operator dashboard structural alignment | Verified and closed the 2 remaining gaps in `app/dashboard/operator/client.tsx` against `.context/admin/operator.md`. (1) **Bookings tab** — new sidebar item + tab showing city-scoped guest stays grouped in In Progress / Upcoming / Pending Confirmation / Recent (last 30 days) for first-line issue resolution. Backed by new `getOperatorBookings(assignedCities)` data helper that filters bookings by city via property_id → property.city lookup. (2) **Onboarding workflow** — added "+ Onboard new property" button + modal to the Curation tab. Form captures property name, city (scoped to assigned cities), bedrooms, max guests, address, plus owner name/phone/email. New property is added to the operator's Curation queue in `pending` state. Operator dashboard now 9 tabs: Today, Curation, Inspections, Bookings, Claims, Owners, Photos, Verification, Notifications. Admin dashboard already excludes operational tasks (no Curation/Inspections/Photos/Verification tabs); owner dashboard remains lightweight (6 tabs). Row-level city-scoping enforced via existing `getOperatorClaims(assignedCities)`, `getOwnersForCity(assignedCities)`, `operatorCanAccessCity`, `filterByAssignedCities` helpers + middleware. Demo operator accounts `operator-lagos@`, `operator-abuja@`, `operator@` (multi-city) all enforced via `mockOperatorCities()` + Supabase `operators.assigned_cities`. 184/184 tests pass. |
+| Customer account + search filters + dashboards | **Customer account.** `guest@checkbliss.com` added to mock allowlist (mock login → `/account`); all `/account/*` server components redirect to `/login` when unauthenticated; bookings wired to `reservations` via `getGuestBookingsFromDB()` filtered by `guest_email`, with mock fallback for the seeded guest; upcoming vs. past split derived from `check_out >= today`. New actions: `updateProfileAction` (Zod-validated `full_name`/`phone`), `requestPasswordResetAction` (calls `supabase.auth.resetPasswordForEmail` in real mode, returns neutral success in mock). New page `/forgot-password`; "Forgot password?" link on `/login`. Settings form posts to `updateProfileAction` and surfaces saved/error state. **Search.** `guests` and `rooms` (bedrooms) added to `SearchOpts` and applied in both mock and Supabase paths; `SearchBar` has a Bedrooms stepper; chips for `N guests` / `N+ bedrooms` shown next to the sort control; `app/search/loading.tsx` skeleton added for the `force-dynamic` route. New `tests/search-filters.test.ts` (6 tests). **Dashboards.** New `lib/owner-gate.ts` mirroring `operator-gate.ts`; both `/dashboard/owner/layout.tsx` and `/dashboard/operator/layout.tsx` now redirect non-owners/operators to `/login?next=...`. Admin gate already covered the whole `/admin` tree. 277/277 tests pass. |
+| Property pages — verification panel + room types (PRD #4) | Every property page now renders a "Verified by us" panel (green check stamp + inspector name, inspection date, photo count, inspector experience, free-text notes) backed by a per-property `verification` field. Per-bedroom **room types** (Master suite / Guest room / Twin room / Bunk room / Single room) with bed configs (king/queen/double/singles/bunk) and bath notes — fed into the configuration modal instead of generic "1 king" placeholders. `SeedProperty` extended with `room_types[]` and `verification`; `defaultRoomTypes()` + `defaultVerification()` helpers derive these deterministically per property (city-aware inspectors, deterministic date offsets so tests don't drift). New `tests/property-page-data.test.ts` (5 tests). 282/282 tests pass. |
 
 ---
 
@@ -200,7 +214,7 @@ Update this file after every completed feature. Any engineer reading this should
 | `/api/webhooks/stripe` | POST | Payment webhook |
 | `/api/cron/inspections` | GET | Inspection lifecycle |
 | `/api/cron/feedback` | GET | Post-checkout feedback |
-| `/api/cron/reconcile` | GET | Payment reconciliation |
+| `/api/cron/reconcile` | GET | Payment reconciliation — recovers paid-but-unconfirmed bookings, refunds orphans |
 | `/api/cron/sweep` | GET | Orphan sweep |
 | `/api/cron/payouts` | GET | Payout lifecycle (eligibility → release → poll)|
 | `/api/locations` | GET | City/neighbourhood typeahead |
@@ -221,22 +235,28 @@ Update this file after every completed feature. Any engineer reading this should
 | Suite | File | Tests | Status |
 |-------|------|-------|--------|
 | WhatsApp unit | `tests/whatsapp.test.ts` | 3 | Passing |
-| WhatsApp webhook | `tests/whatsapp-webhook.test.ts` | 27 | Passing |
-| Stripe | `tests/stripe.test.ts` | 4 | Passing |
-| Currency | `tests/currency.test.ts` | 10 | Passing |
-| Seed data | `tests/seed-data.test.ts` | 4 | Passing |
-| App data | `tests/data.test.ts` | 3 | Passing |
-| Booking workflow | `tests/booking-workflow.test.ts` | 19 | Passing |
-| Deposit workflow | `tests/deposit-workflow.test.ts` | 18 | Passing |
-| Inspection workflow | `tests/inspection-workflow.test.ts` | 15 | Passing |
-| Damage claim workflow | `tests/damage-claim-workflow.test.ts` | 19 | Passing |
-| Mock mode integration | `tests/mock-mode-integration.test.ts` | 21 | Passing |
+| WhatsApp webhook | `tests/whatsapp-webhook.test.ts` | 29 | Passing |
+| Stripe | `tests/stripe.test.ts` | 6 | Passing |
+| Stripe events | `tests/stripe-events.test.ts` | 14 | Passing |
+| Currency | `tests/currency.test.ts` | 9 | Passing |
+| Seed data | `tests/seed-data.test.ts` | 9 | Passing |
+| App data | `tests/data.test.ts` | 7 | Passing |
+| Booking workflow | `tests/booking-workflow.test.ts` | 18 | Passing |
+| Deposit workflow | `tests/deposit-workflow.test.ts` | 21 | Passing |
+| Inspection workflow | `tests/inspection-workflow.test.ts` | 20 | Passing |
+| Damage claim workflow | `tests/damage-claim-workflow.test.ts` | 22 | Passing |
+| Mock mode integration | `tests/mock-mode-integration.test.ts` | 34 | Passing |
 | Admin gate | `tests/admin-gate.test.ts` | 9 | Passing |
-| Slack research | `tests/slack-research.test.ts` | 34 | Passing |
-| **Pre-existing** | **6 suites** | **60** | **Passing** |
+| Checkout (one-time payments) | `tests/checkout.test.ts` | 4 | Passing |
 | Payment architecture | `tests/payment-architecture.test.ts` | 24 | Passing |
-| **V1 workflow suites** | **6 suites** | **116** | **Passing** |
-| **Total** | **14 suites** | **229** | **All passing** |
+| **14-day booking rule** | `tests/booking-rules.test.ts` | 21 | Passing |
+| **Booking route (mock, duplicate + race)** | `tests/booking-route.test.ts` | 7 | Passing |
+| **Payment reconciliation** | `tests/reconciliation.test.ts` | 14 | Passing |
+| **Search filters** | `tests/search-filters.test.ts` | 6 | Passing |
+| **Property page data** | `tests/property-page-data.test.ts` | 5 | Passing |
+| **Total** | **20 suites** | **282** | **All passing** |
+
+`npm run typecheck` clean · `npm run lint` — new code clean (20 pre-existing errors in unrelated files)
 
 ---
 
@@ -244,7 +264,15 @@ Update this file after every completed feature. Any engineer reading this should
 
 | Issue | Severity | Status |
 |-------|----------|--------|
+| Reconcile cron was a stub ("Reconciliation not yet implemented") | High | **Resolved** — `app/api/cron/reconcile/route.ts` now runs `reconcilePaymentIntents()` (recover/refund/ok/skip policy). `tests/reconciliation.test.ts` 14 tests. |
+| 14-day advance rule duplicated across call sites (no single source of truth) | High | **Resolved** — `lib/booking-rules.ts` is the single source of truth; search bar, booking page, `POST /api/bookings`, and `book_stays()` all enforce it (422 `ADVANCE_14_DAYS`). Boundary (13d rejected / 14d earliest bookable) defined in code + docs. 21 + 7 tests. |
+| Mock booking path could double-book (no range registry) | High | **Resolved** — in-memory `mockPendingRanges` + mutex; duplicate PAY-PAY → 409, simultaneous race → exactly one 201. |
+| Real-mode drift: `inspection_schedule` + `reservations.payment_intent_id` referenced by Stripe webhook but no migration created them | Medium | **Resolved** — `0016_reconciliation.sql` creates both + `reconciliation_log`. |
 | NGN payout backend complete, partner unconfirmed | Medium | Deferred — Raenest adapter + payout cron built, awaiting partner credentials |
+| Customer account was a mock-only stub (`/account` showed static data, no mock guest allowlist) | High | **Resolved** — `guest@checkbliss.com` added to mock allowlist; `lib/data-guest.ts` queries `reservations` by `guest_email` with mock fallback; Zod-validated `updateProfileAction` + `requestPasswordResetAction`; new `/forgot-password` page; all `/account/*` routes redirect to `/login?next=...` when unauthenticated. |
+| Search lacked guests/rooms filters | High | **Resolved** — `SearchOpts.guests` + `SearchOpts.rooms` applied in both mock and Supabase paths; Bedrooms stepper on `SearchBar`; active chips on the results page; `app/search/loading.tsx` skeleton. New `tests/search-filters.test.ts` (6 tests). |
+| Owner dashboard had no role gate | High | **Resolved** — new `lib/owner-gate.ts` mirroring `operator-gate.ts`; `/dashboard/owner/layout.tsx` redirects non-owners to `/login?next=/dashboard/owner`. |
+| Property pages missing "Relevant verification information" + structured room types (PRD #4) | Medium | **Resolved** — "Verified by us" panel + per-bedroom `room_types` with bed configs and bath notes. `SeedProperty` extended with `room_types[]` and `verification`. New `tests/property-page-data.test.ts` (5 tests). |
 | `ADMIN_DASH_KEY` not enforced in code | Medium | **Resolved** — `lib/admin-gate.ts` enforces via `x-admin-key` header or `cb_admin` cookie. Gates: `/admin` page render, all `/api/admin/*` routes (claims decision, operators, suspend, claims list), and admin Server Actions. Bypassed in mock mode. 9 new tests. **Note:** gate later disabled in dev by returning `{ ok: true }` from `checkAdminGate()` — admin dashboard accessible by logging in as `admin@checkbliss.com`. |
 | Session auth is dev-only | Medium | **Resolved** — replaced `cb_session` base64 cookie with real Supabase Auth via `@supabase/ssr`. `lib/supabase/{client,server,admin,middleware}.ts` + `index.ts` re-exports the same 3 factories (`createBrowser`, `createServer`, `createAdmin`) so 25 import sites kept working. `actions/auth.ts` rewritten with `signInWithPassword` / `signUp` / `signOut`; `middleware.ts` now reads role from `profiles` table. Legacy `lib/auth.ts` stripped to types only. `0010_seed_demo_users.sql` seeds 3 users with password `checkbliss-demo-2026`. |
 | Airwallex hosted fields not on frontend | Medium | Mock payment form in booking flow (Stripe Elements deferred to follow-up) |
@@ -376,6 +404,65 @@ All 11 assets from `.context/landing/assets/images/`:
 
 ---
 
+## Property Pages — Verification + Room Types (Aug 2026)
+
+Closed the last two PRD #4 gaps on every property page at `app/[city]/[neighbourhood]/[building]/[property]/property-client.tsx`. The page now ships the same data surface as the PRD checklist requires: images, description, location, amenities, **room types** (Master suite / Guest room / Twin room / Bunk room / Single room with bed configs and bath notes), pricing, availability, booking CTA, nearby info, **verification information** (green check stamp + inspector name, inspection date, photo count, inspector experience, free-text notes), policies, cancellation.
+
+### What was built
+
+- **`lib/seed-data.ts`** — `SeedProperty` extended with `room_types?: SeedRoomType[]` and `verification?: SeedVerification`. New types: `SeedRoomType` (label, bed, bath?, note?) + `SeedVerification` (inspected_on ISO date, inspector display name, photos count, inspector_experience count, free-text notes).
+- **Deterministic defaults** — `defaultRoomTypes(bedrooms, bathrooms)` rotates through a 5-room label set so the first bedroom is always "Master suite, 1 king, En suite, Walk-in wardrobe" regardless of bedroom count. `defaultVerification(propertyId, city, idx)` picks a city-aware inspector from `INSPECTOR_BY_CITY` (Tunde Ogunlade / Folake Adeyemi / Chidi Okafor for Lagos; Funke Adeyemi / Ibrahim Musa / Zainab Bello for Abuja) and computes a deterministic date offset so tests don't drift. 4 canned inspection notes rotated through.
+- **`lib/data.ts`** — `mapRowToSeedProperty()` threads `room_types` + `verification` through the Supabase mapping path so real-mode rows carry them too.
+- **Property client** — new `<section aria-labelledby="verified-h">` "Verified by us" panel inserted after the Home truths section. The configuration modal now reads from `prop.room_types` (cast-friendly fallback if absent). New `formatInspectionDate()` helper renders `2026-06-14` as `14 June 2026`.
+- **CSS** — `app/styles/property.css` gains `.verified-card` (grid with stamp + body), `.verified-stamp` (44px green circle), `.verified-headline`, `.verified-notes`, `.verified-stats` (3-column dl) with a `max-width: 720px` mobile collapse to single column.
+- **Tests** — `tests/property-page-data.test.ts` (5 tests): room-type presence + count-matches-bedrooms + master-first ordering + verification record shape + date determinism.
+
+### Verification
+
+- `npm run typecheck` clean
+- `npm test` — **282/282 passing across 20 suites** (was 277/277 across 19)
+- `npm run lint` — 20 errors (baseline, all pre-existing); 0 new errors in touched files
+- `next build --webpack` — passes; `/[city]/[neighbourhood]/[building]/[property]` still routes dynamic (`ƒ`)
+
+## Customer Account + Search Filters + Owner Gate (Aug 2026)
+
+Closed the remaining Phase 4 (customer account) gaps + Phase 5 (search filters) + Phase 6 (operator/owner dashboard gates) in one pass. The full guest journey — register, verify, login, search, book, view booking, logout, login again, still see booking — now works end-to-end against real `reservations` data with mock-mode fallback.
+
+### Customer account
+
+- **`actions/auth.ts`** — added `guest@checkbliss.com` to the mock allowlist (mock login now redirects to `/account` rather than `/login`).
+- **`lib/data-guest.ts`** (new) — `getGuestBookingsFromDB(email)` queries `reservations` filtered by `guest_email`, joining `properties(name, city, neighbourhood)`; falls back to mock data for the seeded `guest@checkbliss.com` and returns `[]` for any other email (mirrors "fresh guest" behaviour on a real DB). Computes `nights` from `check_in`/`check_out`.
+- **`actions/auth.ts`** — new `updateProfileAction(formData)` (Zod schema for `full_name` 1–120 chars + `phone` regex, persists via `createAdmin()`) and `requestPasswordResetAction(formData)` (calls `supabase.auth.resetPasswordForEmail()` in real mode; returns neutral "if that email is registered…" success in mock mode to avoid address enumeration).
+- **`app/forgot-password/page.tsx`** (new) — standalone page; uses the same editorial split-panel design as `/login` and `/signup`.
+- **`app/login/page.tsx`** — added "Forgot your password?" link above the "Get started" CTA.
+- **`app/account/{page,bookings,history,claims,notifications,settings}/page.tsx`** — all server components now: declare `dynamic = "force-dynamic"`; redirect to `/login?next=…` when no session; pass `bookings` (only for pages that need them) into `GuestDashboard`.
+- **`app/account/guest-client.tsx`** — `GuestDashboard` now takes a `bookings?: OwnerBookingView[]` prop and derives upcoming vs. past from `check_out >= today` rather than the previous static mock list. `SettingsTab` form posts to `updateProfileAction` with pending/saved/error states and a "Send a reset link" shortcut to `/forgot-password`.
+- **`app/logout/page.tsx`** — removed (the existing `/logout/route.ts` GET handler at the same path signs the user out server-side).
+
+### Search
+
+- **`lib/data.ts`** — `SearchOpts` gains `guests?: number` and `rooms?: number`. Both applied after the existing amenities filter in both the mock `searchProperties()` and the `searchPropertiesAsync()` paths (Supabase RPC + manual fallback).
+- **`components/search-bar.tsx`** — new `Bedrooms` stepper (1–8) between Guests and the Search button, wired to the `rooms` URL param.
+- **`app/search/page.tsx`** — parses `guests` / `rooms` from `searchParams`, passes them down; metadata reflects the group/bedroom count in the title.
+- **`app/search/client.tsx`** — filters `properties` by `sleeps >= guests` and `bedrooms >= rooms`; renders `N guests` and `N+ bedrooms` chips next to the existing amenity chip.
+- **`app/search/loading.tsx`** (new) — skeleton for the `force-dynamic` search route (header bar + 3 property-card skeletons + map skeleton).
+
+### Owner gate
+
+- **`lib/owner-gate.ts`** (new) — mirrors `lib/operator-gate.ts`. Returns `{ ok: false }` if no session, role !== `"owner"`.
+- **`app/dashboard/owner/layout.tsx`** — invokes `checkOwnerGate()` and redirects to `/login?next=/dashboard/owner` on failure.
+- **`app/dashboard/operator/layout.tsx`** — was a pass-through; now invokes `checkOperatorGate()` for parity.
+- **`actions/auth.ts`** — `getSession()` Supabase path now reads `whatsapp_e164` from `profiles` so future account pages can show the stored phone.
+
+### Verification
+
+- `npm run typecheck` clean
+- `npm test` — **277/277 passing across 19 suites** at the time of this pass (then 282/282 after the property-page pass above)
+- `npm run lint` — 20 errors (baseline), 0 new errors in touched files
+- `next build --webpack` — passes; new routes (`/forgot-password`) appear as static (`○`)
+
+---
+
 ## Operator Dashboard Structural Alignment (Jul 2026)
 
 Verified and closed gaps in `app/dashboard/operator/client.tsx` against `.context/admin/operator.md` (the same doc as `structure.md`). The brief is clear: **City Operators are embedded operational partners** who run their city autonomously (sourcing properties, conducting inspections, submitting damage claims, monthly re-verification, first-line issue resolution). **Super Admin is strategic oversight and financial control** — not daily operations. **Property Owners** get a lightweight dashboard (calendar + bookings + earnings).
@@ -445,10 +532,42 @@ Implemented the two-entity payment architecture from `.context/features/payment_
 
 ---
 
+## 14-Day Booking Rule + Payment Reconciliation (Aug 2026)
+
+Closed the two biggest launch-critical correctness gaps. 271/271 tests pass, typecheck clean.
+
+### 1. The 14-day advance booking rule — single source of truth
+
+- **`lib/booking-rules.ts`** (new): `MIN_ADVANCE_DAYS = 14`, `BOOKING_RULE_TIMEZONE = "Africa/Lagos"`, `dateInTimeZone()`, `daysUntilCheckIn()`, `isBookingOpen()`, `advanceRuleViolation()` → `"ADVANCE_14_DAYS" | null`, `minCheckInDateStr()`. Pure module — no `server-only` import — so the client search bar can import it.
+- **Boundary made unambiguous:** date-only UTC arithmetic against the Lagos calendar date. Today 1 Aug → 14 Aug (13 days) **rejected**; 15 Aug (14 days) **earliest bookable**. Timezone-deterministic: at `2026-08-14T23:30Z` it's already 15 Aug in Lagos, so a 28 Aug check-in is 13 days (rejected) even though UTC says 14.
+- **4 layers, identical verdict:** (1) search-bar date `min`, (2) booking-page date `min` — both `minCheckInDateStr()`, (3) `POST /api/bookings` server guard → 422 `ADVANCE_14_DAYS`, (4) `book_stays()` RPC raises `ADVANCE_14_DAYS`, transaction rolls back. No hardcoded `14` anywhere else.
+- **Tests** `tests/booking-rules.test.ts` — 21 tests: 1/3/7/13/14/15/30/60-day matrix, exact-13 vs exact-14 boundary, `minCheckInDateStr === today+14`, month/year rollover, past/same-day rejection, Lagos 00:30 UTC edge → different verdict than UTC.
+- **Docs** `docs/booking-rules.md` + migration `0015_booking_rules.sql` (SQL comment documenting the DB invariant on `book_stays`).
+
+### 2. Atomic mock booking (duplicate + race protection)
+
+- Mock path now reserves dates in an in-memory `mockPendingRanges` registry under a `withMockLock()` mutex before returning — mirrors DB reserve-before-charge ordering, so mock-mode tests of concurrency are meaningful.
+- Fixed hidden mock-block bug: overlap check used `block.starts/block.ends` instead of `check_in/check_out` → overlapping seed data returned 5xx instead of 409 `DATES_UNAVAILABLE`.
+- **Tests** `tests/booking-route.test.ts` — 7 tests: 14-day server enforcement (422 at 5d, 201 at 30d), **duplicate PAY-PAY double-click** → 2nd request 409, never a 2nd booking; **simultaneous same-room race** → exactly one 201 + one 409; adjacent non-overlapping dates still book; malformed email → 400 `VALIDATION_ERROR`.
+
+### 3. Payment reconciliation (paid-but-unconfirmed recovery + orphan refund)
+
+- **Policy** (`docs/payment-reconciliation.md`): for each succeeded booking-charge PaymentIntent — group confirmed → `ok` (no-op); group pending → **recover** (mirror the webhook's `payment_intent.succeeded` branch: reservations+group → confirmed, `inspection_schedule` created, owner WhatsApp sent, `reconciliation_log` written); no group → **refund** (customer paid for dates never held). Deposit-hold and non-booking intents → skip (never auto-capture a hold).
+- **`lib/reconciliation.ts`** (new): pure `classifyPaymentIntent()` + mock/real orchestrator. Mock mode reads the new in-memory intent ledger + mock booking-group registry; real mode lists Stripe intents (7-day lookback) and joins `booking_groups.charge_intent_id`.
+- **`lib/stripe.ts`**: mock intent ledger — `createBookingCharge`/`createDepositHold` now register `pi_mock_charge_<group>` / `pi_mock_hold_<group>` intents; `listMockPaymentIntents`, `mockConfirmPaymentIntent`, `mockCancelPaymentIntent`, `mockRefundPaymentIntent`, `resetMockPaymentIntents`. Mock booking handler registers its group so the whole story is demonstrable.
+- **`app/api/cron/reconcile/route.ts`**: was a stub ("Reconciliation not yet implemented") — now calls `reconcilePaymentIntents()`, returns per-intent outcomes + summary, keeps CRON_SECRET auth + hourly idempotency + heartbeats.
+- **Migration `0016_reconciliation.sql`**: `reconciliation_log` (audit trail: `ok`/`recovered`/`refunded`), plus real-mode drift the Stripe webhook already depended on but no migration created — **`inspection_schedule`** table and **`reservations.payment_intent_id`** column.
+- **Tests** `tests/reconciliation.test.ts` — 14 tests: pure classifier matrix (9 cases) + mock end-to-end (recover via `POST /api/bookings` → simulate webhook miss → confirm → reconcile recovers; orphan refund; already-confirmed no-op; never-succeeded skip; deposit-hold untouched).
+- **Demo:** mock mode, `POST /api/bookings` (201) → do nothing (simulated webhook miss) → `GET /api/cron/reconcile` → `{ disposition: "recover" }`, group now confirmed. Orphan: create a charge whose group never persisted → reconcile → `{ disposition: "refund" }`, intent refunded.
+
+---
+
 ## Next Steps
-1. Wire admin finance-client + owner payouts tab to new data layer
-2. **Confirm NGN partner** (Raenest or equivalent) — adapter is abstracted for swap
-3. **Phase 2 V2 features** (deferred) — see `context/features/version 2/`
+1. WhatsApp Phase 6 — owner `LINK` proof-of-ownership flow + cross-owner security tests (owner A cannot act on owner B's property) + owner notify number fix + end-to-end WhatsApp → DB → website chain test.
+2. Notifications Phase 8 — email channel (Resend/SendGrid) + notifications log on every booking state transition (currently WhatsApp only).
+3. Real-mode drift fixes Phase 7 — operators refs, `assigned_cities`, `country_of_residence`, booking reference, admin finance-client + owner payouts tab to new data layer.
+4. **Confirm NGN partner** (Raenest or equivalent) — adapter is abstracted for swap.
+5. **Phase 2 V2 features** (deferred) — see `context/features/version 2/`.
 
 ---
 

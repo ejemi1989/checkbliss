@@ -19,6 +19,8 @@ export function SearchResultsClient({
   checkOut,
   displayCurrency = "GBP",
   activeAmenity = "",
+  activeGuests,
+  activeRooms,
 }: {
   properties: SeedProperty[];
   activeWhere: string;
@@ -26,6 +28,8 @@ export function SearchResultsClient({
   checkOut: string;
   displayCurrency?: CurrencyCode;
   activeAmenity?: string;
+  activeGuests?: number;
+  activeRooms?: number;
 }) {
   const hasSearch = !!(activeWhere || checkIn || checkOut);
   const displayWhere = activeWhere || "Lagos";
@@ -63,8 +67,15 @@ export function SearchResultsClient({
       result = result.filter((p) => p.city === displayWhere);
     }
 
+    if (activeGuests && activeGuests > 0) {
+      result = result.filter((p) => (p.sleeps ?? 0) >= activeGuests);
+    }
+    if (activeRooms && activeRooms > 0) {
+      result = result.filter((p) => (p.bedrooms ?? 0) >= activeRooms);
+    }
+
     return result;
-  }, [properties, sort, hasSearch, displayWhere]);
+  }, [properties, sort, hasSearch, displayWhere, activeGuests, activeRooms]);
 
   const propertyCoords = useMemo(() => {
     return filtered.map((p, i) => {
@@ -149,7 +160,7 @@ export function SearchResultsClient({
       {hasSearch && (
         <div className="px-8 py-4 max-sm:px-5">
           <div className="max-w-[1240px] mx-auto flex items-center justify-between">
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3 flex-wrap">
               <p className="font-sans text-[13px] text-mute font-medium">
                 {filtered.length} {filtered.length === 1 ? "stay" : "stays"}
               </p>
@@ -161,6 +172,16 @@ export function SearchResultsClient({
                       <path d="M3 3l6 6M9 3l-6 6"/>
                     </svg>
                   </Link>
+                </span>
+              )}
+              {activeGuests && (
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-lagoon/10 text-lagoon-dark text-[12px] font-medium">
+                  {activeGuests} {activeGuests === 1 ? "guest" : "guests"}
+                </span>
+              )}
+              {activeRooms && (
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-lagoon/10 text-lagoon-dark text-[12px] font-medium">
+                  {activeRooms}+ bedrooms
                 </span>
               )}
             </div>

@@ -28,6 +28,14 @@ export interface PropertyClientProps {
     extended_checkout_price_minor: number;
     currency: string;
     slug: string;
+    room_types: Array<{ label: string; bed: string; bath?: string; note?: string }>;
+    verification?: {
+      inspected_on: string;
+      inspector: string;
+      photos: number;
+      inspector_experience: number;
+      notes: string;
+    };
   };
   formattedNightly: string;
   formattedDeposit: string;
@@ -36,6 +44,14 @@ export interface PropertyClientProps {
 }
 
 const MAPBOX_TOKEN = process.env.NEXT_PUBLIC_MAPBOX_TOKEN || "";
+
+const MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
+
+function formatInspectionDate(iso: string): string {
+  const [y, m, d] = iso.split("-").map(Number);
+  if (!y || !m || !d) return iso;
+  return `${d} ${MONTHS[m - 1]} ${y}`;
+}
 
 const HOME_TRUTHS = [
   "The building runs on generator during grid outages, which is most evenings. It is housed two floors below and audible as a low hum in the second bedroom, though not in the living room or main bedroom.",
@@ -182,6 +198,41 @@ export function PropertyClient({ property: prop, formattedNightly, formattedDepo
                 ))}
               </ul>
             </section>
+
+            {/* Verified by us */}
+            {prop.verification && (
+              <section className="block" aria-labelledby="verified-h">
+                <h2 className="block-h block-h-sm" id="verified-h">Verified by us</h2>
+                <div className="verified-card">
+                  <div className="verified-stamp" aria-hidden="true">
+                    <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round">
+                      <path d="M20 6L9 17l-5-5" />
+                    </svg>
+                  </div>
+                  <div className="verified-body">
+                    <p className="verified-headline">
+                      Inspected on {formatInspectionDate(prop.verification.inspected_on)} by{" "}
+                      <strong>{prop.verification.inspector}</strong>, {prop.city} city manager
+                    </p>
+                    <p className="verified-notes">{prop.verification.notes}</p>
+                    <dl className="verified-stats">
+                      <div>
+                        <dt>Inspection photos</dt>
+                        <dd>{prop.verification.photos}</dd>
+                      </div>
+                      <div>
+                        <dt>Inspector experience</dt>
+                        <dd>{prop.verification.inspector_experience} properties inspected</dd>
+                      </div>
+                      <div>
+                        <dt>Last verified</dt>
+                        <dd>{formatInspectionDate(prop.verification.inspected_on)}</dd>
+                      </div>
+                    </dl>
+                  </div>
+                </div>
+              </section>
+            )}
 
             {/* About this stay */}
             <section className="block" aria-labelledby="stay-h">
@@ -649,11 +700,11 @@ export function PropertyClient({ property: prop, formattedNightly, formattedDepo
             <div className="modal-scroll">
               <h3 className="cfg-group">Bedrooms</h3>
               <div className="cfg-grid">
-                {Array.from({ length: prop.bedrooms }, (_, i) => (
+                {(prop.room_types.length > 0 ? prop.room_types : Array.from({ length: prop.bedrooms }, (_, i) => ({ label: `Bedroom ${i + 1}`, bed: "1 king" }) as { label: string; bed: string; bath?: string; note?: string })).map((room, i) => (
                   <div key={i} className="cfg-card">
-                    <h4>Bedroom {i + 1}</h4>
-                    <p className="cfg-bed">1 king</p>
-                    <p className="cfg-note">En suite · wardrobe{i === 0 ? " · walk-in" : ""}</p>
+                    <h4>{room.label}</h4>
+                    <p className="cfg-bed">{room.bed}</p>
+                    <p className="cfg-note">{(room.bath ?? "") && (room.note ?? "") ? `${room.bath} · ${room.note}` : (room.bath ?? room.note ?? "—")}</p>
                   </div>
                 ))}
               </div>

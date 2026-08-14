@@ -46,6 +46,8 @@ export default async function PropertyPage({
           extended_checkout_price_minor: prop.extended_checkout_price_minor ?? 0,
           currency: prop.currency,
           slug: prop.slug,
+          room_types: prop.room_types ?? [],
+          verification: prop.verification,
         }}
         formattedNightly={formattedNightly}
         formattedDeposit={formattedDeposit}

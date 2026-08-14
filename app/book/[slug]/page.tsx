@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { getSeedProperties } from "@/lib/seed-data";
+import { minCheckInDateStr } from "@/lib/booking-rules";
 import { Footer } from "@/components/footer";
 import { BookingFlow } from "./client";
 
@@ -22,10 +23,7 @@ export default async function BookPage({
   const prop = getSeedProperties().find((p) => p.slug === slug && p.status === "approved");
   if (!prop) notFound();
 
-  const today = new Date();
-  today.setUTCHours(0, 0, 0, 0);
-  today.setUTCDate(today.getUTCDate() + 14);
-  const minDateStr = `${today.getUTCFullYear()}-${String(today.getUTCMonth() + 1).padStart(2, "0")}-${String(today.getUTCDate()).padStart(2, "0")}`;
+  const minDateStr = minCheckInDateStr();
 
   return (
     <>

@@ -44,6 +44,56 @@ export interface PaymentResult {
   status: string;
 }
 
+/* ---------------------------------------------------------------------------
+ * Mock payment-intent ledger — lets the reconciliation cron and tests
+ * simulate "customer paid but the webhook didn't process it" without real
+ * Stripe credentials. Mirrors the payment_intent lifecycle in memory.
+ * ------------------------------------------------------------------------- */
+
+export interface MockPaymentIntent {
+  id: string;
+  status: string;
+  amountMinor: number;
+  currency: string;
+  metadata: Record<string, string>;
+}
+
+const mockIntents: MockPaymentIntent[] = [];
+
+function registerMockIntent(intent: MockPaymentIntent): void {
+  mockIntents.push(intent);
+}
+
+export function listMockPaymentIntents(): MockPaymentIntent[] {
+  return [...mockIntents];
+}
+
+export function getMockPaymentIntent(intentId: string): MockPaymentIntent | undefined {
+  return mockIntents.find((i) => i.id === intentId);
+}
+
+/** Simulate the customer completing payment (mirrors payment_intent.succeeded). */
+export function mockConfirmPaymentIntent(intentId: string): void {
+  const intent = mockIntents.find((i) => i.id === intentId);
+  if (intent) intent.status = "succeeded";
+}
+
+/** Simulate the customer cancelling (mirrors payment_intent.canceled). */
+export function mockCancelPaymentIntent(intentId: string): void {
+  const intent = mockIntents.find((i) => i.id === intentId);
+  if (intent) intent.status = "canceled";
+}
+
+/** Simulate a refund of the intent (mirrors charge.refunded). */
+export function mockRefundPaymentIntent(intentId: string): void {
+  const intent = mockIntents.find((i) => i.id === intentId);
+  if (intent) intent.status = "refunded";
+}
+
+export function resetMockPaymentIntents(): void {
+  mockIntents.length = 0;
+}
+
 export async function createBookingCharge(opts: BookingChargeOpts): Promise<PaymentResult> {
   if (!stripeConfigured) {
     const id = `pi_mock_charge_${opts.bookingGroupId}`;
@@ -52,6 +102,13 @@ export async function createBookingCharge(opts: BookingChargeOpts): Promise<Paym
     } else {
       console.log(`[stripe:mock] charge ${id} £${opts.amountMinor / 100}`);
     }
+    registerMockIntent({
+      id,
+      status: "requires_payment_method",
+      amountMinor: opts.amountMinor,
+      currency: opts.currency,
+      metadata: { booking_group_id: opts.bookingGroupId, guest_name: opts.guestName, type: "booking_charge" },
+    });
     return { intentId: id, clientSecret: `${id}_secret_mock`, status: "requires_payment_method" };
   }
 
@@ -81,6 +138,13 @@ export async function createDepositHold(opts: DepositHoldOpts): Promise<PaymentR
   if (!stripeConfigured) {
     const id = `pi_mock_hold_${opts.bookingGroupId}`;
     console.log(`[stripe:mock] hold ${id} £${opts.amountMinor / 100}`);
+    registerMockIntent({
+      id,
+      status: "requires_payment_method",
+      amountMinor: opts.amountMinor,
+      currency: opts.currency,
+      metadata: { booking_group_id: opts.bookingGroupId, type: "deposit_hold" },
+    });
     return { intentId: id, clientSecret: `${id}_secret_mock`, status: "requires_payment_method" };
   }
   const intent = await getStripe().paymentIntents.create(

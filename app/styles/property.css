@@ -274,6 +274,72 @@
 }
 
 /* --------------------------------------------------------------------------
+   Verified-by-us card
+   -------------------------------------------------------------------------- */
+.verified-card{
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: var(--s8, 32px);
+  align-items: flex-start;
+  padding: var(--s6, 24px);
+  border: 1px solid var(--hairline);
+  border-radius: var(--r-lg, 16px);
+  background: var(--soft);
+}
+.verified-stamp{
+  width: 44px; height: 44px;
+  display: grid; place-items: center;
+  border-radius: 999px;
+  background: var(--green);
+  color: var(--soft);
+}
+.verified-body{ min-width: 0; }
+.verified-headline{
+  margin: 0 0 var(--s3, 12px);
+  font-family: var(--body);
+  font-size: calc(var(--text-base) - 3px);
+  line-height: 1.55;
+  color: var(--ink);
+}
+.verified-headline strong{ color: var(--ink); font-weight: 600; }
+.verified-notes{
+  margin: 0 0 var(--s5, 20px);
+  font-family: var(--body);
+  font-size: calc(var(--text-base) - 4px);
+  line-height: 1.6;
+  color: var(--body-c);
+  max-width: 68ch;
+}
+.verified-stats{
+  margin: 0;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--s5, 20px);
+  padding-top: var(--s4, 16px);
+  border-top: 1px solid var(--hairline);
+}
+.verified-stats > div{ min-width: 0; }
+.verified-stats dt{
+  font-family: var(--body);
+  font-size: calc(var(--text-base) - 7px);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--mute);
+  margin-bottom: 4px;
+}
+.verified-stats dd{
+  margin: 0;
+  font-family: var(--body);
+  font-size: calc(var(--text-base) - 3px);
+  font-weight: 600;
+  color: var(--ink);
+}
+@media (max-width: 720px){
+  .verified-card{ grid-template-columns: 1fr; gap: var(--s4, 16px); }
+  .verified-stats{ grid-template-columns: 1fr; gap: var(--s3, 12px); }
+}
+
+/* --------------------------------------------------------------------------
    004 — Amenities preview + configuration summary
    -------------------------------------------------------------------------- */
 .amen-grid{

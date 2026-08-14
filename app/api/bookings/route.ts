@@ -6,6 +6,8 @@ import { createBookingCharge, createDepositHold } from "@/lib/stripe";
 import { sendWhatsApp, getTemplate } from "@/lib/whatsapp";
 import { getSeedProperties, getSeedReservations, getSeedBlocks } from "@/lib/seed-data";
 import { computeSplit, createOwnerPayoutRows } from "@/lib/payouts";
+import { registerMockBookingGroup } from "@/lib/reconciliation";
+import { advanceRuleViolation, ADVANCE_RULE_MESSAGE } from "@/lib/booking-rules";
 
 const TURNSTILE_SECRET = process.env.TURNSTILE_SECRET_KEY;
 
@@ -45,12 +47,7 @@ const BookingRequestSchema = z.object({
 });
 
 function validate14Days(checkIn: string): string | null {
-  const checkInDate = new Date(checkIn);
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const diffDays = Math.ceil((checkInDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
-  if (diffDays < 14) return "ADVANCE_14_DAYS";
-  return null;
+  return advanceRuleViolation(checkIn);
 }
 
 function validateRange(checkIn: string, checkOut: string): string | null {
@@ -71,6 +68,28 @@ function generateReference(): string {
   return ref;
 }
 
+/**
+ * Compensating cancellation: release reserved dates after a failure so
+ * inventory is never silently held. Mirrors the webhook's
+ * `cancel_booking_group` action — reservations and the group flip to
+ * `cancelled` only while still `pending_payment`.
+ */
+async function compensateFailedGroup(
+  db: ReturnType<typeof createAdmin>,
+  groupId: string,
+): Promise<void> {
+  await db
+    .from("reservations")
+    .update({ status: "cancelled" })
+    .eq("booking_group_id", groupId)
+    .eq("status", "pending_payment");
+  await db
+    .from("booking_groups")
+    .update({ status: "cancelled" })
+    .eq("id", groupId)
+    .eq("status", "pending_payment");
+}
+
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
@@ -89,7 +108,7 @@ export async function POST(request: NextRequest) {
       const r1 = validate14Days(item.check_in);
       if (r1) {
         return NextResponse.json(
-          { code: r1, message: "Bookings open 14+ days ahead." },
+          { code: r1, message: ADVANCE_RULE_MESSAGE },
           { status: 422 },
         );
       }
@@ -111,176 +130,221 @@ export async function POST(request: NextRequest) {
     const reference = generateReference();
     const currency = "GBP";
 
+    // --- 1. ATOMIC RESERVE — the database owns non-overlap and the 14-day
+    // rule. book_stays() inserts pending_payment reservations inside a single
+    // transaction; the GiST EXCLUDE constraint rejects any overlap (23P01) and
+    // the RPC raises ADVANCE_14_DAYS / PROPERTY_NOT_BOOKABLE / INVALID_RANGE.
+    // Nothing has been charged yet — payment is created only after reserve.
+    const { data: reserveResult, error: reserveError } = await db.rpc("book_stays", {
+      p_group_id: groupId,
+      p_items: items.map((i) => ({
+        property_id: i.property_id,
+        check_in: i.check_in,
+        check_out: i.check_out,
+        extended_checkout: i.extended_checkout ?? false,
+      })),
+      p_guest_name: guest.name,
+      p_guest_email: guest.email,
+      p_guest_phone: guest.phone,
+      p_guest_count: guest.guests,
+    });
+
+    if (reserveError) {
+      const msg = reserveError.message ?? "";
+      const code = reserveError.code ?? "";
+      if (msg.includes("ADVANCE_14_DAYS")) {
+        return NextResponse.json(
+          { code: "ADVANCE_14_DAYS", message: ADVANCE_RULE_MESSAGE },
+          { status: 422 },
+        );
+      }
+      if (msg.includes("PROPERTY_NOT_BOOKABLE")) {
+        return NextResponse.json(
+          { code: "PROPERTY_NOT_BOOKABLE", message: "A selected property is not currently bookable." },
+          { status: 404 },
+        );
+      }
+      if (code === "23P01" || msg.includes("conflicts with existing") || msg.includes("reservations_no_overlap")) {
+        return NextResponse.json(
+          { code: "DATES_UNAVAILABLE", message: "One or more stays are no longer available for those dates. Nothing was charged." },
+          { status: 409 },
+        );
+      }
+      console.error(`[bookings] book_stays failed for group ${groupId}: ${msg}`);
+      throw new Error(`Failed to reserve stays: ${msg}`);
+    }
+
+    const reservedRows = (reserveResult ?? []) as Array<{
+      reservation_id: string;
+      reference: string;
+      property_id: string;
+      property_name: string;
+      total_minor: number;
+      deposit_minor: number;
+      checkout_time: string;
+    }>;
+    if (reservedRows.length !== items.length) {
+      throw new Error("book_stays returned an unexpected number of reservations");
+    }
+
+    const propertyIds = [...new Set(items.map((i) => i.property_id))];
+    const { data: propsData } = await db
+      .from("properties")
+      .select("id, name, owner_id, nightly_rate_minor, deposit_minor, extended_checkout_offered, extended_checkout_price_minor, currency")
+      .in("id", propertyIds);
+    const propsById = new Map((propsData ?? []).map((p) => [p.id, p]));
+
     const reservations = [];
     let chargeTotalMinor = 0;
     let depositHoldTotalMinor = 0;
 
-    for (const item of items) {
-      const { data: property } = await db
-        .from("properties")
-        .select("id, nightly_rate_minor, deposit_minor, extended_checkout_offered, extended_checkout_price_minor, name, owner_id, currency")
-        .eq("id", item.property_id)
-        .eq("status", "approved")
-        .single();
-
-      if (!property) {
-        return NextResponse.json(
-          { code: "PROPERTY_NOT_BOOKABLE", message: `${item.property_id} is not currently bookable.` },
-          { status: 404 },
-        );
-      }
+    for (let idx = 0; idx < items.length; idx++) {
+      const item = items[idx];
+      const reserved = reservedRows[idx];
+      const property = propsById.get(item.property_id);
+      if (!property) throw new Error(`Property ${item.property_id} missing after reservation`);
 
       const nights = computeNights(item.check_in, item.check_out);
-      const accommodationMinor = property.nightly_rate_minor * nights;
-      let lateCheckoutFeeMinor: number | null = null;
-      let confirmedCheckoutTime = "11:00";
-
-      if (item.extended_checkout && property.extended_checkout_offered) {
-        lateCheckoutFeeMinor = property.extended_checkout_price_minor ?? Math.round(property.nightly_rate_minor * 0.4);
-        confirmedCheckoutTime = "18:00";
-      }
-
-      const totalMinor = accommodationMinor + (lateCheckoutFeeMinor ?? 0);
-      const depositMinor = property.deposit_minor ?? 10000;
-      const split = computeSplit(totalMinor);
+      const split = computeSplit(reserved.total_minor);
 
       reservations.push({
-        id: crypto.randomUUID(),
+        id: reserved.reservation_id,
         booking_group_id: groupId,
         property_id: item.property_id,
         property_name: property.name,
         owner_id: property.owner_id,
-        guest_name: guest.name,
-        guest_email: guest.email,
-        guest_phone: guest.phone,
-        guest_count: guest.guests,
         check_in: item.check_in,
         check_out: item.check_out,
-        confirmed_checkout_time: confirmedCheckoutTime,
-        late_checkout_fee_minor: lateCheckoutFeeMinor,
-        total_minor: totalMinor,
-        deposit_hold_minor: depositMinor,
+        total_minor: reserved.total_minor,
+        deposit_hold_minor: reserved.deposit_minor,
         commission_minor: split.commissionMinor,
         owner_share_minor: split.ownerShareMinor,
-        status: "pending_payment",
-        nights,
-        created_at: new Date().toISOString(),
-        currency,
+        currency: property.currency,
+        checkout_time: reserved.checkout_time,
       });
 
-      chargeTotalMinor += totalMinor;
-      depositHoldTotalMinor += depositMinor;
+      chargeTotalMinor += reserved.total_minor;
+      depositHoldTotalMinor += reserved.deposit_minor;
     }
 
     const totalSplit = computeSplit(chargeTotalMinor);
     const connectAccountId = process.env.STRIPE_CONNECT_ACCOUNT_ID || undefined;
 
-    const charge = await createBookingCharge({
-      amountMinor: chargeTotalMinor,
-      currency: "gbp",
-      bookingGroupId: groupId,
-      guestEmail: guest.email,
-      guestName: guest.name,
-      description: `CheckinBliss: ${reservations.map((r) => r.property_name).join(", ")}`,
-      connectAccountId,
-      applicationFeeMinor: connectAccountId ? totalSplit.commissionMinor : undefined,
-    });
-    const hold = await createDepositHold({
-      amountMinor: depositHoldTotalMinor,
-      currency: "gbp",
-      bookingGroupId: groupId,
-      guestEmail: guest.email,
-      description: `Security deposit: ${reservations[0]?.property_name}`,
-    });
-
-    const { error: groupError } = await db.from("booking_groups").insert({
-      id: groupId,
-      charge_intent_id: charge.intentId,
-      charge_status: "pending",
-      currency,
-      charge_total_minor: chargeTotalMinor,
-      deposit_hold_total_minor: depositHoldTotalMinor,
-      commission_minor: totalSplit.commissionMinor,
-      owner_share_minor: totalSplit.ownerShareMinor,
-      status: "pending_payment",
-    });
-    if (groupError) throw new Error(`Failed to create group: ${groupError.message}`);
-
-    for (const r of reservations) {
-      const { error: resError } = await db.from("reservations").insert({
-        id: r.id,
-        booking_group_id: r.booking_group_id,
-        property_id: r.property_id,
-        guest_name: r.guest_name,
-        guest_email: r.guest_email,
-        guest_phone: r.guest_phone,
-        guest_count: r.guest_count,
-        check_in: r.check_in,
-        check_out: r.check_out,
-        status: r.status,
-        confirmed_checkout_time: r.confirmed_checkout_time,
-        late_checkout_fee_minor: r.late_checkout_fee_minor,
-        accommodation_minor: r.total_minor - (r.late_checkout_fee_minor ?? 0),
-        total_minor: r.total_minor,
-        deposit_hold_minor: r.deposit_hold_minor,
-        commission_minor: r.commission_minor,
-        owner_share_minor: r.owner_share_minor,
-        currency: r.currency,
-        payment_intent_id: charge.intentId,
-        reference: generateReference(),
+    // --- 2. PAYMENT CREATION — if this fails we compensate: the reserved
+    // dates are released (group + reservations cancelled) and nothing is
+    // charged, because nothing was charged yet.
+    let charge: Awaited<ReturnType<typeof createBookingCharge>>;
+    let hold: Awaited<ReturnType<typeof createDepositHold>>;
+    try {
+      charge = await createBookingCharge({
+        amountMinor: chargeTotalMinor,
+        currency: "gbp",
+        bookingGroupId: groupId,
+        guestEmail: guest.email,
+        guestName: guest.name,
+        description: `CheckinBliss: ${reservations.map((r) => r.property_name).join(", ")}`,
+        connectAccountId,
+        applicationFeeMinor: connectAccountId ? totalSplit.commissionMinor : undefined,
       });
-      if (resError) throw new Error(`Failed to create reservation: ${resError.message}`);
-
-      const { error: inspError } = await db.from("inspections").insert({
-        reservation_id: r.id,
-        created_at: new Date().toISOString(),
+      hold = await createDepositHold({
+        amountMinor: depositHoldTotalMinor,
+        currency: "gbp",
+        bookingGroupId: groupId,
+        guestEmail: guest.email,
+        description: `Security deposit: ${reservations[0]?.property_name}`,
       });
-      if (inspError) {
-        console.warn(`Failed to create inspection for reservation ${r.id}: ${inspError.message}`);
-      }
+    } catch (paymentError) {
+      await compensateFailedGroup(db, groupId);
+      console.error(`[bookings] Payment setup failed for group ${groupId}; dates released.`, paymentError);
+      return NextResponse.json(
+        {
+          code: "PAYMENT_SETUP_FAILED",
+          message: "We couldn't set up payment. Your dates were released and nothing was charged. Please try again.",
+        },
+        { status: 502 },
+      );
     }
 
-    const ownerMap = new Map<string, { ownerId: string; reservationId: string; propertyId: string; ownerShareMinor: number }>();
-    for (const r of reservations) {
-      const existing = ownerMap.get(r.owner_id ?? r.property_id);
-      if (existing) {
-        existing.ownerShareMinor += r.owner_share_minor;
-      } else {
-        ownerMap.set(r.owner_id ?? r.property_id, {
-          ownerId: r.owner_id ?? r.property_id,
-          reservationId: r.id,
-          propertyId: r.property_id,
-          ownerShareMinor: r.owner_share_minor,
+    try {
+      const { error: groupError } = await db.from("booking_groups").insert({
+        id: groupId,
+        charge_intent_id: charge.intentId,
+        charge_status: "pending",
+        currency,
+        charge_total_minor: chargeTotalMinor,
+        deposit_hold_total_minor: depositHoldTotalMinor,
+        commission_minor: totalSplit.commissionMinor,
+        owner_share_minor: totalSplit.ownerShareMinor,
+        status: "pending_payment",
+      });
+      if (groupError) throw new Error(`Failed to create group: ${groupError.message}`);
+
+      for (const r of reservations) {
+        const { error: inspError } = await db.from("inspections").insert({
+          reservation_id: r.id,
+          created_at: new Date().toISOString(),
+        });
+        if (inspError) {
+          console.warn(`Failed to create inspection for reservation ${r.id}: ${inspError.message}`);
+        }
+      }
+
+      const ownerMap = new Map<string, { ownerId: string; reservationId: string; propertyId: string; ownerShareMinor: number }>();
+      for (const r of reservations) {
+        const key = r.owner_id ?? r.property_id;
+        const existing = ownerMap.get(key);
+        if (existing) {
+          existing.ownerShareMinor += r.owner_share_minor;
+        } else {
+          ownerMap.set(key, {
+            ownerId: key,
+            reservationId: r.id,
+            propertyId: r.property_id,
+            ownerShareMinor: r.owner_share_minor,
+          });
+        }
+      }
+      const payoutEntries = [...ownerMap.values()];
+      await createOwnerPayoutRows(groupId, payoutEntries);
+
+      const expiresAt = new Date();
+      expiresAt.setDate(expiresAt.getDate() + 7);
+      for (const r of reservations) {
+        await db.from("deposit_holds").insert({
+          reservation_id: r.id,
+          payment_intent_id: hold.intentId,
+          hold_amount_minor: r.deposit_hold_minor,
+          currency,
+          status: "held",
+          expires_at: expiresAt.toISOString(),
         });
       }
-    }
-    const payoutEntries = [...ownerMap.values()];
-    await createOwnerPayoutRows(groupId, payoutEntries);
 
-    const expiresAt = new Date();
-    expiresAt.setDate(expiresAt.getDate() + 7);
-    for (const r of reservations) {
-      await db.from("deposit_holds").insert({
-        reservation_id: r.id,
-        payment_intent_id: hold.intentId,
-        hold_amount_minor: r.deposit_hold_minor,
-        currency,
-        status: "held",
-        expires_at: expiresAt.toISOString(),
+      const uniqueOwners = new Set(reservations.map((r) => r.property_name));
+      for (const propertyName of uniqueOwners) {
+        const msg = getTemplate("newBooking", propertyName, guest.name, items[0].check_in, items[items.length - 1].check_out, `£${(chargeTotalMinor / 100).toFixed(2)}`);
+        await sendWhatsApp("+2348000000000", msg);
+      }
+
+      await db.from("audit_log").insert({
+        action: "booking.reserved",
+        target_id: groupId,
+        detail: `Group ${groupId} (${reference}) — ${items.length} stay(s), charge ${chargeTotalMinor}, commission ${totalSplit.commissionMinor}, owner share ${totalSplit.ownerShareMinor}, hold ${depositHoldTotalMinor}. Payment setup: ${charge.intentId}`,
       });
+    } catch (writeError) {
+      // Any post-payment persistence failure: release the dates so inventory
+      // is never silently held; the customer can retry. Payment can be
+      // reconciled later (see docs/payment-reconciliation.md).
+      await compensateFailedGroup(db, groupId);
+      console.error(`[bookings] Post-payment persistence failed for group ${groupId}; dates released.`, writeError);
+      return NextResponse.json(
+        {
+          code: "BOOKING_PERSIST_FAILED",
+          message: "We couldn't complete your booking. Your dates were released and you have not been charged.",
+        },
+        { status: 502 },
+      );
     }
-
-    const uniqueOwners = new Set(reservations.map((r) => r.property_name));
-    for (const propertyName of uniqueOwners) {
-      const msg = getTemplate("newBooking", propertyName, guest.name, items[0].check_in, items[items.length - 1].check_out, `£${(chargeTotalMinor / 100).toFixed(2)}`);
-      await sendWhatsApp("+2348000000000", msg);
-    }
-
-    await db.from("audit_log").insert({
-      action: "booking.confirmed",
-      target_id: groupId,
-      detail: `Group ${groupId} — ${items.length} stay(s), charge ${chargeTotalMinor}, commission ${totalSplit.commissionMinor}, owner share ${totalSplit.ownerShareMinor}, hold ${depositHoldTotalMinor}`,
-    });
 
     return NextResponse.json(
       {
@@ -294,7 +358,7 @@ export async function POST(request: NextRequest) {
           check_out: r.check_out,
           total_minor: r.total_minor,
           deposit_minor: r.deposit_hold_minor,
-          checkout_time: r.confirmed_checkout_time,
+          checkout_time: r.checkout_time,
         })),
         charge_total_minor: chargeTotalMinor,
         deposit_hold_minor: depositHoldTotalMinor,
@@ -321,6 +385,18 @@ export async function POST(request: NextRequest) {
   }
 }
 
+/** In-memory registry of held (pending_payment) date ranges in mock mode —
+ *  mirrors the DB GiST EXCLUDE constraint so concurrent mock bookings can
+ *  never double-book a property. */
+const mockPendingRanges: Array<{ property_id: string; check_in: string; check_out: string }> = [];
+let mockLock: Promise<unknown> = Promise.resolve();
+
+async function withMockLock<T>(fn: () => Promise<T>): Promise<T> {
+  const run = mockLock.then(fn, fn);
+  mockLock = run.then(() => undefined, () => undefined);
+  return run;
+}
+
 async function handleMockBooking(
   guest: z.infer<typeof BookingGuestSchema>,
   items: z.infer<typeof BookingItemSchema>[],
@@ -332,47 +408,63 @@ async function handleMockBooking(
   const reference = generateReference();
   const currency = "GBP";
 
-  const checkedProperties = new Map<string, boolean>();
-  for (const item of items) {
-    const prop = properties.find((p) => p.id === item.property_id);
-    if (!prop || prop.status !== "approved") {
-      return NextResponse.json(
-        { code: "PROPERTY_NOT_BOOKABLE", message: `${item.property_id} is not currently bookable.` },
-        { status: 404 },
-      );
+  const conflict = await withMockLock(async () => {
+    for (const item of items) {
+      const prop = properties.find((p) => p.id === item.property_id);
+      if (!prop || prop.status !== "approved") {
+        return {
+          code: "PROPERTY_NOT_BOOKABLE" as const,
+          message: `${item.property_id} is not currently bookable.`,
+          status: 404,
+        };
+      }
+
+      const itemCheckIn = new Date(item.check_in);
+      const itemCheckOut = new Date(item.check_out);
+      const overlaps = (r: { check_in?: string; check_out?: string; starts?: string; ends?: string }) => {
+        const rIn = new Date(r.check_in ?? r.starts ?? "");
+        const rOut = new Date(r.check_out ?? r.ends ?? "");
+        return itemCheckIn < rOut && itemCheckOut > rIn;
+      };
+
+      if (mockPendingRanges.some((p) => p.property_id === item.property_id && overlaps(p))) {
+        return {
+          code: "DATES_UNAVAILABLE" as const,
+          message: `${prop.name} is booked for those dates. Nothing charged.`,
+          status: 409,
+        };
+      }
+      if (reservations.some((r) => r.property_id === item.property_id && r.status !== "cancelled" && overlaps(r))) {
+        return {
+          code: "DATES_UNAVAILABLE" as const,
+          message: `${prop.name} is booked for those dates. Nothing charged.`,
+          status: 409,
+        };
+      }
+      if (blocks.some((b) => b.property_id === item.property_id && overlaps(b))) {
+        return {
+          code: "DATES_BLOCKED" as const,
+          message: `${prop.name} is unavailable for those dates. Nothing charged.`,
+          status: 409,
+        };
+      }
     }
 
-    const itemReservations = reservations.filter(
-      (r) => r.property_id === item.property_id && r.status !== "cancelled",
+    for (const item of items) {
+      mockPendingRanges.push({
+        property_id: item.property_id,
+        check_in: item.check_in,
+        check_out: item.check_out,
+      });
+    }
+    return null;
+  });
+
+  if (conflict) {
+    return NextResponse.json(
+      { code: conflict.code, message: conflict.message },
+      { status: conflict.status },
     );
-    const itemBlocks = blocks.filter((b) => b.property_id === item.property_id);
-
-    const itemCheckIn = new Date(item.check_in);
-    const itemCheckOut = new Date(item.check_out);
-
-    for (const r of itemReservations) {
-      const rIn = new Date(r.check_in);
-      const rOut = new Date(r.check_out);
-      if (itemCheckIn < rOut && itemCheckOut > rIn) {
-        return NextResponse.json(
-          { code: "DATES_UNAVAILABLE", message: `${prop.name} is booked for those dates. Nothing charged.` },
-          { status: 409 },
-        );
-      }
-    }
-
-    for (const b of itemBlocks) {
-      const bIn = new Date(b.starts);
-      const bOut = new Date(b.ends);
-      if (itemCheckIn < bOut && itemCheckOut > bIn) {
-        return NextResponse.json(
-          { code: "DATES_BLOCKED", message: `${prop.name} is unavailable for those dates. Nothing charged.` },
-          { status: 409 },
-        );
-      }
-    }
-
-    checkedProperties.set(item.property_id, true);
   }
 
   let chargeTotalMinor = 0;
@@ -436,6 +528,26 @@ async function handleMockBooking(
   }
   await createOwnerPayoutRows(groupId, payoutEntries);
 
+  // Create the charge + hold intents through the same functions the real path
+  // uses — in mock mode this registers them in the in-memory payment-intent
+  // ledger so the reconciliation cron can demo "paid but webhook missed it".
+  const charge = await createBookingCharge({
+    amountMinor: chargeTotalMinor,
+    currency: "gbp",
+    bookingGroupId: groupId,
+    guestEmail: guest.email,
+    guestName: guest.name,
+    description: `CheckinBliss: ${resultReservations.map((r) => r.property_name).join(", ")}`,
+  });
+  const hold = await createDepositHold({
+    amountMinor: depositHoldTotalMinor,
+    currency: "gbp",
+    bookingGroupId: groupId,
+    guestEmail: guest.email,
+    description: `Security deposit: ${resultReservations[0]?.property_name}`,
+  });
+  registerMockBookingGroup(groupId, charge.intentId, "pending", "pending_payment");
+
   console.log(`[mock bookings] Group ${groupId} (${reference}) created — ${items.length} stay(s), charge ${chargeTotalMinor}, hold ${depositHoldTotalMinor}`);
 
   const uniqueOwners = [...new Set(resultReservations.map((r) => r.property_name))];
@@ -453,8 +565,8 @@ async function handleMockBooking(
       charge_total_minor: chargeTotalMinor,
       deposit_hold_minor: depositHoldTotalMinor,
       currency,
-      chargeClientSecret: `mock_charge_${groupId}_secret`,
-      holdClientSecret: `mock_hold_${groupId}_secret`,
+      chargeClientSecret: charge.clientSecret,
+      holdClientSecret: hold.clientSecret,
       deposit: {
         note: "Pre-authorisation hold — not a charge. Released within 7 days of a clean checkout.",
       },

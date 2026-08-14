@@ -1,24 +1,36 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useTransition } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { formatMinor } from "@/lib/currency";
-import { getOwnerBookings } from "@/lib/data";
 import { submitDispute } from "@/actions/disputes";
+import { updateProfileAction } from "@/actions/auth";
 import type { AuthUser } from "@/lib/auth";
+import type { OwnerBookingView } from "@/lib/types";
 
 function fmt(n: number) { return formatMinor(n); }
 
 type GuestTab = "overview" | "bookings" | "history" | "claims" | "support" | "settings" | "notifications";
 
-export function GuestDashboard({ user, initialTab }: { user: AuthUser | null; initialTab?: GuestTab }) {
+export function GuestDashboard({
+  user,
+  initialTab,
+  bookings = [],
+}: {
+  user: AuthUser | null;
+  initialTab?: GuestTab;
+  bookings?: OwnerBookingView[];
+}) {
   const displayUser = { name: user?.name ?? "Guest", email: user?.email ?? "" };
-  const [bookings] = useState(() => getOwnerBookings().slice(0, 6));
   const [tab, setTab] = useState<GuestTab>(initialTab ?? "overview");
-  const [bookingDetail, setBookingDetail] = useState<typeof bookings[0] | null>(null);
+  const [bookingDetail, setBookingDetail] = useState<OwnerBookingView | null>(null);
 
-  const upcoming = bookings.filter(b => b.status === "confirmed");
-  const past = bookings.filter(b => b.status === "completed");
+  const today = new Date().toISOString().slice(0, 10);
+  const upcoming = bookings.filter((b) => b.status === "confirmed" && b.check_out >= today);
+  const past = bookings.filter(
+    (b) => b.status === "completed" || (b.status === "confirmed" && b.check_out < today),
+  );
 
   const tabs: { key: GuestTab; label: string }[] = [
     { key: "overview", label: "Overview" },
@@ -337,14 +349,20 @@ function ContactTab({ user }: { user: { name: string; email: string } }) {
 }
 
 function SettingsTab({ user }: { user: { name: string; email: string } }) {
-  const [saved, setSaved] = useState(false);
+  const [saved, setSaved] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+  const [pending, startTransition] = useTransition();
   const [photo, setPhoto] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
-  function handleSave(e: React.FormEvent) {
-    e.preventDefault();
-    setSaved(true);
-    setTimeout(() => setSaved(false), 3000);
+  function handleSave(formData: FormData) {
+    setSaved(null);
+    setError(null);
+    startTransition(async () => {
+      const result = await updateProfileAction(null, formData);
+      if (result?.error) setError(result.error);
+      else if (result?.success) setSaved(result.success);
+    });
   }
 
   function handlePhotoChange(e: React.ChangeEvent<HTMLInputElement>) {
@@ -360,8 +378,7 @@ function SettingsTab({ user }: { user: { name: string; email: string } }) {
     <div className="space-y-5">
       <h1 className="font-display text-2xl font-medium text-ink">Account settings</h1>
 
-      <form onSubmit={handleSave} className="p-6 rounded-xl border border-hairline bg-card space-y-5">
-        {/* Avatar upload */}
+      <form action={handleSave} className="p-6 rounded-xl border border-hairline bg-card space-y-5">
         <div className="flex items-center gap-5">
           <div className="w-20 h-20 rounded-full border-2 border-hairline bg-primary-bg overflow-hidden shrink-0 flex items-center justify-center">
             {photo ? (
@@ -398,7 +415,13 @@ function SettingsTab({ user }: { user: { name: string; email: string } }) {
         <div className="grid grid-cols-2 gap-4 max-sm:grid-cols-1">
           <div className="flex flex-col gap-1">
             <label className="text-xs font-semibold uppercase tracking-wider text-mute">Full name</label>
-            <input type="text" defaultValue={user.name} className="px-4 py-3 rounded-lg border border-line bg-card text-sm text-ink outline-none focus:border-primary transition-colors" />
+            <input
+              name="full_name"
+              type="text"
+              defaultValue={user.name}
+              required
+              className="px-4 py-3 rounded-lg border border-line bg-card text-sm text-ink outline-none focus:border-primary transition-colors"
+            />
           </div>
           <div className="flex flex-col gap-1">
             <label className="text-xs font-semibold uppercase tracking-wider text-mute">Email</label>
@@ -407,21 +430,39 @@ function SettingsTab({ user }: { user: { name: string; email: string } }) {
         </div>
         <div className="flex flex-col gap-1">
           <label className="text-xs font-semibold uppercase tracking-wider text-mute">Phone (WhatsApp)</label>
-          <input type="tel" placeholder="+234 801 234 5678" className="px-4 py-3 rounded-lg border border-line bg-card text-sm text-ink outline-none focus:border-primary transition-colors" />
+          <input
+            name="phone"
+            type="tel"
+            placeholder="+234 801 234 5678"
+            className="px-4 py-3 rounded-lg border border-line bg-card text-sm text-ink outline-none focus:border-primary transition-colors"
+          />
         </div>
         <div className="flex flex-col gap-1">
           <label className="text-xs font-semibold uppercase tracking-wider text-mute">Communication preference</label>
-          <select className="px-4 py-3 rounded-lg border border-line bg-card text-sm text-ink outline-none focus:border-primary transition-colors cursor-pointer">
+          <select disabled className="px-4 py-3 rounded-lg border border-line bg-primary-bg text-sm text-ink-secondary outline-none cursor-not-allowed">
             <option>WhatsApp</option>
             <option>Email</option>
           </select>
+          <p className="text-[11px] text-mute">Set at signup — contact support to change.</p>
         </div>
 
-        {saved && <p className="text-xs font-medium text-success">Settings saved.</p>}
+        {saved && <p className="text-xs font-medium text-success">{saved}</p>}
+        {error && <p className="text-xs font-medium text-danger">{error}</p>}
 
-        <button type="submit" className="py-3 px-6 rounded-lg bg-brass text-soft text-sm font-semibold hover:bg-brass-dark transition-colors cursor-pointer">
-          Save changes
+        <button
+          type="submit"
+          disabled={pending}
+          className="py-3 px-6 rounded-lg bg-brass text-soft text-sm font-semibold hover:bg-brass-dark transition-colors cursor-pointer disabled:opacity-60"
+        >
+          {pending ? "Saving\u2026" : "Save changes"}
         </button>
+
+        <p className="text-xs text-ink-secondary pt-2">
+          Need to change your password?{" "}
+          <Link href="/forgot-password" className="text-primary font-semibold no-underline">
+            Send a reset link
+          </Link>
+        </p>
       </form>
     </div>
   );

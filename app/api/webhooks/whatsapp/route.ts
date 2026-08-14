@@ -9,6 +9,7 @@ import type { OwnerCommand, OperatorCommand } from "@/lib/whatsapp";
 import { wasProcessed, markProcessed } from "@/lib/idempotency";
 import { log } from "@/lib/observability";
 import { createAdmin, supabaseAdminConfigured } from "@/lib/supabase/admin";
+import { releaseHold } from "@/lib/stripe";
 import { getSeedProperties, getSeedReservations } from "@/lib/seed-data";
 import { addDamagePhoto, damagePhotoCount } from "@/lib/media";
 
@@ -319,10 +320,22 @@ async function releaseHoldFor(
   reservationId: string,
 ): Promise<void> {
   if (supabaseAdminConfigured && db) {
+    const { data: hold } = await db
+      .from("deposit_holds")
+      .select("payment_intent_id")
+      .eq("reservation_id", reservationId)
+      .eq("status", "held")
+      .maybeSingle();
+    if (hold?.payment_intent_id) {
+      await releaseHold(hold.payment_intent_id).catch((err: unknown) => {
+        log("whatsapp-bot", "warn", `Stripe releaseHold failed: ${err instanceof Error ? err.message : err}`);
+      });
+    }
     await db
       .from("deposit_holds")
       .update({ status: "released", released_at: new Date().toISOString() })
-      .eq("reservation_id", reservationId);
+      .eq("reservation_id", reservationId)
+      .eq("status", "held");
   }
 }
 

@@ -269,7 +269,7 @@ export function getOwnerProperties() {
 }
 
 /* ---------- Search ---------- */
-import { getSeedProperties, getSeedReservations, getSeedBlocks, type SeedProperty } from "./seed-data";
+import { getSeedProperties, getSeedReservations, getSeedBlocks, type SeedProperty, type SeedRoomType, type SeedVerification } from "./seed-data";
 import { supabaseConfigured, createBrowser } from "./supabase";
 
 export interface SearchOpts {
@@ -277,11 +277,15 @@ export interface SearchOpts {
   checkIn?: string;
   checkOut?: string;
   amenities?: string;
+  guests?: number;
+  rooms?: number;
 }
 
 function mapRowToSeedProperty(row: Record<string, unknown>): SeedProperty {
   const branded = (row.branded_name as string) || (row.name as string) || "";
-  return {
+  const roomTypes = (row.room_types as SeedRoomType[] | undefined) ?? undefined;
+  const verification = (row.verification as SeedVerification | undefined) ?? undefined;
+  const result: SeedProperty = {
     id: row.id as string,
     slug: row.slug as string,
     name: branded,
@@ -307,6 +311,9 @@ function mapRowToSeedProperty(row: Record<string, unknown>): SeedProperty {
     images: (row.images as string[]) || [],
     cover_photo_url: (row.cover_photo_url as string) || null,
   };
+  if (roomTypes) result.room_types = roomTypes;
+  if (verification) result.verification = verification;
+  return result;
 }
 
 export function searchProperties(opts: SearchOpts): SeedProperty[] {
@@ -349,6 +356,12 @@ export function searchProperties(opts: SearchOpts): SeedProperty[] {
         p.amenities?.some((a) => a.toLowerCase().includes(amenity)),
       );
     }
+    if (opts.guests && opts.guests > 0) {
+      results = results.filter((p) => (p.sleeps ?? 0) >= opts.guests!);
+    }
+    if (opts.rooms && opts.rooms > 0) {
+      results = results.filter((p) => (p.bedrooms ?? 0) >= opts.rooms!);
+    }
     return results;
   }
 
@@ -369,6 +382,8 @@ export async function searchPropertiesAsync(opts: SearchOpts): Promise<SeedPrope
       p_where: opts.where ? `%${opts.where}%` : null,
       p_in: opts.checkIn || null,
       p_out: opts.checkOut || null,
+      p_guests: opts.guests && opts.guests > 0 ? opts.guests : null,
+      p_rooms: opts.rooms && opts.rooms > 0 ? opts.rooms : null,
     });
 
     if (error || !data) {
@@ -424,6 +439,13 @@ export async function searchPropertiesAsync(opts: SearchOpts): Promise<SeedPrope
         );
       }
 
+      if (opts.guests && opts.guests > 0) {
+        results = results.filter((p) => (p.sleeps ?? 0) >= opts.guests!);
+      }
+      if (opts.rooms && opts.rooms > 0) {
+        results = results.filter((p) => (p.bedrooms ?? 0) >= opts.rooms!);
+      }
+
       if (results.length > 0) return results;
     }
   }
@@ -453,6 +475,12 @@ export async function searchPropertiesAsync(opts: SearchOpts): Promise<SeedPrope
     results = results.filter((p) =>
       p.amenities?.some((a) => a.toLowerCase().includes(amenity)),
     );
+  }
+  if (opts.guests && opts.guests > 0) {
+    results = results.filter((p) => (p.sleeps ?? 0) >= opts.guests!);
+  }
+  if (opts.rooms && opts.rooms > 0) {
+    results = results.filter((p) => (p.bedrooms ?? 0) >= opts.rooms!);
   }
   return results;
 }

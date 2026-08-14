@@ -1,5 +1,29 @@
 import { slugify } from "./slug";
 
+export interface SeedRoomType {
+  /** Friendly label e.g. "Master suite", "Guest room". */
+  label: string;
+  /** Bed config e.g. "1 king", "2 singles". */
+  bed: string;
+  /** Optional ensuite/shared note. */
+  bath?: string;
+  /** Optional extra detail shown on hover or expansion. */
+  note?: string;
+}
+
+export interface SeedVerification {
+  /** ISO date the property was last inspected (YYYY-MM-DD). */
+  inspected_on: string;
+  /** Operator display name that performed the inspection. */
+  inspector: string;
+  /** Number of photos captured during inspection. */
+  photos: number;
+  /** Total properties inspected by this operator before. */
+  inspector_experience: number;
+  /** Free-text verification notes (mock = canned). */
+  notes: string;
+}
+
 export interface SeedProperty {
   id: string;
   slug: string;
@@ -29,6 +53,10 @@ export interface SeedProperty {
   owner_id?: string;
   lat?: number;
   lng?: number;
+  /** Per-bedroom configuration — shown in the room-types modal and inline summary. */
+  room_types?: SeedRoomType[];
+  /** Inspection record — shown in the verification panel. */
+  verification?: SeedVerification;
 }
 
 export interface SeedReservation {
@@ -129,7 +157,76 @@ export function getSeedProperties(): SeedProperty[] {
     PR026: "OW6", PR027: "OW6", PR028: "OW6", PR029: "OW6", PR030: "OW6",
   };
   const props = buildProperties();
-  return props.map((p) => ({ ...p, owner_id: ownerMap[p.id] ?? "OW1" }));
+  return props.map((p, i) => ({
+    ...p,
+    owner_id: ownerMap[p.id] ?? "OW1",
+    room_types: p.room_types ?? defaultRoomTypes(p.bedrooms, p.bathrooms ?? p.bedrooms),
+    verification: p.verification ?? defaultVerification(p.id, p.city, i),
+  }));
+}
+
+/* ----------------------------------------------------------------- */
+/*  Defaults for room_types + verification                            */
+/* ----------------------------------------------------------------- */
+
+const ROOM_LABEL_ROTATION: SeedRoomType[][] = [
+  [{ label: "Master suite", bed: "1 king", bath: "En suite", note: "Walk-in wardrobe" }],
+  [
+    { label: "Master suite", bed: "1 king", bath: "En suite", note: "Walk-in wardrobe" },
+    { label: "Guest room", bed: "1 queen" },
+  ],
+  [
+    { label: "Master suite", bed: "1 king", bath: "En suite", note: "Walk-in wardrobe" },
+    { label: "Twin room", bed: "2 singles" },
+    { label: "Single room", bed: "1 double", note: "Best for one guest or a child" },
+  ],
+  [
+    { label: "Master suite", bed: "1 king", bath: "En suite", note: "Walk-in wardrobe" },
+    { label: "Guest room", bed: "1 queen" },
+    { label: "Twin room", bed: "2 singles" },
+    { label: "Bunk room", bed: "1 bunk", note: "Best for children" },
+  ],
+  [
+    { label: "Master suite", bed: "1 king", bath: "En suite", note: "Walk-in wardrobe" },
+    { label: "Guest room", bed: "1 queen" },
+    { label: "Twin room", bed: "2 singles" },
+    { label: "Twin room", bed: "2 singles" },
+    { label: "Single room", bed: "1 double" },
+  ],
+];
+
+function defaultRoomTypes(bedrooms: number, bathrooms: number): SeedRoomType[] {
+  const set = ROOM_LABEL_ROTATION[Math.min(bedrooms, ROOM_LABEL_ROTATION.length) - 1] ?? ROOM_LABEL_ROTATION[0];
+  return set.map((r, i) => ({
+    ...r,
+    bath: r.bath ?? (i === 0 ? "En suite" : bathrooms >= bedrooms ? "En suite" : "Shared"),
+  }));
+}
+
+const INSPECTOR_BY_CITY: Record<string, string[]> = {
+  Lagos: ["Tunde Ogunlade", "Folake Adeyemi", "Chidi Okafor"],
+  Abuja: ["Funke Adeyemi", "Ibrahim Musa", "Zainab Bello"],
+};
+
+const VERIFICATION_NOTES = [
+  "Inspected on the advertised dates. Bed linen, towels, and kitchenware complete and in good condition.",
+  "All appliances tested on-site. Wi-Fi speed recorded above the 50 Mbps threshold. Generator exercised.",
+  "Walked the full apartment with the owner. Water pressure, AC, and entrance security all verified.",
+  "Photos refreshed against current state. Property matches the listing. No undisclosed construction nearby.",
+];
+
+function defaultVerification(propertyId: string, city: string, idx: number): SeedVerification {
+  const inspectors = INSPECTOR_BY_CITY[city] ?? INSPECTOR_BY_CITY.Lagos;
+  const inspector = inspectors[idx % inspectors.length];
+  // Deterministic date offset so tests don't drift.
+  const inspected = new Date(2026, 5, 14 - (idx % 12));
+  return {
+    inspected_on: inspected.toISOString().slice(0, 10),
+    inspector,
+    photos: 32 + ((idx * 7) % 24),
+    inspector_experience: 18 + (idx % 24),
+    notes: VERIFICATION_NOTES[idx % VERIFICATION_NOTES.length],
+  };
 }
 
 function buildProperties(): Omit<SeedProperty, "owner_id">[] {
