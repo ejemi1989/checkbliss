@@ -355,7 +355,9 @@ function SettingsTab({ user }: { user: { name: string; email: string } }) {
   const [photo, setPhoto] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
 
-  function handleSave(formData: FormData) {
+  function handleSave(ev: React.FormEvent<HTMLFormElement>) {
+    ev.preventDefault();
+    const formData = new FormData(ev.currentTarget);
     setSaved(null);
     setError(null);
     startTransition(async () => {
@@ -378,7 +380,7 @@ function SettingsTab({ user }: { user: { name: string; email: string } }) {
     <div className="space-y-5">
       <h1 className="font-display text-2xl font-medium text-ink">Account settings</h1>
 
-      <form action={handleSave} className="p-6 rounded-xl border border-hairline bg-card space-y-5">
+      <form onSubmit={handleSave} className="p-6 rounded-xl border border-hairline bg-card space-y-5">
         <div className="flex items-center gap-5">
           <div className="w-20 h-20 rounded-full border-2 border-hairline bg-primary-bg overflow-hidden shrink-0 flex items-center justify-center">
             {photo ? (

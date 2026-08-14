@@ -7,7 +7,7 @@ export const stripeConfigured = Boolean(SECRET_KEY);
 let _stripe: Stripe | null = null;
 function getStripe(): Stripe {
   if (!stripeConfigured) throw new Error("Stripe not configured: set STRIPE_SECRET_KEY");
-  if (!_stripe) _stripe = new Stripe(SECRET_KEY, { apiVersion: "2026-06-24.dahlia", typescript: true });
+  if (!_stripe) _stripe = new Stripe(SECRET_KEY, { apiVersion: "2026-07-29.dahlia", typescript: true });
   return _stripe;
 }
 

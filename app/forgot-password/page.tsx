@@ -9,11 +9,13 @@ export default function ForgotPasswordPage() {
   const [success, setSuccess] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
 
-  function handleSubmit(formData: FormData) {
+  function handleSubmit(ev: React.FormEvent<HTMLFormElement>) {
+    ev.preventDefault();
+    const fd = new FormData(ev.currentTarget);
     setError(null);
     setSuccess(null);
     startTransition(async () => {
-      const result = await requestPasswordResetAction(null, formData);
+      const result = await requestPasswordResetAction(null, fd);
       if (result?.error) setError(result.error);
       else if (result?.success) setSuccess(result.success);
     });
@@ -35,7 +37,7 @@ export default function ForgotPasswordPage() {
             </p>
           </div>
 
-          <form action={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <label className="block text-[11px] font-semibold uppercase tracking-[0.1em] text-mute mb-1.5">Email address</label>
               <input

@@ -38,7 +38,15 @@ export function SearchBar() {
     return () => document.removeEventListener("mousedown", onClick);
   }, []);
 
-  const [minDateStr] = useState(() => minCheckInDateStr());
+  const minDateRef = useRef<string | null>(null);
+  const [minDateStr, setMinDateStr] = useState<string | null>(null);
+  useEffect(() => {
+    const next = minCheckInDateStr();
+    if (minDateRef.current !== next) {
+      minDateRef.current = next;
+      setMinDateStr(next);
+    }
+  }, []);
 
   const suggestions = where.length > 0
     ? [
@@ -125,7 +133,7 @@ export function SearchBar() {
               aria-label="Check in date"
               onFocus={(e) => { (e.target as HTMLInputElement).type = "date"; }}
               onBlur={(e) => { if (!e.target.value) (e.target as HTMLInputElement).type = "text"; }}
-              min={minDateStr}
+              min={minDateStr ?? undefined}
               value={checkIn}
               onChange={(e) => setCheckIn(e.target.value)}
               className="w-full border-none outline-none bg-transparent text-[15px] font-medium text-ink placeholder:text-ink-tertiary/50 font-sans p-0 m-0 cursor-pointer"
@@ -141,7 +149,7 @@ export function SearchBar() {
               aria-label="Check out date"
               onFocus={(e) => { (e.target as HTMLInputElement).type = "date"; }}
               onBlur={(e) => { if (!e.target.value) (e.target as HTMLInputElement).type = "text"; }}
-              min={checkIn || minDateStr}
+              min={checkIn || minDateStr || undefined}
               value={checkOut}
               onChange={(e) => setCheckOut(e.target.value)}
               className="w-full border-none outline-none bg-transparent text-[15px] font-medium text-ink placeholder:text-ink-tertiary/50 font-sans p-0 m-0 cursor-pointer"

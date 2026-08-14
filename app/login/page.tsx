@@ -17,10 +17,12 @@ export default function LoginPage() {
   const [pending, startTransition] = useTransition();
   const [fillEmail, setFillEmail] = useState("");
 
-  function handleSubmit(formData: FormData) {
+  function handleSubmit(ev: React.FormEvent<HTMLFormElement>) {
+    ev.preventDefault();
+    const fd = new FormData(ev.currentTarget);
     setError(null);
     startTransition(async () => {
-      const result = await loginAction(null, formData);
+      const result = await loginAction(null, fd);
       if (result?.error) setError(result.error);
     });
   }
@@ -73,7 +75,7 @@ export default function LoginPage() {
             <p style={{ fontSize: 14, color: "#44483D", marginTop: 8 }}>Access your dashboard, bookings, and properties.</p>
           </div>
 
-          <form action={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 20 }}>
+          <form onSubmit={handleSubmit} style={{ display: "flex", flexDirection: "column", gap: 20 }}>
             <div>
               <label style={{ display: "block", fontSize: 11, fontWeight: 600, letterSpacing: "0.1em", textTransform: "uppercase" as const, color: "#6A6E63", marginBottom: 6 }}>Email address</label>
               <input

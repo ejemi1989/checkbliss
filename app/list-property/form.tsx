@@ -10,7 +10,9 @@ export function ListPropertyForm() {
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const handleSubmit = useCallback(async (formData: FormData) => {
+  const handleSubmit = useCallback(async (ev: React.FormEvent<HTMLFormElement>) => {
+    ev.preventDefault();
+    const formData = new FormData(ev.currentTarget);
     setPending(true);
     setError(null);
     try {
@@ -43,7 +45,7 @@ export function ListPropertyForm() {
 
   return (
     <>
-      <form action={handleSubmit} className="p-8 rounded-2xl bg-card border border-hairline space-y-5">
+      <form onSubmit={handleSubmit} className="p-8 rounded-2xl bg-card border border-hairline space-y-5">
         {error && (
           <div className="p-3 rounded-xl bg-danger/10 text-danger text-sm font-medium">
             {error}
