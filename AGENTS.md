@@ -97,6 +97,7 @@ These skills are installed at `.agents/skills/` for project-specific use:
 | `code-reviewer` | `.agents/skills/code-reviewer/SKILL.md` | Pre-merge code review across 5 dimensions |
 | `security-auditor` | `.agents/skills/security-auditor/SKILL.md` | Vulnerability detection, threat modeling |
 | `web-performance-auditor` | `.agents/skills/web-performance-auditor/SKILL.md` | Core Web Vitals, bundle size, rendering perf |
+| `vercel-cdn-debugger` | `.agents/skills/vercel-cdn-debugger/SKILL.md` | Diagnose Vercel CDN/edge-cache/deployment-asset issues (FOUC, stale chunks, alias mismatches) |
 
 Load one when the task matches its description. Each enforces a structured output format and verification gate.
 

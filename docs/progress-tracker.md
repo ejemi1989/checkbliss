@@ -28,6 +28,11 @@ The core money-and-inventory flow is implemented, tested, and documented:
 
 ## Recently completed
 
+### vercel-cdn-debugger skill installed (2026-08-15)
+- Installed the Vercel CDN/deployment debugger as a loadable project skill: `.agents/skills/vercel-cdn-debugger/SKILL.md` (source: `.context/features/vercel_debug.md`).
+- Workflow: establish what "broken" looks like → mandatory incognito cold-load production test (disambiguates dev-only Turbopack CSS-chunk lag from real prod bugs) → structured CDN causes (deployment alias mismatch, stale edge cache mid-propagation, asset-hash 404s, ISR/data-cache staleness, duplicate `globals.css` imports causing async chunk splitting) → redeploy + re-test confirmation. Explicitly forbids CDN-side fixes without the Step 2 incognito test and forbids broad cache disabling.
+- Registered in `AGENTS.md` Project Skills table.
+
 ### Timezone-stable seed data — property "Inspected on" date (2026-08-15)
 - **SSR content bug (root cause):** `lib/seed-data.ts` `defaultVerification()` built the inspection date via `new Date(2026, 5, 14 - (idx % 12))` — a **local-time** constructor — then serialized with `.toISOString()` (UTC). The calendar date therefore shifted by one day with the deployment server's timezone (reproduced via SSR sweep: UTC → "Inspected on 13 June 2026", Pacific/Auckland → "12 June 2026" on every property page's "Verified by us" panel). Same-page cached/SEO content was non-deterministic across environments.
 - **Fix:** construct with `new Date(Date.UTC(2026, 5, 14 - (idx % 12)))`. `inspected_on` is now identical on every server timezone. `formatInspectionDate()` in `property-client.tsx` already parsed ISO components directly (timezone-safe).
