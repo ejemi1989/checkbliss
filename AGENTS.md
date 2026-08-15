@@ -100,6 +100,7 @@ These skills are installed at `.agents/skills/` for project-specific use:
 | `vercel-cdn-debugger` | `.agents/skills/vercel-cdn-debugger/SKILL.md` | Diagnose Vercel CDN/edge-cache/deployment-asset issues (FOUC, stale chunks, alias mismatches) |
 | `nextjs-issue-resolver` | `.agents/skills/nextjs-issue-resolver/SKILL.md` | Autonomous Next.js debugging/repair — FIND → REPRODUCE → TRACE → ROOT CAUSE → FIX → VALIDATE → REGRESSION |
 | `nextjs-first-render-debugger` | `.agents/skills/nextjs-first-render-debugger/SKILL.md` | First-render/hydration incidents — pages broken on first load but correct after refresh: SSR/client divergence, loading-state flashes, auth timing, CSS/font/image shifts, cache differences, race conditions |
+| `frontend-patterns` | `.agents/skills/frontend-patterns/SKILL.md` | React/Next.js component patterns, state management, data fetching, performance (memoization, code splitting, virtualization), forms, error boundaries, animation, accessibility |
 
 Load one when the task matches its description. Each enforces a structured output format and verification gate.
 

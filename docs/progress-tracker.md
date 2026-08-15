@@ -28,6 +28,12 @@ The core money-and-inventory flow is implemented, tested, and documented:
 
 ## Recently completed
 
+### frontend-patterns skill installed (2026-08-15)
+- Installed the frontend development patterns skill: `.agents/skills/frontend-patterns/SKILL.md` (source: `.context/features/frontend-patterns.md`).
+- Covers: component patterns (composition, compound components, render props), custom hooks (useToggle, referentially-stable `useQuery` with refs to avoid infinite fetch loops, useDebounce), state management (Context + useReducer), performance (memoization with copy-before-sort, `React.memo`, lazy/Suspense code splitting, TanStack virtualizer), controlled forms with validation, ErrorBoundary class pattern, Framer Motion list/modal animations, and accessibility (keyboard navigation, focus management).
+- Includes privacy/data-boundary rules: synthetic data in examples, no tracking/analytics without approval, least-privilege APIs, server-side validation at every boundary.
+- Registered in `AGENTS.md` Project Skills table.
+
 ### nextjs-first-render-debugger skill installed (2026-08-15)
 - Installed the professional first-render/hydration incident-resolution skill: `.agents/skills/nextjs-first-render-debugger/SKILL.md` (source: `.context/features/nextjs-first-render-debugger.md`).
 - 31-section workflow: Incident Definition → required investigation model → evidence-first → reproduce → differentiate **server vs client** → hydration investigation → server/client component boundary → loading-state → auth/session timing → CSS → Tailwind → font → image → data-fetching → cache → middleware → effects → race conditions → console classification (incl. treating `ERR_BLOCKED_BY_CLIENT` as likely extension noise) → accessibility → production reproduction → fix principles → `suppressHydrationWarning` rule → validation protocol → visual regression verification → root-cause confidence (HIGH/MEDIUM/LOW) → failure recovery → git safety → Definition of Done → required incident report.
