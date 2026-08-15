@@ -28,6 +28,12 @@ The core money-and-inventory flow is implemented, tested, and documented:
 
 ## Recently completed
 
+### Server-side GA4 page-view tracking (2026-08-15)
+- The app previously had **no analytics code at all** — a `GET /mp/collect` error seen in the browser was traced to a third-party/browser-side GA4 implementation (not CheckinBliss; that endpoint only accepts POST, and its `api_secret` was exposed in the URL — rotated advice given).
+- **Implementation (Measurement Protocol, server-only secret):** `lib/analytics.ts` (`sendPageView()`, reads `GA_MEASUREMENT_ID`/`GA_API_SECRET` lazily, no-op in mock mode) → `app/api/analytics/page-view/route.ts` (Zod-validated POST, max lengths) → `components/analytics/page-view-tracker.tsx` (client component, fires once per route incl. query params, persists `ga_client_id` in `localStorage`, `crypto.randomUUID()` session, `keepalive`). Mounted in root layout inside `<Suspense fallback={null}>` — the `useSearchParams()` CSR bailout otherwise broke static prerender of `/dashboard/operator`.
+- **Security:** `GA_API_SECRET` lives only in the server env (`lib/analytics.ts` is `server-only`); the browser only ever talks to our route.
+- **Verification:** 292 tests (5 new in `tests/analytics.test.ts` — no-op mock mode, correct MP POST shape, route 200/400/non-JSON), typecheck, lint (0 new), production build green.
+
 ### vercel-cdn-debugger skill installed (2026-08-15)
 - Installed the Vercel CDN/deployment debugger as a loadable project skill: `.agents/skills/vercel-cdn-debugger/SKILL.md` (source: `.context/features/vercel_debug.md`).
 - Workflow: establish what "broken" looks like → mandatory incognito cold-load production test (disambiguates dev-only Turbopack CSS-chunk lag from real prod bugs) → structured CDN causes (deployment alias mismatch, stale edge cache mid-propagation, asset-hash 404s, ISR/data-cache staleness, duplicate `globals.css` imports causing async chunk splitting) → redeploy + re-test confirmation. Explicitly forbids CDN-side fixes without the Step 2 incognito test and forbids broad cache disabling.

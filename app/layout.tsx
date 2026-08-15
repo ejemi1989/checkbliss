@@ -1,7 +1,9 @@
+import { Suspense } from "react";
 import type { Metadata, Viewport } from "next";
 import { Inter, Playfair_Display, Newsreader, Hanken_Grotesk } from "next/font/google";
 import Script from "next/script";
 import { SCRIPT_URL, DEFAULT_SCRIPT_ID } from "@marsidev/react-turnstile";
+import { PageViewTracker } from "@/components/analytics/page-view-tracker";
 import "./globals.css";
 
 const inter = Inter({
@@ -58,6 +60,9 @@ export default function RootLayout({
           src={SCRIPT_URL}
           strategy="afterInteractive"
         />
+        <Suspense fallback={null}>
+          <PageViewTracker />
+        </Suspense>
         {children}
       </body>
     </html>
