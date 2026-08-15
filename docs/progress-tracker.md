@@ -22,11 +22,17 @@ The core money-and-inventory flow is implemented, tested, and documented:
 
 | Command | Last run | Result |
 |---------|----------|--------|
-| `npm test` | 2026-08-14 | 21 files, **287 tests passing** |
-| `npm run typecheck` | 2026-08-14 | clean |
-| `npm run lint` | 2026-08-14 | 20 pre-existing errors (unrelated files); new code clean |
+| `npm test` | 2026-08-15 | 21 files, **292 tests passing** |
+| `npm run typecheck` | 2026-08-15 | clean |
+| `npm run lint` | 2026-08-15 | 20 pre-existing errors (unrelated files); new code clean |
 
 ## Recently completed
+
+### nextjs-first-render-debugger skill installed (2026-08-15)
+- Installed the professional first-render/hydration incident-resolution skill: `.agents/skills/nextjs-first-render-debugger/SKILL.md` (source: `.context/features/nextjs-first-render-debugger.md`).
+- 31-section workflow: Incident Definition → required investigation model → evidence-first → reproduce → differentiate **server vs client** → hydration investigation → server/client component boundary → loading-state → auth/session timing → CSS → Tailwind → font → image → data-fetching → cache → middleware → effects → race conditions → console classification (incl. treating `ERR_BLOCKED_BY_CLIENT` as likely extension noise) → accessibility → production reproduction → fix principles → `suppressHydrationWarning` rule → validation protocol → visual regression verification → root-cause confidence (HIGH/MEDIUM/LOW) → failure recovery → git safety → Definition of Done → required incident report.
+- Core principle: ask *"why did the app render state A initially and state B after hydration/refresh?"* and prove the answer before changing CSS. Bans fake fixes (setTimeout, reload, `"use client"` everywhere, `suppressHydrationWarning`, `no-store` everywhere) without evidence.
+- Registered in `AGENTS.md` Project Skills table.
 
 ### nextjs-issue-resolver skill installed (2026-08-15)
 - Installed the autonomous Next.js debugging/repair skill: `.agents/skills/nextjs-issue-resolver/SKILL.md` (source: `.context/features/nextjs_resolve.md`).
