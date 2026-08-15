@@ -46,8 +46,8 @@ type OwnerTab = "home" | "properties" | "bookings" | "claims" | "payouts" | "cal
 
 export function OwnerDashboard({ user, initialTab }: { user: AuthUser | null; initialTab?: OwnerTab }) {
   const [tab, setTab] = useState<OwnerTab>(initialTab ?? "home");
-  const [month, setMonth] = useState(() => new Date().getMonth());
-  const [year, setYear] = useState(() => new Date().getFullYear());
+  const [month, setMonth] = useState<number | null>(null);
+  const [year, setYear] = useState<number | null>(null);
   const [bookingModal, setBookingModal] = useState<(typeof bookings)[0] | null>(null);
   const [claimModal, setClaimModal] = useState<(typeof damageClaims)[0] | null>(null);
   const [blockStart, setBlockStart] = useState("");
@@ -67,6 +67,8 @@ export function OwnerDashboard({ user, initialTab }: { user: AuthUser | null; in
     if (!todayRef.current || todayRef.current.getTime() !== next.getTime()) {
       todayRef.current = next;
       setToday(next);
+      setMonth(next.getMonth());
+      setYear(next.getFullYear());
     }
   }, []);
 
@@ -83,6 +85,7 @@ export function OwnerDashboard({ user, initialTab }: { user: AuthUser | null; in
   calendarBookings.forEach((b) => b.dates.forEach((d) => { bookingsByDate[d] = b; }));
 
   const calendar = useMemo(() => {
+    if (month === null || year === null) return [];
     const firstDay = new Date(year, month, 1).getDay();
     const daysInMonth = new Date(year, month + 1, 0).getDate();
     const isCurrentMonth = !!today && today.getFullYear() === year && today.getMonth() === month;
@@ -101,7 +104,17 @@ export function OwnerDashboard({ user, initialTab }: { user: AuthUser | null; in
   const greet = hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
 
   const MONTHS = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"];
-  function monthLabel() { return `${MONTHS[month]} ${year}`; }
+  function monthLabel() { return month === null || year === null ? "" : `${MONTHS[month]} ${year}`; }
+
+  function shiftMonth(delta: number) {
+    if (month === null || year === null) return;
+    let m = month + delta;
+    let y = year;
+    if (m < 0) { m = 11; y -= 1; }
+    if (m > 11) { m = 0; y += 1; }
+    setMonth(m);
+    setYear(y);
+  }
 
   /* stats */
   const totalRevenue = bookings.reduce((s, b) => s + (b.status === "cancelled" ? 0 : b.amount_minor), 0);
@@ -287,9 +300,9 @@ export function OwnerDashboard({ user, initialTab }: { user: AuthUser | null; in
                 <div className="flex items-center justify-between mb-5">
                   <div><h2 className="font-display text-lg font-medium text-ink">Availability Calendar</h2><p className="text-xs mt-0.5 text-ink-secondary">Bookings across all your units</p></div>
                   <div className="flex items-center gap-x-2">
-                    <button onClick={() => { setMonth((m) => { if (m <= 0) { setYear((y) => y - 1); return 11; } return m - 1; }); }} className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-primary-bg border border-hairline text-ink-secondary cursor-pointer">{I.chevronLeft}</button>
+                    <button onClick={() => shiftMonth(-1)} className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-primary-bg border border-hairline text-ink-secondary cursor-pointer">{I.chevronLeft}</button>
                     <span className="text-sm font-semibold text-ink w-28 text-center">{monthLabel()}</span>
-                    <button onClick={() => { setMonth((m) => { if (m >= 11) { setYear((y) => y + 1); return 0; } return m + 1; }); }} className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-primary-bg border border-hairline text-ink-secondary cursor-pointer">{I.chevronRight}</button>
+                    <button onClick={() => shiftMonth(1)} className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-primary-bg border border-hairline text-ink-secondary cursor-pointer">{I.chevronRight}</button>
                   </div>
                 </div>
                 <div className="grid grid-cols-7 gap-1">
