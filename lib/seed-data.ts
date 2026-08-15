@@ -218,8 +218,9 @@ const VERIFICATION_NOTES = [
 function defaultVerification(propertyId: string, city: string, idx: number): SeedVerification {
   const inspectors = INSPECTOR_BY_CITY[city] ?? INSPECTOR_BY_CITY.Lagos;
   const inspector = inspectors[idx % inspectors.length];
-  // Deterministic date offset so tests don't drift.
-  const inspected = new Date(2026, 5, 14 - (idx % 12));
+  // Deterministic date offset so tests don't drift. UTC construction keeps
+  // inspected_on stable regardless of the deployment server's timezone.
+  const inspected = new Date(Date.UTC(2026, 5, 14 - (idx % 12)));
   return {
     inspected_on: inspected.toISOString().slice(0, 10),
     inspector,
