@@ -28,6 +28,11 @@ The core money-and-inventory flow is implemented, tested, and documented:
 
 ## Recently completed
 
+### nextjs-issue-resolver skill installed (2026-08-15)
+- Installed the autonomous Next.js debugging/repair skill: `.agents/skills/nextjs-issue-resolver/SKILL.md` (source: `.context/features/nextjs_resolve.md`).
+- 41-section workflow: FIND → REPRODUCE → TRACE → ROOT CAUSE → FIX → VALIDATE → REGRESSION. Covers hydration, server/client boundaries, async data, auth, routing, CSS/FOUC, images/fonts, API, DB, env vars, caching, build/TS failures, race conditions, third-party integrations (incl. distinguishing ad-blocker `ERR_BLOCKED_BY_CLIENT` from app bugs), console classification, accessibility, performance, security (never expose secrets), controlled experiments, and a strict Definition of Done + root-cause report format. Explicitly bans fake fixes (setTimeout hacks, `any`, "use client" everywhere, disabling hydration/TS/ESLint).
+- Registered in `AGENTS.md` Project Skills table.
+
 ### Server-side GA4 page-view tracking (2026-08-15)
 - The app previously had **no analytics code at all** — a `GET /mp/collect` error seen in the browser was traced to a third-party/browser-side GA4 implementation (not CheckinBliss; that endpoint only accepts POST, and its `api_secret` was exposed in the URL — rotated advice given).
 - **Implementation (Measurement Protocol, server-only secret):** `lib/analytics.ts` (`sendPageView()`, reads `GA_MEASUREMENT_ID`/`GA_API_SECRET` lazily, no-op in mock mode) → `app/api/analytics/page-view/route.ts` (Zod-validated POST, max lengths) → `components/analytics/page-view-tracker.tsx` (client component, fires once per route incl. query params, persists `ga_client_id` in `localStorage`, `crypto.randomUUID()` session, `keepalive`). Mounted in root layout inside `<Suspense fallback={null}>` — the `useSearchParams()` CSR bailout otherwise broke static prerender of `/dashboard/operator`.
