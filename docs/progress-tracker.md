@@ -28,6 +28,17 @@ The core money-and-inventory flow is implemented, tested, and documented:
 
 ## Recently completed
 
+### Implemented: suppress-expected-hydration-mismatches pattern (2026-08-16)
+- Audited the codebase against `.context/features/rendering.md` (suppressHydrationWarning only for *expected* server/client render differences — random IDs, dates, locale/timezone formatting — never to hide real bugs, never overused).
+- **Verdict: pattern already correctly applied at every legitimate site.** Verified inventory:
+  - `app/book/[slug]/client.tsx:578,583` — `formatCheckinDate()` locale-formatted dates (only rendered after user picks dates).
+  - `components/admin/bookings-view.tsx:47` — `monthLabel()` uses `toLocaleString("default", ...)`; locale differs between Node ICU and browser.
+  - `components/notification-bell.tsx:84`, `components/notifications-view.tsx:76` — `toLocaleDateString("en-GB", ...)` timestamps.
+  - `app/admin/crm/analytics/page.tsx:11` — chart axis label (`toLocaleDateString`).
+  - `app/layout.tsx:55,57` — `<html>/<body>` (extension/theme-attribute tolerance).
+- **Correctly left alone (would be overuse):** `guest-client.tsx` `today` (filter-only, never rendered), `verification-client.tsx` `now` (handler computation only), hero-search date labels (user-interaction gated, no hydration), admin CRM audit/inbox pages (server components — no hydration), `Math.round(...).toLocaleString` number formatting (stable across ICU).
+- The month-boundary *state* bug class (owner dashboard calendar) was already fixed properly in `a3ec233` by deferring "now"-derived state to post-mount rather than suppressing.
+
 ### First-paint flash fix — inline critical CSS (2026-08-16)
 - Reported "hydration issues / page flashes then fixes" on `/book/lagoon-view-loft`. **Investigation (nextjs-first-render-debugger):** no hydration mismatch exists — `app/book/[slug]/client.tsx` renders deterministically (no window/Date/random at render time); verified clean in Chromium on both aliases, desktop+mobile, direct load, `?step` variants, and client navigation (only DOM delta was Stripe's hidden metrics iframe).
 - **Root cause:** the HTML shipped **zero inline critical CSS** — styling came entirely from 2 render-blocking external stylesheet requests. On first-time/slow/cold-cache loads the browser paints before (or waits on) those requests, producing a visible "flash then fix" (FOUC-style). Skeleton during client nav is <16 ms locally, not the culprit.
