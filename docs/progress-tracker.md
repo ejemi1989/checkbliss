@@ -22,11 +22,17 @@ The core money-and-inventory flow is implemented, tested, and documented:
 
 | Command | Last run | Result |
 |---------|----------|--------|
-| `npm test` | 2026-08-15 | 21 files, **292 tests passing** |
-| `npm run typecheck` | 2026-08-15 | clean |
-| `npm run lint` | 2026-08-15 | 20 pre-existing errors (unrelated files); new code clean |
+| `npm test` | 2026-08-16 | 22 files, **292 tests passing** |
+| `npm run typecheck` | 2026-08-16 | clean |
+| `npm run lint` | 2026-08-16 | 23 pre-existing errors (unrelated files); new code clean |
 
 ## Recently completed
+
+### First-paint flash fix — inline critical CSS (2026-08-16)
+- Reported "hydration issues / page flashes then fixes" on `/book/lagoon-view-loft`. **Investigation (nextjs-first-render-debugger):** no hydration mismatch exists — `app/book/[slug]/client.tsx` renders deterministically (no window/Date/random at render time); verified clean in Chromium on both aliases, desktop+mobile, direct load, `?step` variants, and client navigation (only DOM delta was Stripe's hidden metrics iframe).
+- **Root cause:** the HTML shipped **zero inline critical CSS** — styling came entirely from 2 render-blocking external stylesheet requests. On first-time/slow/cold-cache loads the browser paints before (or waits on) those requests, producing a visible "flash then fix" (FOUC-style). Skeleton during client nav is <16 ms locally, not the culprit.
+- **Fix:** enabled `experimental.inlineCss: true` in `next.config.ts` (documented in Next 16 `inlineCss.md`, recommended for Tailwind atomic CSS). Verified in local production build: book-page HTML now contains a single 88 KB inline `<style>` block and **zero** stylesheet `<link>` tags; page renders styled with correct bg/fonts and no JS errors.
+- **Verification:** 292 tests pass, typecheck clean, lint clean for touched file.
 
 ### frontend-patterns skill installed (2026-08-15)
 - Installed the frontend development patterns skill: `.agents/skills/frontend-patterns/SKILL.md` (source: `.context/features/frontend-patterns.md`).
