@@ -28,6 +28,11 @@ The core money-and-inventory flow is implemented, tested, and documented:
 
 ## Recently completed
 
+### vercel-react-best-practices skill installed (2026-08-16)
+- Installed the Vercel Engineering performance guide: `.agents/skills/vercel-react-best-practices/SKILL.md` (source: `.context/features/vercel.md`).
+- 70 rules across 8 categories prioritized by impact: (1) Eliminating Waterfalls — `Promise.all`, defer/start-early, Suspense streaming; (2) Bundle Size — no barrel imports, `next/dynamic`, defer third-party, preload on hover; (3) Server-Side — auth server actions, `React.cache()`, LRU, dedupe RSC props, hoist static I/O, no shared module state, minimize serialization, parallel nested fetches, `after()`; (4) Client Fetching — SWR dedup, listener dedup, passive scroll listeners, versioned localStorage; (5) Re-render — memoization, lazy state init, functional setState, `startTransition`, `useDeferredValue`, refs for transient values, no inline components; (6) Rendering — content-visibility, hoist static JSX, suppress expected hydration mismatches, ternary over `&&`, resource hints; (7) JS perf — Maps for lookups, cache property access, early exits, hoisted RegExp, `toSorted()`, `flatMap`; (8) Advanced — `useEffectEvent` deps, handler refs, init-once, `useLatest`.
+- Registered in `AGENTS.md` Project Skills table.
+
 ### Implemented: suppress-expected-hydration-mismatches pattern (2026-08-16)
 - Audited the codebase against `.context/features/rendering.md` (suppressHydrationWarning only for *expected* server/client render differences — random IDs, dates, locale/timezone formatting — never to hide real bugs, never overused).
 - **Verdict: pattern already correctly applied at every legitimate site.** Verified inventory:
