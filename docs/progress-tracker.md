@@ -50,6 +50,12 @@ The core money-and-inventory flow is implemented, tested, and documented:
 - **Fix:** enabled `experimental.inlineCss: true` in `next.config.ts` (documented in Next 16 `inlineCss.md`, recommended for Tailwind atomic CSS). Verified in local production build: book-page HTML now contains a single 88 KB inline `<style>` block and **zero** stylesheet `<link>` tags; page renders styled with correct bg/fonts and no JS errors.
 - **Verification:** 292 tests pass, typecheck clean, lint clean for touched file.
 
+### Forgot Password styling & FOUC fix (2026-08-16)
+- **Problem:** `/forgot-password` page was visually unstyled and misaligned on client-side routing from `/login` but correct on reload.
+- **Root Cause:** Next.js `inlineCss: true` optimization inlines only the critical styles used by the source page. Since `/login` uses inline styles, the Tailwind CSS structural rules needed by `/forgot-password` were missing from the client-side bundle on first navigation.
+- **Fix:** Refactored `app/forgot-password/page.tsx` to match the brand-compliant editorial split-panel layout used on `/login` and `/signup` and implemented visual styling using React inline style attributes. This makes style loading instant, consistent, and independent of external CSS files.
+- **Verification:** Passed typechecking, 292 unit tests, and production build compiles cleanly. Manual layout verified for desktop and mobile viewports.
+
 ### frontend-patterns skill installed (2026-08-15)
 - Installed the frontend development patterns skill: `.agents/skills/frontend-patterns/SKILL.md` (source: `.context/features/frontend-patterns.md`).
 - Covers: component patterns (composition, compound components, render props), custom hooks (useToggle, referentially-stable `useQuery` with refs to avoid infinite fetch loops, useDebounce), state management (Context + useReducer), performance (memoization with copy-before-sort, `React.memo`, lazy/Suspense code splitting, TanStack virtualizer), controlled forms with validation, ErrorBoundary class pattern, Framer Motion list/modal animations, and accessibility (keyboard navigation, focus management).
