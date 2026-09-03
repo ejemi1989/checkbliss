@@ -16,6 +16,8 @@ Update this file after every completed feature. Any engineer reading this should
 
 **Last completed:** 14-day advance booking rule + atomic mock booking — `lib/booking-rules.ts` is the single source of truth (`MIN_ADVANCE_DAYS=14`, Africa/Lagos date-only arithmetic; 13 days → rejected, 14 → earliest bookable). Enforced at all 4 layers: search bar min, booking page min, `POST /api/bookings` (422 `ADVANCE_14_DAYS`), `book_stays()` RPC (DB). Mock booking path made atomic — in-memory `mockPendingRanges` registry under a mutex — so duplicate-submit (PAY-PAY double-click) and simultaneous same-room races behave like the DB GiST EXCLUDE guard. Docs `docs/booking-rules.md`, migrations `0015_booking_rules.sql`, tests `tests/booking-rules.test.ts` (21) + `tests/booking-route.test.ts` (7).
 
+**Last completed:** NGN partner swap — RaeNest replaced with Fincra. New `lib/fincra.ts` (mock + sandbox-aware, Fincra-documented error codes, HMAC SHA-512 webhook signature), `app/api/webhooks/fincra/route.ts` (signature-verified, idempotent, terminal-state-aware), migration `0016_rename_raenest_to_fincra.sql` (column rename, no data loss), `lib/payouts.ts` updated to read owner bank details from `owner_payout_details` and route through Fincra. `lib/raenest.ts` deleted. Mock returns `processing` then `successful` on first poll to mirror real Fincra behavior.
+
 **Last completed:** Payment Architecture V2 — implemented the two-entity Stripe Connect + Raenest payment architecture per `.context/features/payment_1.md`.
 
 **Last completed:** Operator dashboard structural alignment — verified and completed the city operator dashboard against `.context/admin/operator.md`. The current 9-tab operator dashboard (Today, Curation, Inspections, Bookings, Claims, Owners, Photos, Verification, Notifications) covers the brief's day-to-day responsibilities (sourcing properties, inspections, damage claim submission, verification, owner directory, performance metrics, onboarding workflow, no cross-city data). The Bookings tab and Onboarding modal were added in this pass — see the Operator Dashboard section below. Verified the existing data layer helpers `getOperatorClaims(assignedCities)`, `getOwnersForCity(assignedCities)`, `operatorCanAccessCity`, `filterByAssignedCities` enforce city-scoping. Admin dashboard already excludes operational tasks (no Curation/Inspections/Photos/Verification tabs); admin focuses on Claims adjudication, Operators management, Finance, Properties suspension, Users, Audit, WhatsApp CRM. Owner dashboard remains lightweight (6 tabs: Home, Bookings, Claims, Payouts, Calendar, Notifications) and is now gated by `lib/owner-gate.ts` mirroring `operator-gate.ts`. Demo operator accounts `operator-lagos@checkbliss.com` (Lagos only), `operator-abuja@checkbliss.com` (Abuja only), `operator@checkbliss.com` (Lagos + Abuja multi-city).
@@ -111,7 +113,7 @@ Update this file after every completed feature. Any engineer reading this should
   - All cron routes (inspections, feedback, reconcile, sweep) with idempotency + heartbeats
   - GOOD → Trustpilot redirect; BAD → capture text, notify admin + operator, append to verification history
   - `0006_feedback.sql` migration — `feedback_requests` table with reservation FK, unique token, status, URLs
-- [x] 21 NGN Payout Integration — **Partially implemented** (backend + cron + Raenest adapter built; deferred pending partner confirmation for production activation)
+- [x] 21 NGN Payout Integration — **Complete** (Fincra replaces RaeNest: `lib/fincra.ts` adapter, sandbox + mock modes, webhook handler at `app/api/webhooks/fincra/route.ts`, migration `0016_rename_raenest_to_fincra.sql`)
 - [x] 22 Outbound Calendar Sync
   - `lib/calendar.ts` — RFC 5545 iCal generator
   - `GET /api/calendar/[ownerId]` — subscribe feed (Google/Outlook/Apple)
@@ -178,7 +180,7 @@ Update this file after every completed feature. Any engineer reading this should
 | Notifications click-to-read + navigate | `components/notifications-view.tsx` — clicking a notification marks it as read AND navigates to its `link` field. Added keyboard support (Enter/Space) and `stopPropagation` on "Mark all as read". |
 | Admin gate disabled | `lib/admin-gate.ts:42` `checkAdminGate()` always returns `{ ok: true }`. Removed `setAdminCookie()` from `app/admin/page.tsx` (cookies can only be set in Server Actions/Route Handlers). Admin dashboard now accessible simply by logging in as admin. |
 | WhatsApp CRM (admin layer) | In-app implementation of the wacrm.tech-style admin CRM, forked and adapted to the existing CheckinBliss bot + Supabase stack. New `/admin/crm` route with 5 sub-views (Shared Inbox, Contact Hub, Pipelines, Broadcasts, Templates) plus analytics strip. Webhook fan-out in `app/api/webhooks/whatsapp/route.ts` records every inbound message into `whatsapp_threads` + `whatsapp_messages` + `whatsapp_contacts` (non-fatal). Bot-handled commands auto-resolve in the inbox; messages the bot can't handle stay open for human follow-up. Supabase migration `0011_whatsapp_crm.sql` adds 8 tables (contacts, threads, messages, pipelines, deals, broadcasts, templates, automations) with RLS — admin role only. `lib/crm.ts` provides mock-mode fallback for all queries so the UI works without Supabase credentials. New `WhatsApp CRM` sidebar item in admin links to the new route. **Superseded by purpose-built CRM below.** |
-| Payment Architecture V2 | Stripe Connect split (12%/88%), Raenest NGN payout adapter, eligibility engine, settlement hold, retry-with-backoff, refund reversal, `owner_payouts` ledger, `payout_alerts` admin dashboard, payout lifecycle cron. 229/229 tests pass. Mock mode complete. |
+| Payment Architecture V2 | Stripe Connect split (12%/88%), Fincra NGN payout adapter, eligibility engine, settlement hold, retry-with-backoff, refund reversal, `owner_payouts` ledger, `payout_alerts` admin dashboard, payout lifecycle cron. 229/229 tests pass. Mock mode complete. |
 | 14-day advance booking rule | `lib/booking-rules.ts` — single source of truth (`MIN_ADVANCE_DAYS=14`, Africa/Lagos date-only arithmetic). Boundary made explicit: 13 days → rejected, 14 → earliest bookable. Enforced at 4 layers: search-bar `min`, booking-page `min`, `POST /api/bookings` server guard (422 `ADVANCE_14_DAYS`), `book_stays()` RPC (DB). Client-safe (no server-only import). `tests/booking-rules.test.ts` 21 tests (1/3/7/13/14/15/30/60-day matrix, timezone-determinism, month/year rollover). Docs `docs/booking-rules.md`. |
 | Atomic mock booking (race + duplicate protection) | Mock path now reserves dates in an in-memory `mockPendingRanges` registry under a mutex before returning — mirrors the DB GiST EXCLUDE guard so duplicate PAY-PAY double-clicks (2nd → 409 `DATES_UNAVAILABLE`) and simultaneous same-room requests (exactly one 201) behave correctly in mock mode. Fixed hidden mock-block bug (used `starts`/`ends` instead of `check_in`/`check_out`). `tests/booking-route.test.ts` 7 tests. |
 | Payment reconciliation | Answers "payment succeeds but booking creation fails — how do we know?" Policy: succeeded booking-charge intent + group confirmed = `ok`; group pending = **recover** (mirror webhook: confirm reservations + group, schedule inspection, notify owner, audit); no group = **refund**. Deposit holds & non-booking intents = skip. `lib/reconciliation.ts` (pure classifier + mock/real orchestrator), `app/api/cron/reconcile/route.ts` live (CRON_SECRET + hourly idempotency), mock intent ledger in `lib/stripe.ts` (`pi_mock_charge_<group>` / `pi_mock_hold_<group>`) so the full story is demonstrable with no creds. Migration `0016_reconciliation.sql` adds `reconciliation_log` + `inspection_schedule` + `reservations.payment_intent_id` (real-mode drift the Stripe webhook already depended on). Docs `docs/payment-reconciliation.md`. `tests/reconciliation.test.ts` 14 tests. |
@@ -268,7 +270,7 @@ Update this file after every completed feature. Any engineer reading this should
 | 14-day advance rule duplicated across call sites (no single source of truth) | High | **Resolved** — `lib/booking-rules.ts` is the single source of truth; search bar, booking page, `POST /api/bookings`, and `book_stays()` all enforce it (422 `ADVANCE_14_DAYS`). Boundary (13d rejected / 14d earliest bookable) defined in code + docs. 21 + 7 tests. |
 | Mock booking path could double-book (no range registry) | High | **Resolved** — in-memory `mockPendingRanges` + mutex; duplicate PAY-PAY → 409, simultaneous race → exactly one 201. |
 | Real-mode drift: `inspection_schedule` + `reservations.payment_intent_id` referenced by Stripe webhook but no migration created them | Medium | **Resolved** — `0016_reconciliation.sql` creates both + `reconciliation_log`. |
-| NGN payout backend complete, partner unconfirmed | Medium | Deferred — Raenest adapter + payout cron built, awaiting partner credentials |
+| NGN payout backend complete, partner unconfirmed | Medium | **Resolved** — Fincra adapter + payout cron + webhook handler live; awaiting sandbox credentials to flip from mock to real mode |
 | Customer account was a mock-only stub (`/account` showed static data, no mock guest allowlist) | High | **Resolved** — `guest@checkbliss.com` added to mock allowlist; `lib/data-guest.ts` queries `reservations` by `guest_email` with mock fallback; Zod-validated `updateProfileAction` + `requestPasswordResetAction`; new `/forgot-password` page; all `/account/*` routes redirect to `/login?next=...` when unauthenticated. |
 | Search lacked guests/rooms filters | High | **Resolved** — `SearchOpts.guests` + `SearchOpts.rooms` applied in both mock and Supabase paths; Bedrooms stepper on `SearchBar`; active chips on the results page; `app/search/loading.tsx` skeleton. New `tests/search-filters.test.ts` (6 tests). |
 | Owner dashboard had no role gate | High | **Resolved** — new `lib/owner-gate.ts` mirroring `operator-gate.ts`; `/dashboard/owner/layout.tsx` redirects non-owners to `/login?next=/dashboard/owner`. |
@@ -509,8 +511,8 @@ Implemented the two-entity payment architecture from `.context/features/payment_
 
 ### What was built
 - Migration `0015_payment_architecture.sql` — split columns on booking_groups + reservations, new tables `owner_payouts`, `owner_payout_details`, `payout_alerts` with admin + owner RLS
-- `lib/raenest.ts` — mock-aware NGN payout adapter with error classification and idempotency
-- `lib/payouts.ts` — `computeSplit()` (12%/88%), eligibility engine, settlement hold (3 business days), Raenest release with exponential-backoff retry, poll-for-confirmation, refund reversal, in-memory mock ledger
+- `lib/fincra.ts` — mock-aware NGN payout adapter with error classification and idempotency (replaced `lib/raenest.ts`)
+- `lib/payouts.ts` — `computeSplit()` (12%/88%), eligibility engine, settlement hold (3 business days), Fincra release with exponential-backoff retry, poll-for-confirmation, refund reversal, in-memory mock ledger
 - `lib/stripe.ts` — Connect `application_fee_amount` + `transfer_data`, `refundBookingCharge` with `refund_application_fee` + `reverse_transfer`
 - `app/api/bookings/route.ts` — computes per-reservation split, passes Connect params, creates `owner_payouts` rows per owner
 - `app/api/webhooks/stripe/route.ts` — captures `stripe_charge_id` from `latest_charge`, handles `record_refund`
@@ -518,7 +520,7 @@ Implemented the two-entity payment architecture from `.context/features/payment_
 - `actions/finance.ts` — `refundBooking`, real `approvePayout`/`rejectPayout`, `resolveAlert`
 - `lib/data.ts` + `lib/data-server.ts` — `getPayoutLedger`, `getPayoutAlerts`, `getCommissionRecords`, `getFxHistory`, `getCommissionSummary`, `getBookingTrace`
 - `tests/payment-architecture.test.ts` — 24 tests covering split, eligibility, mock lifecycle, refund, retry, NGN, FX
-- `.env.example` — added `STRIPE_CONNECT_ACCOUNT_ID`, `RAENEST_*`, `NEXT_PUBLIC_GBP_TO_NGN_RATE`
+- `.env.example` — added `STRIPE_CONNECT_ACCOUNT_ID`, `FINCRA_*`, `NEXT_PUBLIC_GBP_TO_NGN_RATE`
 
 ### Deferred
 - Admin finance UI expansion (new commission/FX/alerts/trace tabs) — data helpers ready, UI follow-up
@@ -527,7 +529,7 @@ Implemented the two-entity payment architecture from `.context/features/payment_
 ### Payout rules
 - NOT automatic on booking — release only after: check-in + check-out + inspection CLEAN + no open claims
 - 3-business-day settlement hold after all conditions met
-- Raenest call with idempotency (`raenest-{groupId}-{payoutId}`), 5-retry backoff
+- Fincra call with idempotency (`fincra-{groupId}-{payoutId}`), 5-retry backoff
 - FX conversion at payout time, owner receives NGN only
 
 ---
@@ -566,7 +568,7 @@ Closed the two biggest launch-critical correctness gaps. 271/271 tests pass, typ
 1. WhatsApp Phase 6 — owner `LINK` proof-of-ownership flow + cross-owner security tests (owner A cannot act on owner B's property) + owner notify number fix + end-to-end WhatsApp → DB → website chain test.
 2. Notifications Phase 8 — email channel (Resend/SendGrid) + notifications log on every booking state transition (currently WhatsApp only).
 3. Real-mode drift fixes Phase 7 — operators refs, `assigned_cities`, `country_of_residence`, booking reference, admin finance-client + owner payouts tab to new data layer.
-4. **Confirm NGN partner** (Raenest or equivalent) — adapter is abstracted for swap.
+4. **Confirm NGN partner credentials** — Fincra sandbox API key + business id; webhook secret configured at Fincra dashboard before webhook URL is registered in production.
 5. **Phase 2 V2 features** (deferred) — see `context/features/version 2/`.
 
 ---

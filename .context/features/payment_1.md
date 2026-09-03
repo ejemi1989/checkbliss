@@ -10,7 +10,7 @@ CheckinBliss operates through a two-entity structure:
 commission
  Nigerian Subsidiary: Lyxio Curtis Nigeria Ltd (trading as CheckinBliss Nigeria)
 — receives owner share and disburses to Nigerian property owners
-Payment flow uses Stripe Connect (UK) for collection, Raenest (or equivalent
+Payment flow uses Stripe Connect (UK) for collection, Fincra (or equivalent
 partner) for NGN disbursement.
 
 Step 1: Guest payment via Stripe
@@ -31,7 +31,7 @@ Destination A: Platform Commission (12%)
 Destination B: Owner Share (88%)
 
  Amount: 88% of total booking value
- Routes to: Nigerian subsidiary&#39;s collection account at Raenest (or equivalent
+ Routes to: Nigerian subsidiary's collection account at Fincra (or equivalent
 partner)
  Example: £528 (88% of £600)
 
@@ -42,22 +42,22 @@ manual payout schedule.
 This is CheckinBliss&#39;s revenue. Fully compliant with UK regulations as this
 represents platform commission, not client funds.
 
-Step 4: Owner share arrives at Raenest
-The £528 arrives in Lyxio Curtis Nigeria Ltd&#39;s Raenest account (or equivalent
+Step 4: Owner share arrives at Fincra
+The £528 arrives in Lyxio Curtis Nigeria Ltd's Fincra account (or equivalent
 partner). This is a Nigerian-incorporated subsidiary receiving payment under
 Nigerian regulatory framework (CBN).
-Funds held under Raenest&#39;s regulated structure until platform instructs payout.
+Funds held under Fincra's regulated structure until platform instructs payout.
 
 Step 5: Platform instructs owner payout via API
-CheckinBliss platform sends API call to Raenest instructing:
- Beneficiary: specific property owner (registered as Raenest beneficiary during
+CheckinBliss platform sends API call to Fincra instructing:
+Beneficiary: specific property owner (registered as Fincra beneficiary during
 onboarding)
  Amount: NGN equivalent of £528 minus platform-negotiated FX and payout
 fees
  Timing: as per configured payout schedule (see below)
-Step 6: Raenest converts and pays owner
-Raenest converts GBP to NGN at prevailing rate and pays the NGN equivalent to the
-property owner&#39;s Nigerian bank account (GTBank, Access Bank, Zenith, UBA, etc.).
+Step 6: Fincra converts and pays owner
+Fincra converts GBP to NGN at prevailing rate and pays the NGN equivalent to the
+property owner's Nigerian bank account (GTBank, Access Bank, Zenith, UBA, etc.).
 Property owner receives NGN in their standard Nigerian business account.
 Payout Timing Rules
 Owner payouts are NOT automatic on booking. They release after specific
@@ -77,7 +77,7 @@ Refunds work in reverse of the split:
 Full refund scenarios:
  Platform reverses charge on guest&#39;s original card
  Commission (12%) returned to platform
- Owner share (88%) reversed from Raenest account
+ Owner share (88%) reversed from Fincra account
  If owner has already been paid, refund is recovered from owner (contractually
 addressed in operator agreement)
 Partial refund scenarios (damage claims):
@@ -94,11 +94,11 @@ Platform-facing:
  Commission routed to Stripe Balance in guest currency, settles to RBS in
 GBP
 
- Owner share routed to Raenest in guest currency (or converted based on
-Raenest capabilities)
+ Owner share routed to Fincra in guest currency (or converted based on
+Fincra capabilities)
 Owner-facing:
  Owner receives NGN only
- FX conversion happens at Raenest layer
+ FX conversion happens at Fincra layer
  Owner sees GBP equivalent for records (informational)
 
 Data Model Requirements
@@ -111,13 +111,13 @@ Booking table additions:
  stripe_charge_id
  platform_payout_status (pending/settled/failed)
  owner_payout_status (pending/released/paid/failed)
- owner_payout_reference (Raenest transaction reference)
+ owner_payout_reference (Fincra transaction reference)
  owner_payout_ngn_amount (final NGN amount paid)
  owner_payout_fx_rate (rate at conversion)
  owner_payout_date
 
 Property Owner table additions:
- raenest_beneficiary_id (registered beneficiary reference at Raenest)
+ fincra_beneficiary_id (registered beneficiary reference at Fincra)
  nigerian_bank_name
  nigerian_bank_account_number
  nigerian_bank_account_name
@@ -125,9 +125,9 @@ Property Owner table additions:
 
 Reconciliation Requirements
 Platform admin dashboard must provide:
- Daily reconciliation view showing all transactions across Stripe and Raenest
+ Daily reconciliation view showing all transactions across Stripe and Fincra
  Booking-to-payout traceability (from initial charge to final owner payment)
- Failed transaction alerts (Stripe charge failures, Raenest payout failures, split
+ Failed transaction alerts (Stripe charge failures, Fincra payout failures, split
 routing failures)
  Currency conversion tracking (rates applied, dates, references)
  Owner payout history per property owner
@@ -137,12 +137,12 @@ Error Handling
 Critical error scenarios that need handling:
 1. Stripe split fails: Retry with exponential backoff, alert admin, ensure funds don&#39;t sit
 in ambiguous state.
-2. Raenest API unavailable: Queue payout for retry, alert admin after 15-minute
+2. Fincra API unavailable: Queue payout for retry, alert admin after 15-minute
 timeout, provide manual payout instruction fallback.
-3. Owner bank account rejected: Alert admin immediately, hold funds in Raenest,
+3. Owner bank account rejected: Alert admin immediately, hold funds in Fincra,
 contact owner via operator to update bank details.
 4. FX conversion outside expected range: Alert admin for review before proceeding.
-5. Duplicate payout attempts: Idempotency keys required on all Raenest API calls.
+5. Duplicate payout attempts: Idempotency keys required on all Fincra API calls.
 
 Testing Requirements
 Before launch:
@@ -161,7 +161,7 @@ Please confirm:
 1. You can build to this specification
 2. Estimated implementation time (in days)
 3. Any technical concerns or questions
-4. Any information needed from Stripe or Raenest to proceed
+4. Any information needed from Stripe or Fincra to proceed
 Best,
 Curtis
 
