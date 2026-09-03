@@ -194,7 +194,7 @@ export interface PayoutLedgerEntry {
   status: string;
   payoutNgnMinor: number | null;
   fxRate: number | null;
-  raenestReference: string | null;
+  fincraReference: string | null;
   requestedAt: string | null;
   releasedAt: string | null;
   paidAt: string | null;

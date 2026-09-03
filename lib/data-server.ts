@@ -619,7 +619,7 @@ export async function getPayoutLedgerFromDB(): Promise<PayoutLedgerEntry[]> {
       .from("owner_payouts")
       .select(
         `id, booking_group_id, owner_id, owner_share_minor, status,
-         payout_ngn_minor, fx_rate, raenest_reference,
+         payout_ngn_minor, fx_rate, fincra_reference,
          requested_at, released_at, paid_at, attempts, last_error, created_at,
          profiles!owner_id(full_name), properties(name)`
       )
@@ -641,7 +641,7 @@ export async function getPayoutLedgerFromDB(): Promise<PayoutLedgerEntry[]> {
         status: (r.status as string) ?? "pending",
         payoutNgnMinor: (r.payout_ngn_minor as number) ?? null,
         fxRate: (r.fx_rate as number) ?? null,
-        raenestReference: (r.raenest_reference as string) ?? null,
+        fincraReference: (r.fincra_reference as string) ?? null,
         requestedAt: (r.requested_at as string) ?? null,
         releasedAt: (r.released_at as string) ?? null,
         paidAt: (r.paid_at as string) ?? null,
@@ -716,7 +716,7 @@ export async function getFxHistoryFromDB(): Promise<FxRecord[]> {
     const db = createAdmin();
     const { data, error } = await db
       .from("owner_payouts")
-      .select("booking_group_id, fx_rate, requested_at, raenest_reference, owner_id, profiles!owner_id(full_name)")
+      .select("booking_group_id, fx_rate, requested_at, fincra_reference, owner_id, profiles!owner_id(full_name)")
       .not("fx_rate", "is", null)
       .order("requested_at", { ascending: false })
       .limit(50);
@@ -729,7 +729,7 @@ export async function getFxHistoryFromDB(): Promise<FxRecord[]> {
         date: ((r.requested_at as string) ?? "").slice(0, 10),
         rate: (r.fx_rate as number) ?? 0,
         bookingGroupId: (r.booking_group_id as string) ?? "",
-        payoutReference: (r.raenest_reference as string) ?? "",
+        payoutReference: (r.fincra_reference as string) ?? "",
         ownerName: (profile.full_name as string) ?? "",
       };
     });

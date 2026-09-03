@@ -18,12 +18,12 @@ import {
   recordRefundSplit,
   createOwnerPayoutRows,
 } from "@/lib/payouts";
-import { resetMockRaenest } from "@/lib/raenest";
+import { resetMockFincra } from "@/lib/fincra";
 import { convertGbpToNgnMinor, isFxWithinRange } from "@/lib/currency";
 
 beforeEach(() => {
   resetMockPayoutLedger();
-  resetMockRaenest();
+  resetMockFincra();
 });
 
 describe("Payout split computation", () => {
@@ -117,7 +117,7 @@ describe("Mock payout ledger", () => {
       status: "pending",
       payoutNgnMinor: null,
       fxRate: null,
-      raenestReference: null,
+      fincraReference: null,
       requestedAt: null,
       releasedAt: null,
       paidAt: null,
@@ -140,7 +140,7 @@ describe("Mock payout ledger", () => {
       status: "pending",
       payoutNgnMinor: null,
       fxRate: null,
-      raenestReference: null,
+      fincraReference: null,
       requestedAt: null,
       releasedAt: null,
       paidAt: null,
@@ -165,7 +165,7 @@ describe("Mock payout ledger", () => {
       status: "eligible",
       payoutNgnMinor: null,
       fxRate: null,
-      raenestReference: null,
+      fincraReference: null,
       requestedAt: null,
       releasedAt: null,
       paidAt: null,
@@ -182,10 +182,14 @@ describe("Mock payout ledger", () => {
     expect(releasedIds).toContain("BG-r1");
 
     const updated = getMockPayoutLedger();
-    expect(updated[0].status).toBe("paid");
+    expect(updated[0].status).toBe("released");
     expect(updated[0].payoutNgnMinor).toBeGreaterThan(0);
     expect(updated[0].fxRate).toBeGreaterThan(0);
-    expect(updated[0].raenestReference).toBeTruthy();
+    expect(updated[0].fincraReference).toBeTruthy();
+
+    const confirmed = await pollPendingPayouts();
+    expect(confirmed).toBe(1);
+    expect(getMockPayoutLedger()[0].status).toBe("paid");
   });
 
   it("pollPendingPayouts confirms released payouts in mock mode", async () => {
@@ -199,7 +203,7 @@ describe("Mock payout ledger", () => {
       status: "released",
       payoutNgnMinor: null,
       fxRate: null,
-      raenestReference: "rnst_mock_BG-p1",
+      fincraReference: "fincra_mock_BG-p1",
       requestedAt: new Date().toISOString(),
       releasedAt: new Date().toISOString(),
       paidAt: null,
@@ -227,7 +231,7 @@ describe("Refund split reversal", () => {
       status: "paid",
       payoutNgnMinor: 129360000,
       fxRate: 2450,
-      raenestReference: "rnst_mock_BG-ref",
+      fincraReference: "fincra_mock_BG-ref",
       requestedAt: new Date().toISOString(),
       releasedAt: new Date().toISOString(),
       paidAt: new Date().toISOString(),

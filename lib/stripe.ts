@@ -23,7 +23,7 @@ export interface BookingChargeOpts {
   /** Stripe Connect: destination connected-account id (Nigerian subsidiary).
    *  When set, `application_fee_amount` is added so the platform retains
    *  the commission and the remainder is transferred to the connected
-   *  account (which withdraws to its Raenest bank account). */
+   *  account (which withdraws to its Fincra bank account). */
   connectAccountId?: string;
   /** Commission amount in minor units retained by the platform when
    *  `connectAccountId` is set. Must be <= amountMinor. */

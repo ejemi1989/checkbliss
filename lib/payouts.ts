@@ -1,6 +1,6 @@
 import "server-only";
 import { supabaseAdminConfigured, createAdmin } from "@/lib/supabase/admin";
-import { createRaenestPayout, getRaenestPayoutStatus, raenestConfigured, RaenestError } from "@/lib/raenest";
+import { createFincraBeneficiary, createFincraPayout, getFincraPayoutStatus, FincraError } from "@/lib/fincra";
 import { convertGbpToNgnMinor, GBP_TO_NGN_RATE, isFxWithinRange } from "@/lib/currency";
 import { log } from "@/lib/observability";
 
@@ -84,7 +84,7 @@ interface MockPayoutRecord {
   status: string;
   payoutNgnMinor: number | null;
   fxRate: number | null;
-  raenestReference: string | null;
+  fincraReference: string | null;
   requestedAt: string | null;
   releasedAt: string | null;
   paidAt: string | null;
@@ -147,7 +147,7 @@ async function createOwnerPayoutRows(
         status: "pending",
         payoutNgnMinor: null,
         fxRate: null,
-        raenestReference: null,
+        fincraReference: null,
         requestedAt: null,
         releasedAt: null,
         paidAt: null,
@@ -250,7 +250,7 @@ export async function evaluatePayoutEligibility(): Promise<string[]> {
 }
 
 /* ------------------------------------------------------------------ */
-/*  Release eligible payouts (settlement hold expired → Raenest call)  */
+/*  Release eligible payouts (settlement hold expired → Fincra call)  */
 /* ------------------------------------------------------------------ */
 
 export async function releaseEligiblePayouts(): Promise<string[]> {
@@ -272,23 +272,29 @@ export async function releaseEligiblePayouts(): Promise<string[]> {
       }
 
       try {
-        const idempotencyKey = `raenest-${record.bookingGroupId}-${record.id}`;
-        const result = await createRaenestPayout({
-          beneficiaryId: record.ownerId,
+        const idempotencyKey = `fincra-${record.bookingGroupId}-${record.id}`;
+        const result = await createFincraPayout({
+          customerReference: idempotencyKey,
           amountNgnMinor: ngnMinor,
-          reference: record.bookingGroupId,
-          idempotencyKey,
+          beneficiary: {
+            firstName: record.ownerId,
+            accountHolderName: record.ownerId,
+            accountNumber: "0000000000",
+            bankCode: "000",
+            type: "individual",
+            country: "NG",
+          },
         });
 
         record.status = "released";
         record.payoutNgnMinor = result.amountNgnMinor;
-        record.fxRate = result.fxRate;
-        record.raenestReference = result.payoutReference;
+        record.fxRate = fxRate;
+        record.fincraReference = result.payoutReference;
         record.releasedAt = now.toISOString();
         record.requestedAt = now.toISOString();
         releasedIds.push(record.bookingGroupId);
 
-        if (result.status === "completed") {
+        if (result.status === "successful") {
           record.status = "paid";
           record.paidAt = now.toISOString();
         }
@@ -296,7 +302,7 @@ export async function releaseEligiblePayouts(): Promise<string[]> {
         log("payouts", "info", `Mock release — group ${record.bookingGroupId}, NGN ${ngnMinor / 100} @ ${fxRate}`);
       } catch {
         record.attempts++;
-        record.lastError = "Raenest unavailable (mock)";
+        record.lastError = "Fincra unavailable (mock)";
         record.nextAttemptAt = computeNextAttemptAt(record.attempts).toISOString();
         if (record.attempts >= MAX_PAYOUT_RETRY_ATTEMPTS) {
           record.status = "failed";
@@ -348,34 +354,106 @@ export async function releaseEligiblePayouts(): Promise<string[]> {
           });
         }
 
-        const idempotencyKey = `raenest-${group.id}-${payout.id}`;
-        const result = await createRaenestPayout({
-          beneficiaryId: payout.owner_id,
+        const idempotencyKey = `fincra-${group.id}-${payout.id}`;
+
+        const { data: ownerDetails } = await db
+          .from("owner_payout_details")
+          .select("fincra_beneficiary_id, nigerian_bank_account_name, nigerian_bank_account_number, nigerian_bank_name, bank_code")
+          .eq("owner_id", payout.owner_id)
+          .maybeSingle();
+
+        if (!ownerDetails?.nigerian_bank_account_number || !ownerDetails?.bank_code || !ownerDetails?.nigerian_bank_account_name) {
+          await db.from("owner_payouts")
+            .update({
+              status: "failed",
+              last_error: "missing_owner_bank_details",
+              attempts: (payout.attempts ?? 0) + 1,
+            })
+            .eq("id", payout.id);
+          await db.from("payout_alerts").insert({
+            severity: "high",
+            kind: "invalid_beneficiary",
+            booking_group_id: group.id,
+            owner_payout_id: payout.id,
+            message: `Owner ${payout.owner_id} has incomplete Nigerian bank details on file (need account number, bank code, and account name)`,
+          });
+          continue;
+        }
+
+        let beneficiaryId = ownerDetails.fincra_beneficiary_id;
+        if (!beneficiaryId) {
+          try {
+            const [firstName, ...rest] = ownerDetails.nigerian_bank_account_name.split(" ");
+            const beneficiary = await createFincraBeneficiary({
+              firstName: firstName || ownerDetails.nigerian_bank_account_name,
+              lastName: rest.join(" ") || undefined,
+              accountHolderName: ownerDetails.nigerian_bank_account_name,
+              bankName: ownerDetails.nigerian_bank_name ?? "Unknown Bank",
+              bankCode: ownerDetails.bank_code,
+              accountNumber: ownerDetails.nigerian_bank_account_number,
+              type: "individual",
+              country: "NG",
+            });
+            beneficiaryId = beneficiary.accountHolderName + ":" + beneficiary.accountNumber;
+            await db.from("owner_payout_details")
+              .update({ fincra_beneficiary_id: beneficiaryId, updated_at: new Date().toISOString() })
+              .eq("owner_id", payout.owner_id);
+            log("payouts", "info", `Auto-registered Fincra beneficiary for owner ${payout.owner_id} → ${beneficiaryId}`);
+          } catch (err) {
+            await db.from("owner_payouts")
+              .update({
+                status: "failed",
+                last_error: `fincra_beneficiary_registration_failed: ${err instanceof Error ? err.message : String(err)}`,
+                attempts: (payout.attempts ?? 0) + 1,
+              })
+              .eq("id", payout.id);
+            await db.from("payout_alerts").insert({
+              severity: "high",
+              kind: "invalid_beneficiary",
+              booking_group_id: group.id,
+              owner_payout_id: payout.id,
+              message: `Fincra beneficiary registration failed for owner ${payout.owner_id}: ${err instanceof Error ? err.message : String(err)}`,
+            });
+            continue;
+          }
+        }
+
+        const beneficiary = {
+          firstName: ownerDetails.nigerian_bank_account_name.split(" ")[0] || ownerDetails.nigerian_bank_account_name,
+          accountHolderName: ownerDetails.nigerian_bank_account_name,
+          accountNumber: ownerDetails.nigerian_bank_account_number,
+          bankCode: ownerDetails.bank_code,
+          type: "individual" as const,
+          country: "NG",
+        };
+
+        const result = await createFincraPayout({
+          customerReference: idempotencyKey,
           amountNgnMinor: ngnMinor,
-          reference: group.id,
-          idempotencyKey,
+          beneficiary,
+          description: `CheckinBliss owner payout — group ${group.id}`,
         });
 
         const now = new Date().toISOString();
         const updateData: Record<string, unknown> = {
-          status: result.status === "completed" ? "paid" : "released",
+          status: result.status === "successful" ? "paid" : "released",
           payout_ngn_minor: result.amountNgnMinor,
-          fx_rate: result.fxRate,
-          raenest_reference: result.payoutReference,
-          raenest_idempotency_key: idempotencyKey,
+          fx_rate: GBP_TO_NGN_RATE,
+          fincra_reference: result.payoutReference,
+          fincra_idempotency_key: idempotencyKey,
           requested_at: now,
           released_at: now,
         };
-        if (result.status === "completed") updateData.paid_at = now;
+        if (result.status === "successful") updateData.paid_at = now;
 
         await db.from("owner_payouts").update(updateData).eq("id", payout.id);
         await db.from("booking_groups")
           .update({
-            owner_payout_status: result.status === "completed" ? "paid" : "released",
+            owner_payout_status: result.status === "successful" ? "paid" : "released",
             owner_payout_requested_at: now,
             owner_payout_reference: result.payoutReference,
             owner_payout_ngn_minor: result.amountNgnMinor,
-            owner_payout_fx_rate: result.fxRate,
+            owner_payout_fx_rate: GBP_TO_NGN_RATE,
           })
           .eq("id", group.id);
 
@@ -383,7 +461,7 @@ export async function releaseEligiblePayouts(): Promise<string[]> {
         log("payouts", "info", `Released payout ${payout.id} for group ${group.id} — NGN ${ngnMinor / 100}`);
 
       } catch (err) {
-        const errorMessage = err instanceof RaenestError ? `${err.kind}: ${err.message}` : String(err);
+        const errorMessage = err instanceof FincraError ? `${err.kind}: ${err.message}` : String(err);
 
         await db.from("owner_payouts")
           .update({
@@ -393,7 +471,7 @@ export async function releaseEligiblePayouts(): Promise<string[]> {
           })
           .eq("id", payout.id);
 
-        if (!(err instanceof RaenestError) || !err.retryable || (payout.attempts ?? 0) + 1 >= MAX_PAYOUT_RETRY_ATTEMPTS) {
+        if (!(err instanceof FincraError) || !err.retryable || (payout.attempts ?? 0) + 1 >= MAX_PAYOUT_RETRY_ATTEMPTS) {
           await db.from("owner_payouts")
             .update({ status: "failed", last_error: errorMessage })
             .eq("id", payout.id);
@@ -401,7 +479,7 @@ export async function releaseEligiblePayouts(): Promise<string[]> {
 
         await db.from("payout_alerts").insert({
           severity: "high",
-          kind: err instanceof RaenestError && err.kind === "bank_rejected" ? "bank_rejected" : "raenest_unavailable",
+          kind: err instanceof FincraError && err.kind === "bank_rejected" ? "bank_rejected" : "fincra_unavailable",
           booking_group_id: group.id,
           owner_payout_id: payout.id,
           message: errorMessage,
@@ -442,9 +520,9 @@ export async function pollPendingPayouts(): Promise<number> {
 
   for (const payout of released) {
     try {
-      const result = await getRaenestPayoutStatus(payout.raenest_reference);
+      const result = await getFincraPayoutStatus(payout.fincra_reference);
 
-      if (result.status === "completed") {
+      if (result.status === "successful") {
         const now = new Date().toISOString();
         await db.from("owner_payouts")
           .update({ status: "paid", paid_at: now })
@@ -455,14 +533,14 @@ export async function pollPendingPayouts(): Promise<number> {
         confirmed++;
       } else if (result.status === "failed") {
         await db.from("owner_payouts")
-          .update({ status: "failed", last_error: "Raenest reported payout as failed" })
+          .update({ status: "failed", last_error: "Fincra reported payout as failed" })
           .eq("id", payout.id);
         await db.from("payout_alerts").insert({
           severity: "critical",
-          kind: "payout_failed",
+          kind: "fincra_failed",
           booking_group_id: payout.booking_group_id,
           owner_payout_id: payout.id,
-          message: `Raenest reported payout ${payout.raenest_reference} as failed`,
+          message: `Fincra reported payout ${payout.fincra_reference} as failed`,
         });
       }
     } catch {

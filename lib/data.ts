@@ -638,35 +638,35 @@ export function getPayoutLedger(): PayoutLedgerEntry[] {
     {
       id: "OP-001", bookingGroupId: "BG-2026-0618-A", ownerId: "OW1", ownerName: "Adaora Mensah",
       propertyName: "The Palms Maisonette", ownerShareMinor: 36960, status: "paid",
-      payoutNgnMinor: 9055200, fxRate: 2450, raenestReference: "rnst_001_adaora",
+      payoutNgnMinor: 9055200, fxRate: 2450, fincraReference: "fincra_001_adaora",
       requestedAt: `${yyyy}-${mm}-22`, releasedAt: `${yyyy}-${mm}-23`, paidAt: `${yyyy}-${mm}-24`,
       attempts: 1, lastError: null, createdAt: `${yyyy}-${mm}-22T10:00:00Z`,
     },
     {
       id: "OP-002", bookingGroupId: "BG-2026-0620-B", ownerId: "OW1", ownerName: "Adaora Mensah",
       propertyName: "Sunset Dove", ownerShareMinor: 28160, status: "eligible",
-      payoutNgnMinor: null, fxRate: null, raenestReference: null,
+      payoutNgnMinor: null, fxRate: null, fincraReference: null,
       requestedAt: null, releasedAt: null, paidAt: null,
       attempts: 0, lastError: null, createdAt: `${yyyy}-${mm}-24T11:00:00Z`,
     },
     {
       id: "OP-003", bookingGroupId: "BG-2026-0628-C", ownerId: "OW4", ownerName: "Ngozi Okonkwo",
       propertyName: "GRA Executive Suite", ownerShareMinor: 96800, status: "released",
-      payoutNgnMinor: 237160000, fxRate: 2450, raenestReference: "rnst_002_ngozi",
+      payoutNgnMinor: 237160000, fxRate: 2450, fincraReference: "fincra_002_ngozi",
       requestedAt: `${yyyy}-${mm}-28`, releasedAt: `${yyyy}-${mm}-28`, paidAt: null,
       attempts: 1, lastError: null, createdAt: `${yyyy}-${mm}-28T09:00:00Z`,
     },
     {
       id: "OP-004", bookingGroupId: "BG-2026-0705-D", ownerId: "OW6", ownerName: "Ibrahim Musa",
       propertyName: "Transcorp Hilton Apartment", ownerShareMinor: 125400, status: "failed",
-      payoutNgnMinor: null, fxRate: 2450, raenestReference: "rnst_003_ibrahim",
+      payoutNgnMinor: null, fxRate: 2450, fincraReference: "fincra_003_ibrahim",
       requestedAt: `${yyyy}-07-08`, releasedAt: `${yyyy}-07-08`, paidAt: null,
       attempts: 5, lastError: "bank_rejected: account number invalid", createdAt: `${yyyy}-07-08T14:30:00Z`,
     },
     {
       id: "OP-005", bookingGroupId: "BG-2026-0701-E", ownerId: "OW1", ownerName: "Adaora Mensah",
       propertyName: "The Palms Maisonette", ownerShareMinor: 42240, status: "pending",
-      payoutNgnMinor: null, fxRate: null, raenestReference: null,
+      payoutNgnMinor: null, fxRate: null, fincraReference: null,
       requestedAt: null, releasedAt: null, paidAt: null,
       attempts: 0, lastError: null, createdAt: `${yyyy}-07-05T15:00:00Z`,
     },
@@ -676,7 +676,7 @@ export function getPayoutLedger(): PayoutLedgerEntry[] {
 export function getPayoutAlerts(): PayoutAlert[] {
   return [
     { id: "PA-001", severity: "high", kind: "bank_rejected", message: "Ibrahim Musa — bank account invalid (5 attempts exceeded)", resolved: false, createdAt: `${yyyy}-07-08T15:00:00Z` },
-    { id: "PA-002", severity: "medium", kind: "raenest_unavailable", message: "Raenest API timeout — 3 payouts queued for retry", resolved: true, createdAt: `${yyyy}-07-06T22:15:00Z` },
+    { id: "PA-002", severity: "medium", kind: "fincra_unavailable", message: "Fincra API timeout — 3 payouts queued for retry", resolved: true, createdAt: `${yyyy}-07-06T22:15:00Z` },
     { id: "PA-003", severity: "low", kind: "fx_out_of_range", message: "GBP→NGN rate at 1980 (below expected 2000)", resolved: true, createdAt: `${yyyy}-06-30T08:00:00Z` },
   ];
 }
