@@ -1,9 +1,10 @@
 "use client";
 
-import { useState, useMemo, useEffect, useRef } from "react";
+import { useState, useMemo, useEffect, useRef, useTransition } from "react";
 import { formatMinor } from "@/lib/currency";
 import { getOwnerBookings, getOwnerPayouts, getCalendarBookings, getOwnerProperties } from "@/lib/data";
 import { blockDates, unblockDates } from "@/actions/properties";
+import { saveOwnerPayoutDetails } from "@/actions/owner-payout-details";
 import type { AuthUser } from "@/lib/auth";
 import { NotificationsView } from "@/components/notifications-view";
 import { getSeedDamageClaims } from "@/lib/seed-data";
@@ -42,9 +43,26 @@ function statusColor(s: string) {
   }
 }
 
-type OwnerTab = "home" | "properties" | "bookings" | "claims" | "payouts" | "calendar" | "notifications";
+type OwnerTab = "home" | "properties" | "bookings" | "claims" | "payouts" | "payout-details" | "calendar" | "notifications";
 
-export function OwnerDashboard({ user, initialTab }: { user: AuthUser | null; initialTab?: OwnerTab }) {
+export interface OwnerPayoutDetailsData {
+  nigerianBankName: string | null;
+  bankCode: string | null;
+  nigerianBankAccountNumber: string | null;
+  nigerianBankAccountName: string | null;
+  taxIdentificationNumber: string | null;
+  fincraBeneficiaryId: string | null;
+}
+
+export function OwnerDashboard({
+  user,
+  initialTab,
+  initialPayoutDetails,
+}: {
+  user: AuthUser | null;
+  initialTab?: OwnerTab;
+  initialPayoutDetails?: OwnerPayoutDetailsData | null;
+}) {
   const [tab, setTab] = useState<OwnerTab>(initialTab ?? "home");
   const [month, setMonth] = useState<number | null>(null);
   const [year, setYear] = useState<number | null>(null);
@@ -457,6 +475,9 @@ export function OwnerDashboard({ user, initialTab }: { user: AuthUser | null; in
             </div>
           )}
 
+          {/* ---------- PAYOUT DETAILS (bank info for NGN disbursement) ---------- */}
+          {tab === "payout-details" && <PayoutDetailsForm initial={initialPayoutDetails ?? null} onNotify={notify} />}
+
           {/* ---------- CALENDAR SYNC ---------- */}
           {tab === "calendar" && (
             <div className="space-y-6">
@@ -574,5 +595,184 @@ export function OwnerDashboard({ user, initialTab }: { user: AuthUser | null; in
         </div>
       )}
     </>
+  );
+}
+
+/* ------------------------------------------------------------------ */
+/*  Payout Details form — owner enters bank details for Fincra payout */
+/* ------------------------------------------------------------------ */
+
+const NIGERIAN_BANKS: Array<{ name: string; code: string }> = [
+  { name: "Access Bank", code: "044" },
+  { name: "Ecobank Nigeria", code: "050" },
+  { name: "Fidelity Bank", code: "070" },
+  { name: "First Bank of Nigeria", code: "011" },
+  { name: "First City Monument Bank (FCMB)", code: "214" },
+  { name: "Globus Bank", code: "00103" },
+  { name: "Guaranty Trust Bank (GTBank)", code: "058" },
+  { name: "Heritage Bank", code: "030" },
+  { name: "Keystone Bank", code: "082" },
+  { name: "Polaris Bank", code: "076" },
+  { name: "Providus Bank", code: "101" },
+  { name: "Stanbic IBTC Bank", code: "221" },
+  { name: "Standard Chartered Bank Nigeria", code: "068" },
+  { name: "Sterling Bank", code: "232" },
+  { name: "SunTrust Bank", code: "100" },
+  { name: "Union Bank of Nigeria", code: "032" },
+  { name: "United Bank for Africa (UBA)", code: "033" },
+  { name: "Unity Bank", code: "215" },
+  { name: "Wema Bank", code: "035" },
+  { name: "Zenith Bank", code: "057" },
+];
+
+function PayoutDetailsForm({
+  initial,
+  onNotify,
+}: {
+  initial: OwnerPayoutDetailsData | null;
+  onNotify: (message: string, type?: "success" | "error") => void;
+}) {
+  const [bankName, setBankName] = useState(initial?.nigerianBankName ?? "");
+  const [bankCode, setBankCode] = useState(initial?.bankCode ?? "");
+  const [accountNumber, setAccountNumber] = useState(initial?.nigerianBankAccountNumber ?? "");
+  const [accountName, setAccountName] = useState(initial?.nigerianBankAccountName ?? "");
+  const [tin, setTin] = useState(initial?.taxIdentificationNumber ?? "");
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [pending, startTransition] = useTransition();
+  const alreadyRegistered = Boolean(initial?.fincraBeneficiaryId);
+
+  function onBankSelect(name: string) {
+    setBankName(name);
+    const match = NIGERIAN_BANKS.find((b) => b.name === name);
+    if (match) setBankCode(match.code);
+  }
+
+  function onSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    setErrors({});
+    startTransition(async () => {
+      const result = await saveOwnerPayoutDetails({
+        nigerianBankName: bankName,
+        bankCode,
+        nigerianBankAccountNumber: accountNumber,
+        nigerianBankAccountName: accountName,
+        taxIdentificationNumber: tin,
+      });
+      if (result.ok) {
+        onNotify(alreadyRegistered ? "Payout details updated" : "Payout details saved — beneficiary registered with Fincra", "success");
+      } else {
+        if (result.fieldErrors) setErrors(result.fieldErrors);
+        onNotify(result.message, "error");
+      }
+    });
+  }
+
+  return (
+    <div className="space-y-6">
+      <div className="bg-white rounded-xl border border-hairline p-6">
+        <div className="flex items-start justify-between gap-3 mb-5">
+          <div>
+            <h2 className="font-display text-lg font-medium text-ink">Payout Details</h2>
+            <p className="text-xs mt-0.5 text-ink-secondary">
+              Your 88% owner share is disbursed in NGN to this account via Fincra. Required for payouts to land.
+            </p>
+          </div>
+          {alreadyRegistered && (
+            <span className="text-[11px] font-semibold px-2.5 py-1 rounded-full bg-success/15 text-success whitespace-nowrap">
+              Registered
+            </span>
+          )}
+        </div>
+
+        <form onSubmit={onSubmit} className="space-y-5">
+          <div>
+            <label htmlFor="bankName" className="block text-xs font-semibold text-ink-secondary mb-1.5">Bank</label>
+            <select
+              id="bankName"
+              value={bankName}
+              onChange={(e) => onBankSelect(e.target.value)}
+              className="w-full px-3 py-2.5 rounded-xl border border-hairline bg-white text-sm text-ink focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+            >
+              <option value="">Select your bank…</option>
+              {NIGERIAN_BANKS.map((b) => (
+                <option key={b.code} value={b.name}>{b.name}</option>
+              ))}
+            </select>
+            {errors.nigerianBankName && <p className="text-xs text-danger mt-1">{errors.nigerianBankName}</p>}
+          </div>
+
+          <div>
+            <label htmlFor="bankCode" className="block text-xs font-semibold text-ink-secondary mb-1.5">Bank code</label>
+            <input
+              id="bankCode"
+              type="text"
+              inputMode="numeric"
+              maxLength={3}
+              value={bankCode}
+              onChange={(e) => setBankCode(e.target.value.replace(/\D/g, ""))}
+              placeholder="058"
+              className="w-full px-3 py-2.5 rounded-xl border border-hairline bg-white text-sm text-ink tabular-nums focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+            />
+            <p className="text-xs text-ink-secondary mt-1">Auto-filled from bank selection. 3-digit CBN code.</p>
+            {errors.bankCode && <p className="text-xs text-danger mt-1">{errors.bankCode}</p>}
+          </div>
+
+          <div>
+            <label htmlFor="accountNumber" className="block text-xs font-semibold text-ink-secondary mb-1.5">Account number</label>
+            <input
+              id="accountNumber"
+              type="text"
+              inputMode="numeric"
+              maxLength={10}
+              value={accountNumber}
+              onChange={(e) => setAccountNumber(e.target.value.replace(/\D/g, ""))}
+              placeholder="0123456789"
+              className="w-full px-3 py-2.5 rounded-xl border border-hairline bg-white text-sm text-ink tabular-nums focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+            />
+            {errors.nigerianBankAccountNumber && <p className="text-xs text-danger mt-1">{errors.nigerianBankAccountNumber}</p>}
+          </div>
+
+          <div>
+            <label htmlFor="accountName" className="block text-xs font-semibold text-ink-secondary mb-1.5">Account name</label>
+            <input
+              id="accountName"
+              type="text"
+              value={accountName}
+              onChange={(e) => setAccountName(e.target.value)}
+              placeholder="As it appears on your bank statement"
+              className="w-full px-3 py-2.5 rounded-xl border border-hairline bg-white text-sm text-ink focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+            />
+            {errors.nigerianBankAccountName && <p className="text-xs text-danger mt-1">{errors.nigerianBankAccountName}</p>}
+          </div>
+
+          <div>
+            <label htmlFor="tin" className="block text-xs font-semibold text-ink-secondary mb-1.5">Tax ID (TIN) <span className="text-ink-secondary font-normal">— optional</span></label>
+            <input
+              id="tin"
+              type="text"
+              inputMode="numeric"
+              value={tin}
+              onChange={(e) => setTin(e.target.value.replace(/\D/g, ""))}
+              placeholder="8–14 digits"
+              className="w-full px-3 py-2.5 rounded-xl border border-hairline bg-white text-sm text-ink tabular-nums focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary"
+            />
+            {errors.taxIdentificationNumber && <p className="text-xs text-danger mt-1">{errors.taxIdentificationNumber}</p>}
+          </div>
+
+          <div className="pt-2 flex items-center gap-3">
+            <button
+              type="submit"
+              disabled={pending}
+              className="px-5 py-2.5 rounded-xl bg-primary text-white text-sm font-semibold hover:bg-primary-dark transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed border-none"
+            >
+              {pending ? "Saving…" : alreadyRegistered ? "Update details" : "Save & register with Fincra"}
+            </button>
+            <p className="text-xs text-ink-secondary">
+              Bank details are registered with Fincra as a beneficiary on first save.
+            </p>
+          </div>
+        </form>
+      </div>
+    </div>
   );
 }

@@ -18,7 +18,7 @@ const I = {
   logOut: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" /><polyline points="16 17 21 12 16 7" /><line x1="21" y1="12" x2="9" y2="12" /></svg>,
 };
 
-type OwnerSection = "home" | "properties" | "bookings" | "claims" | "payouts" | "calendar" | "notifications";
+type OwnerSection = "home" | "properties" | "bookings" | "claims" | "payouts" | "payout-details" | "calendar" | "notifications";
 
 const NAV_ITEMS: { id: OwnerSection; icon: keyof typeof I; label: string; href: string }[] = [
   { id: "home", icon: "barChart3", label: "Dashboard", href: "/dashboard/owner" },
@@ -26,6 +26,7 @@ const NAV_ITEMS: { id: OwnerSection; icon: keyof typeof I; label: string; href: 
   { id: "bookings", icon: "calendar", label: "Bookings", href: "/dashboard/owner/bookings" },
   { id: "claims", icon: "shield", label: "Damage Claims", href: "/dashboard/owner/claims" },
   { id: "payouts", icon: "receipt", label: "Payouts", href: "/dashboard/owner/payouts" },
+  { id: "payout-details", icon: "shield", label: "Payout Details", href: "/dashboard/owner/payout-details" },
   { id: "calendar", icon: "sync", label: "Calendar Sync", href: "/dashboard/owner/calendar" },
   { id: "notifications", icon: "bell", label: "Notifications", href: "/dashboard/owner/notifications" },
 ];
