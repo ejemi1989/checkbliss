@@ -32,13 +32,12 @@ export default function LoginPage() {
       {/* Image panel */}
       <div
         style={{
-          display: "none",
           position: "relative",
           overflow: "hidden",
           backgroundColor: "#171915",
           flex: "0 0 42%",
         }}
-        className="login-image-panel"
+        className="hidden lg:block"
       >
         <img
           src="https://images.unsplash.com/photo-1600596542815-ffad4c1539a9?auto=format&fit=crop&w=1200&q=80"
@@ -63,7 +62,7 @@ export default function LoginPage() {
       <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", backgroundColor: "#E9ECE2", padding: "40px 24px" }}>
         <div style={{ width: "100%", maxWidth: 400 }}>
           {/* Mobile logo */}
-          <div style={{ textAlign: "center", marginBottom: 40 }} className="login-mobile-logo">
+          <div style={{ textAlign: "center", marginBottom: 40 }} className="block lg:hidden">
             <Link href="/" style={{ textDecoration: "none" }}>
               <img src="/assets/images/logo/Logo.png" alt="CheckinBliss" style={{ height: 28, width: "auto", margin: "0 auto" }} />
             </Link>
@@ -177,13 +176,6 @@ export default function LoginPage() {
           </div>
         </div>
       </div>
-
-      <style>{`
-        @media (min-width: 1024px) {
-          .login-image-panel { display: block !important; }
-          .login-mobile-logo { display: none !important; }
-        }
-      `}</style>
     </div>
   );
 }

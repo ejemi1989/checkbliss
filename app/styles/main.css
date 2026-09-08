@@ -34,7 +34,7 @@
     font-display:swap;
   }
 
-  :root{
+  .lst-body, .prop-body {
     /* ---------- CheckinBliss Sage · Design Tokens ---------- */
     /* Color (9) */
     --bg:#E9ECE2;        /* page background — oatmeal-sage */
@@ -67,11 +67,9 @@
     --sh3:0 14px 40px rgba(23,25,21,.14);
     --sh4:0 24px 60px rgba(23,25,21,.20);
   }
-  *{margin:0;padding:0;box-sizing:border-box}
   html{scroll-behavior:smooth}
-  body{font-family:var(--body);font-size:20px;color:var(--body-c);background:var(--bg);line-height:1.6;-webkit-font-smoothing:antialiased}
-  img{display:block;max-width:100%}
-  a{color:inherit;text-decoration:none}
+  .lst-body img, .prop-body img{display:block;max-width:100%}
+  .lst-body a, .prop-body a{color:inherit;text-decoration:none}
   .wrap{max-width:1240px;margin:0 auto;padding:0 var(--s8)}
   .eyebrow{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--green-soft);font-weight:600}
   .ph{background:linear-gradient(135deg,#d7dccf,#c4cbb8);position:relative;overflow:hidden}
@@ -108,14 +106,14 @@
   .hero h1{font-family:var(--display);font-weight:400;font-size:clamp(2.2rem,4.6vw,4rem);line-height:1.04;letter-spacing:.005em;max-width:16ch;margin:0 auto 18px;text-shadow:0 2px 30px rgba(0,0,0,.22)}
   .hero-sub{font-family:var(--body);font-weight:400;font-size:20px;line-height:1.55;color:rgba(255,255,255,.92);max-width:46ch;margin:0 auto 40px;text-shadow:0 1px 16px rgba(0,0,0,.3)}
   /* SEARCH — long, sharp rectangular edges */
-  .search{display:flex;align-items:stretch;background:var(--card);border-radius:0px;padding:0px;max-width:780px;margin:0 auto;box-shadow:var(--sh4);color:var(--ink)}
-  .field{flex:1;text-align:left;padding:8px 20px;border-right:1px solid var(--line)}
-  .field:nth-last-child(2){border-right:none}
-  .field label{display:block;font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--mute);font-weight:600;margin-bottom:2px}
-  .field span{font-size:14px;color:var(--ink);font-weight:500}
-  .search-btn{background:var(--green);color:var(--soft);border:none;border-radius:0px;padding:0 34px;font-family:var(--body);font-weight:600;font-size:14px;cursor:pointer;transition:background .2s;margin:3px}
-  .search-btn:hover{background:var(--green-d)}
-  @media(max-width:760px){.search{flex-direction:column;border-radius:4px;gap:4px;max-width:440px}.field{border-right:none;border-bottom:1px solid var(--line)}.search-btn{padding:14px;margin:3px 0 0}.hero{padding:140px 0 40px}.hero h1{margin-bottom:14px}.hero-sub{margin-bottom:24px}}
+  .hero .search{display:flex;align-items:stretch;background:var(--card);border-radius:0px;padding:0px;max-width:780px;margin:0 auto;box-shadow:var(--sh4);color:var(--ink)}
+  .hero .field{flex:1;text-align:left;padding:8px 20px;border-right:1px solid var(--line)}
+  .hero .field:nth-last-child(2){border-right:none}
+  .hero .field label{display:block;font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--mute);font-weight:600;margin-bottom:2px}
+  .hero .field span{font-size:14px;color:var(--ink);font-weight:500}
+  .hero .search-btn{background:var(--green);color:var(--soft);border:none;border-radius:0px;padding:0 34px;font-family:var(--body);font-weight:600;font-size:14px;cursor:pointer;transition:background .2s;margin:3px}
+  .hero .search-btn:hover{background:var(--green-d)}
+  @media(max-width:760px){.hero .search{flex-direction:column;border-radius:4px;gap:4px;max-width:440px}.hero .field{border-right:none;border-bottom:1px solid var(--line)}.hero .search-btn{padding:14px;margin:3px 0 0}.hero{padding:140px 0 40px}.hero h1{margin-bottom:14px}.hero-sub{margin-bottom:24px}}
 
   /* SEARCH — destination select */
   .field-select-wrap{position:relative;display:flex;align-items:center}

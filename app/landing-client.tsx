@@ -211,7 +211,7 @@ export function HomePageClient() {
   }, []);
 
   return (
-    <div>
+    <div className="landing-page">
       {/* ── Hero + Nav ── */}
       <section className="hero">
         <img

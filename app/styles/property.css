@@ -5,15 +5,15 @@
    "About Victoria Island" section so the map and policies run full width.
    ========================================================================== */
 
-:root{
+.prop-body{
   --nav-h: 76px;
   --page-max: 1240px;
   --gut: 32px;
   --text-base: 20px;
   --r-3: 3px;
+  background: var(--bg);
+  color: var(--body-c);
 }
-
-.prop-body{ background: var(--bg); color: var(--body-c); }
 
 /* --------------------------------------------------------------------------
    Header
@@ -1285,7 +1285,7 @@
 }
 
 @media (max-width: 760px){
-  :root{ --gut: 20px; }
+  .prop-body{ --gut: 20px; }
   .gallery{ grid-template-columns: 1fr; gap: 3px; }
   .gal-frame:last-child{ display: none; }   /* one frame on phones; rest live in the gallery modal */
   .gal-all{ right: var(--s5, 20px); bottom: var(--s5, 20px); }
