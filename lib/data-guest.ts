@@ -25,7 +25,7 @@ export async function getGuestBookingsFromDB(
       .select(
         `id, guest_name, guest_email, guest_count,
          check_in, check_out, status, total_minor,
-         properties(name, city, neighbourhood)`
+         properties(branded_name, city, neighbourhood)`
       )
       .eq("guest_email", guestEmail.toLowerCase())
       .neq("status", "cancelled")
@@ -41,7 +41,7 @@ export async function getGuestBookingsFromDB(
       const nights = nightsBetween(checkIn, checkOut);
       return {
         id: r.id as string,
-        unit: (prop.name as string) ?? "",
+        unit: (prop.branded_name as string) ?? "",
         guest: (r.guest_name as string) ?? "",
         check_in: checkIn,
         check_out: checkOut,
@@ -49,7 +49,7 @@ export async function getGuestBookingsFromDB(
         amount_minor: (r.total_minor as number) ?? 0,
         nights,
         guest_count: (r.guest_count as number) ?? 1,
-        property: (prop.name as string) ?? "",
+        property: (prop.branded_name as string) ?? "",
         city: (prop.city as string) ?? "",
         neighbourhood: (prop.neighbourhood as string) ?? "",
         guests: (r.guest_count as number) ?? 1,

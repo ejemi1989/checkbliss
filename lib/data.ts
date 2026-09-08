@@ -126,10 +126,10 @@ export function getOperatorStats(): OperatorStat[] {
 
 export function getAdminClaims(): DamageClaim[] {
   return [
-    { id: "C001", reservation_id: "R001", property_name: "The Palms Maisonette · Unit 1", property_id: "PR001", guest_name: "Chidi Okafor", guest_email: "chidi.o@email.com", booking_ref: "PAY-2026-0618", stay_dates: `Jun 18–22`, description: "Broken glass table in living room. Photos attached.", estimated_cost_minor: 35000, operator_notes: "", photo_count: 3, admin_decision: "pending", adjusted_amount_minor: null, dispute_status: "none", submitted_at: `${yyyy}-${mm}-22`, decided_at: null, decided_by: null },
-    { id: "C002", reservation_id: "R002", property_name: "Sunset Dove · Unit 2", property_id: "PR002", guest_name: "Folake Adeyemi", guest_email: "folake.a@email.com", booking_ref: "PAY-2026-0620", stay_dates: `Jun 20–24`, description: "Stained bedsheets — replacement needed.", estimated_cost_minor: 15000, operator_notes: "", photo_count: 2, admin_decision: "pending", adjusted_amount_minor: null, dispute_status: "none", submitted_at: `${yyyy}-${mm}-23`, decided_at: null, decided_by: null },
+    { id: "C001", reservation_id: "R001", property_name: "The Palms Maisonette · Unit 1", property_id: "PR001", guest_name: "Chidi Okafor", guest_email: "chidi.o@email.com", booking_ref: "A7KX3MNP", stay_dates: `Jun 18–22`, description: "Broken glass table in living room. Photos attached.", estimated_cost_minor: 35000, operator_notes: "", photo_count: 3, admin_decision: "pending", adjusted_amount_minor: null, dispute_status: "none", submitted_at: `${yyyy}-${mm}-22`, decided_at: null, decided_by: null },
+    { id: "C002", reservation_id: "R002", property_name: "Sunset Dove · Unit 2", property_id: "PR002", guest_name: "Folake Adeyemi", guest_email: "folake.a@email.com", booking_ref: "B8LY4NQR", stay_dates: `Jun 20–24`, description: "Stained bedsheets — replacement needed.", estimated_cost_minor: 15000, operator_notes: "", photo_count: 2, admin_decision: "pending", adjusted_amount_minor: null, dispute_status: "none", submitted_at: `${yyyy}-${mm}-23`, decided_at: null, decided_by: null },
     { id: "C003", reservation_id: "R003", property_name: "Lekki Beach House", property_id: "PR003", guest_name: "Walkthrough", guest_email: "", booking_ref: "N/A", stay_dates: "Pre-listing", description: "Minor wall scuff marks noted during pre-listing inspection.", estimated_cost_minor: 0, operator_notes: "", photo_count: 1, admin_decision: "pending", adjusted_amount_minor: null, dispute_status: "none", submitted_at: `${yyyy}-${mm}-20`, decided_at: null, decided_by: null },
-    { id: "C004", reservation_id: "R004", property_name: "GRA Executive Suite", property_id: "P005", guest_name: "Zainab Bello", guest_email: "zainab.b@email.com", booking_ref: "PAY-2026-0701", stay_dates: `Jul 1–4`, description: "Towel rack pulled from bathroom wall — needs re-mounting and paint touch-up.", estimated_cost_minor: 12000, operator_notes: "Photos show mounting screws pulled from drywall. Recommended re-mounting into stud with proper anchors.", photo_count: 4, admin_decision: "pending", adjusted_amount_minor: null, dispute_status: "none", submitted_at: `${yyyy}-07-04`, decided_at: null, decided_by: null },
+    { id: "C004", reservation_id: "R004", property_name: "GRA Executive Suite", property_id: "P005", guest_name: "Zainab Bello", guest_email: "zainab.b@email.com", booking_ref: "C9MZ5PRS", stay_dates: `Jul 1–4`, description: "Towel rack pulled from bathroom wall — needs re-mounting and paint touch-up.", estimated_cost_minor: 12000, operator_notes: "Photos show mounting screws pulled from drywall. Recommended re-mounting into stud with proper anchors.", photo_count: 4, admin_decision: "pending", adjusted_amount_minor: null, dispute_status: "none", submitted_at: `${yyyy}-07-04`, decided_at: null, decided_by: null },
   ];
 }
 
@@ -219,12 +219,12 @@ export function getAdminOperators(): Operator[] {
 
 export function getAdminFinance(): FinanceRecord[] {
   return [
-    { id: "F001", type: "payment", guest_or_owner: "Chidi Okafor", property: "The Palms Maisonette", amount_minor: 84000, date: `${yyyy}-${mm}-18`, status: "settled", ref: "PAY-2026-0618" },
-    { id: "F002", type: "payment", guest_or_owner: "Folake Adeyemi", property: "Sunset Dove", amount_minor: 64000, date: `${yyyy}-${mm}-20`, status: "settled", ref: "PAY-2026-0620" },
+    { id: "F001", type: "payment", guest_or_owner: "Chidi Okafor", property: "The Palms Maisonette", amount_minor: 84000, date: `${yyyy}-${mm}-18`, status: "settled", ref: "A7KX3MNP" },
+    { id: "F002", type: "payment", guest_or_owner: "Folake Adeyemi", property: "Sunset Dove", amount_minor: 64000, date: `${yyyy}-${mm}-20`, status: "settled", ref: "B8LY4NQR" },
     { id: "F003", type: "payout", guest_or_owner: "Adaora Mensah", property: "All units", amount_minor: 300000, date: `${yyyy}-${mm}-05`, status: "paid", ref: "PO-2026-0605" },
     { id: "F004", type: "deposit_hold", guest_or_owner: "Chidi Okafor", property: "The Palms Maisonette", amount_minor: 50000, date: `${yyyy}-${mm}-18`, status: "held", ref: "DEPT-2026-0618" },
     { id: "F005", type: "deposit_hold", guest_or_owner: "Folake Adeyemi", property: "Sunset Dove", amount_minor: 50000, date: `${yyyy}-${mm}-20`, status: "held", ref: "DEPT-2026-0620" },
-    { id: "F006", type: "payment", guest_or_owner: "Emeka Nwosu", property: "The Palms Maisonette", amount_minor: 108000, date: `${yyyy}-${mm}-25`, status: "processing", ref: "PAY-2026-0625" },
+    { id: "F006", type: "payment", guest_or_owner: "Emeka Nwosu", property: "The Palms Maisonette", amount_minor: 108000, date: `${yyyy}-${mm}-25`, status: "processing", ref: "DQ6ATN2W" },
   ];
 }
 
@@ -615,9 +615,9 @@ export function getReconciliation(): { records: ReconciliationRecord[]; matchedT
   const yyyy = new Date().getFullYear().toString();
   const mm = (new Date().getMonth() + 1).toString().padStart(2, "0");
   const records: ReconciliationRecord[] = [
-    { id: "R001", type: "booking_charge", amount_minor: 84000, stripe_id: "pi_3QxY...abc123", booking_ref: "PAY-2026-0618", property: "The Palms Maisonette", date: `${yyyy}-${mm}-18`, matched: true, matched_with: "R004" },
-    { id: "R002", type: "booking_charge", amount_minor: 64000, stripe_id: "pi_3QxZ...def456", booking_ref: "PAY-2026-0620", property: "Sunset Dove", date: `${yyyy}-${mm}-20`, matched: true, matched_with: "R005" },
-    { id: "R003", type: "booking_charge", amount_minor: 108000, stripe_id: "pi_3Qxa...ghi789", booking_ref: "PAY-2026-0625", property: "The Palms Maisonette", date: `${yyyy}-${mm}-25`, matched: false },
+    { id: "R001", type: "booking_charge", amount_minor: 84000, stripe_id: "pi_3QxY...abc123", booking_ref: "A7KX3MNP", property: "The Palms Maisonette", date: `${yyyy}-${mm}-18`, matched: true, matched_with: "R004" },
+    { id: "R002", type: "booking_charge", amount_minor: 64000, stripe_id: "pi_3QxZ...def456", booking_ref: "B8LY4NQR", property: "Sunset Dove", date: `${yyyy}-${mm}-20`, matched: true, matched_with: "R005" },
+    { id: "R003", type: "booking_charge", amount_minor: 108000, stripe_id: "pi_3Qxa...ghi789", booking_ref: "DQ6ATN2W", property: "The Palms Maisonette", date: `${yyyy}-${mm}-25`, matched: false },
     { id: "R004", type: "payout", amount_minor: 357000, stripe_id: "po_3QxY...jkl012", date: `${yyyy}-${mm}-28`, matched: true, matched_with: "R001" },
     { id: "R005", type: "payout", amount_minor: 187000, stripe_id: "po_3QxZ...mno345", date: `${yyyy}-${mm}-28`, matched: true, matched_with: "R002" },
     { id: "R006", type: "deposit_hold", amount_minor: 50000, stripe_id: "pi_3QxY...pqr678", booking_ref: "DEPT-2026-0618", property: "The Palms Maisonette", date: `${yyyy}-${mm}-18`, matched: false },

@@ -131,12 +131,15 @@ export async function POST(request: NextRequest) {
     const currency = "GBP";
 
     // --- 1. ATOMIC RESERVE — the database owns non-overlap and the 14-day
-    // rule. book_stays() inserts pending_payment reservations inside a single
-    // transaction; the GiST EXCLUDE constraint rejects any overlap (23P01) and
-    // the RPC raises ADVANCE_14_DAYS / PROPERTY_NOT_BOOKABLE / INVALID_RANGE.
+    // rule. book_stays() inserts pending_payment reservations AND the
+    // booking_groups row (with .reference) inside a single transaction;
+    // the GiST EXCLUDE constraint rejects any overlap (23P01) and the RPC
+    // raises ADVANCE_14_DAYS / PROPERTY_NOT_BOOKABLE / INVALID_RANGE.
     // Nothing has been charged yet — payment is created only after reserve.
     const { data: reserveResult, error: reserveError } = await db.rpc("book_stays", {
       p_group_id: groupId,
+      p_reference: reference,
+      p_currency: currency,
       p_items: items.map((i) => ({
         property_id: i.property_id,
         check_in: i.check_in,
@@ -190,7 +193,7 @@ export async function POST(request: NextRequest) {
     const propertyIds = [...new Set(items.map((i) => i.property_id))];
     const { data: propsData } = await db
       .from("properties")
-      .select("id, name, owner_id, nightly_rate_minor, deposit_minor, extended_checkout_offered, extended_checkout_price_minor, currency")
+      .select("id, branded_name, owner_id, nightly_rate_minor, deposit_minor, extended_checkout_offered, extended_checkout_price_minor, currency")
       .in("id", propertyIds);
     const propsById = new Map((propsData ?? []).map((p) => [p.id, p]));
 
@@ -211,7 +214,7 @@ export async function POST(request: NextRequest) {
         id: reserved.reservation_id,
         booking_group_id: groupId,
         property_id: item.property_id,
-        property_name: property.name,
+        property_name: property.branded_name,
         owner_id: property.owner_id,
         check_in: item.check_in,
         check_out: item.check_out,
@@ -266,18 +269,21 @@ export async function POST(request: NextRequest) {
     }
 
     try {
-      const { error: groupError } = await db.from("booking_groups").insert({
-        id: groupId,
-        charge_intent_id: charge.intentId,
-        charge_status: "pending",
-        currency,
-        charge_total_minor: chargeTotalMinor,
-        deposit_hold_total_minor: depositHoldTotalMinor,
-        commission_minor: totalSplit.commissionMinor,
-        owner_share_minor: totalSplit.ownerShareMinor,
-        status: "pending_payment",
-      });
-      if (groupError) throw new Error(`Failed to create group: ${groupError.message}`);
+      const { error: groupError } = await db.from("booking_groups").upsert(
+        {
+          id: groupId,
+          charge_intent_id: charge.intentId,
+          charge_status: "pending",
+          currency,
+          charge_total_minor: chargeTotalMinor,
+          deposit_hold_total_minor: depositHoldTotalMinor,
+          commission_minor: totalSplit.commissionMinor,
+          owner_share_minor: totalSplit.ownerShareMinor,
+          status: "pending_payment",
+        },
+        { onConflict: "id" },
+      );
+      if (groupError) throw new Error(`Failed to upsert group: ${groupError.message}`);
 
       for (const r of reservations) {
         const { error: inspError } = await db.from("inspections").insert({

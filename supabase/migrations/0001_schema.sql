@@ -225,6 +225,8 @@ create table verification_log (
 
 create or replace function book_stays(
   p_group_id uuid,
+  p_reference text,
+  p_currency char(3),
   p_items jsonb,
   p_guest_name text,
   p_guest_email text,
@@ -247,6 +249,8 @@ declare
   v_total_minor int;
   v_reference text;
   v_result jsonb = '[]'::jsonb;
+  v_charge_total int := 0;
+  v_deposit_total int := 0;
 begin
   for v_item in select * from jsonb_array_elements(p_items)
   loop
@@ -283,7 +287,7 @@ begin
       v_total_minor := v_total_minor + v_extended_price;
     end if;
 
-    v_reference := upper(substr(replace(gen_random_uuid()::text, '-', ''), 1, 8));
+    v_reference := coalesce(nullif(trim(p_reference), ''), upper(substr(replace(gen_random_uuid()::text, '-', ''), 1, 8)));
 
     insert into reservations (
       booking_group_id, reference, property_id,
@@ -305,6 +309,9 @@ begin
     )
     returning id, reference into v_property_id, v_reference;
 
+    v_charge_total := v_charge_total + v_total_minor;
+    v_deposit_total := v_deposit_total + v_property.deposit_minor;
+
     v_result := v_result || jsonb_build_object(
       'reservation_id', v_property_id,
       'reference', v_reference,
@@ -315,6 +322,14 @@ begin
       'checkout_time', v_confirmed_checkout_time
     );
   end loop;
+
+  insert into booking_groups (id, reference, currency, charge_total_minor, deposit_hold_total_minor, status)
+  values (p_group_id, v_reference, p_currency, v_charge_total, v_deposit_total, 'pending')
+  on conflict (id) do update set
+    reference = excluded.reference,
+    currency = excluded.currency,
+    charge_total_minor = excluded.charge_total_minor,
+    deposit_hold_total_minor = excluded.deposit_hold_total_minor;
 
   return v_result;
 end;

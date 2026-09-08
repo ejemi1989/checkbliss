@@ -96,7 +96,7 @@ export async function createProperty(
     const { data: prop, error } = await db
       .from("properties")
       .insert({
-        name: parsed.name,
+branded_name: parsed.name,
         slug,
         building_name: parsed.name,
         city: parsed.city,
@@ -158,7 +158,7 @@ export async function updateProperty(
 
     const db = createAdmin();
     const updateData: Record<string, unknown> = {};
-    if (parsed.name) updateData.name = parsed.name;
+    if (parsed.name) updateData.branded_name = parsed.name;
     if (parsed.description) updateData.description = parsed.description;
     if (parsed.nightly_rate_minor) updateData.nightly_rate_minor = parsed.nightly_rate_minor;
     if (parsed.extended_checkout_offered !== undefined) updateData.extended_checkout_offered = parsed.extended_checkout_offered;

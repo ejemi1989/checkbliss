@@ -9,6 +9,7 @@ import {
   PAYOUT_SETTLEMENT_BUSINESS_DAYS,
   MAX_PAYOUT_RETRY_ATTEMPTS,
   RETRY_BASE_DELAY_MS,
+  ALERT_DEDUP_WINDOW_MS,
   addMockPayout,
   getMockPayoutLedger,
   resetMockPayoutLedger,
@@ -247,6 +248,34 @@ describe("Refund split reversal", () => {
     const ledger = getMockPayoutLedger();
     expect(ledger[0].status).toBe("refunded");
   });
+
+  it("partial refund below owner share keeps payout as paid (mock)", async () => {
+    addMockPayout({
+      id: "OP-partial",
+      bookingGroupId: "BG-partial",
+      reservationId: "R-partial",
+      propertyId: "P-partial",
+      ownerId: "OW-partial",
+      ownerShareMinor: 100000,
+      status: "paid",
+      payoutNgnMinor: 245000000,
+      fxRate: 2450,
+      fincraReference: "fincra_mock_BG-partial",
+      requestedAt: new Date().toISOString(),
+      releasedAt: new Date().toISOString(),
+      paidAt: new Date().toISOString(),
+      nextAttemptAt: null,
+    });
+
+    await recordRefundSplit({
+      bookingGroupId: "BG-partial",
+      totalRefundedMinor: 20000,
+      reason: "goodwill_partial",
+    });
+
+    const ledger = getMockPayoutLedger();
+    expect(ledger[0].status).toBe("paid");
+  });
 });
 
 describe("Retry backoff", () => {
@@ -304,6 +333,10 @@ describe("Constants", () => {
 
   it("max payout retry attempts is 5", () => {
     expect(MAX_PAYOUT_RETRY_ATTEMPTS).toBe(5);
+  });
+
+  it("alert dedup window is 24 hours", () => {
+    expect(ALERT_DEDUP_WINDOW_MS).toBe(24 * 60 * 60 * 1000);
   });
 });
 

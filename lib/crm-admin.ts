@@ -290,12 +290,12 @@ export async function getCrmContacts(filters?: { role?: "owner" | "operator"; ci
   const cityByOperator = new Map<string, string>();
   for (const a of assignments ?? []) cityByOperator.set(a.operator_id, a.city);
 
-  const { data: props } = await db.from("properties").select("id, owner_id, name, city");
+  const { data: props } = await db.from("properties").select("id, owner_id, branded_name, city");
   const propsByOwner = new Map<string, string[]>();
   for (const p of props ?? []) {
     if (!p.owner_id) continue;
     const list = propsByOwner.get(p.owner_id) ?? [];
-    list.push(`${p.name} (${p.city})`);
+    list.push(`${p.branded_name} (${p.city})`);
     propsByOwner.set(p.owner_id, list);
   }
 
@@ -338,7 +338,7 @@ export async function getCrmClaims(filter?: "pending" | "resolved"): Promise<Crm
   const db = createAdmin();
   const { data } = await db
     .from("damage_claims")
-    .select("id, property_id, estimated_cost_minor, description, admin_decision, created_at, reporting_operator_id, photos, properties(name, city), profiles!damage_claims_reporting_operator_id_fkey(full_name)")
+    .select("id, property_id, estimated_cost_minor, description, admin_decision, created_at, reporting_operator_id, photos, properties(branded_name, city), profiles!damage_claims_reporting_operator_id_fkey(full_name)")
     .order("created_at", { ascending: false })
     .limit(100);
 
@@ -350,7 +350,7 @@ export async function getCrmClaims(filter?: "pending" | "resolved"): Promise<Crm
     const photos = Array.isArray(c.photos) ? c.photos.length : 0;
     return {
       id: c.id as string,
-      property_name: (prop?.name as string) ?? "—",
+      property_name: (prop?.branded_name as string) ?? "—",
       city: (prop?.city as string) ?? "—",
       operator_name: (op?.full_name as string) ?? null,
       reported_at: c.created_at as string,
@@ -374,7 +374,7 @@ export async function getCrmInspections(): Promise<CrmInspection[]> {
   const db = createAdmin();
   const { data: inspections } = await db
     .from("inspections")
-    .select("id, reservation_id, operator_id, result, prompt_sent_at, reminder_sent_at, escalated_at, inspected_at, created_at, reservations(check_in, check_out, properties(name, city), guest_name)")
+    .select("id, reservation_id, operator_id, result, prompt_sent_at, reminder_sent_at, escalated_at, inspected_at, created_at, reservations(check_in, check_out, properties(branded_name, city), guest_name)")
     .order("created_at", { ascending: false })
     .limit(50);
 
@@ -391,7 +391,7 @@ export async function getCrmInspections(): Promise<CrmInspection[]> {
     const minutes = Math.floor((Date.now() - new Date(lastAction).getTime()) / 60000);
     return {
       id: i.id as string,
-      property_name: (p?.name as string) ?? "—",
+      property_name: (p?.branded_name as string) ?? "—",
       city: (p?.city as string) ?? "—",
       guest_name: (r?.guest_name as string) ?? "—",
       checkout_date: (r?.check_out as string)?.slice(0, 10) ?? "—",

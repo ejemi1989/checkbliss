@@ -16,17 +16,80 @@ The core money-and-inventory flow is implemented, tested, and documented:
 | WhatsApp owner/operator bot (8 templates, strict parsing, webhook security) | Done (audit) | `lib/whatsapp.ts`, `app/api/webhooks/whatsapp/route.ts`, `tests/whatsapp.test.ts`, `tests/whatsapp-webhook.test.ts` |
 | Dashboards (admin / operator Lagos+Abuja / owner) | **Done** | `app/admin/*`, `app/dashboard/operator/*` (gated by `checkOperatorGate`), `app/dashboard/owner/*` (gated by new `checkOwnerGate`) |
 | Customer account (register → verify → login → bookings persist) | **Done** | `/account/*` server components → `getGuestBookingsFromDB()`; mock allowlist now includes `guest@checkbliss.com`; `updateProfileAction` + `requestPasswordResetAction` (Zod-validated); `/forgot-password` page; all `/account/*` routes redirect to `/login` when not signed in |
-| Owner LINK proof-of-ownership + cross-owner security tests | **Not started** | `lib/whatsapp.ts` parses `LINK`; authz not verified end-to-end |
+| Owner LINK proof-of-ownership + cross-owner security | **Done** | `lib/whatsapp.ts` parses `LINK <unit>`; `handleOwner()` verifies the unit is owned by the sender; HELP updated; cross-owner tests cover BLOCK/UNBLOCK/AVAILABILITY/LINK |
 
 ## Verification gates (must stay green)
 
 | Command | Last run | Result |
 |---------|----------|--------|
-| `npm test` | 2026-08-16 | 22 files, **292 tests passing** |
-| `npm run typecheck` | 2026-08-16 | clean |
-| `npm run lint` | 2026-08-16 | 23 pre-existing errors (unrelated files); new code clean |
+| `npm test` | 2026-09-07 | 25 files, **345 tests passing** |
+| `npm run typecheck` | 2026-09-07 | clean |
+| `npm run lint` | 2026-09-07 | 20 pre-existing errors (unrelated files); new code clean |
+| `npm run build` | 2026-09-07 | compiled, 65/65 static pages |
 
 ## Recently completed
+
+### Phase 6 — WhatsApp owner LINK proof-of-ownership + cross-owner security (2026-09-07)
+- **Owner LINK command implemented** (user-confirmed: simple verify, not a token flow). `lib/whatsapp.ts` `OwnerCommand` gains `{ kind: "LINK"; unit: string }`; `parseOwnerCommand()` handles `LINK <unit>` (with `LINK` alone returning `INCOMPLETE` with usage). The `HELP` text now lists `LINK <unit>`.
+- **Webhook handler:** `app/api/webhooks/whatsapp/route.ts` `handleOwner()` adds a `LINK` case — resolves the unit via the same `findOwnedProperty(db, profile.id, unit)` used by BLOCK/UNBLOCK/AVAILABILITY, so **the sender's `owner_id` scoping is shared**. Owned → "✓ Ownership verified — `<name>` is linked to your account."; not owned / not found → rejection copy. Every other command already authed against the same `findOwnedProperty`, so cross-owner isolation is now exercised explicitly.
+- **Owner notify number fix:** both booking-confirmation notify paths (`app/api/webhooks/stripe/route.ts` + `lib/reconciliation.ts`) already guarded against a missing `whatsapp_e164` but silently skipped; they now emit a `warn` log (`Owner <id> has no WhatsApp number — booking notification skipped`) so a notify that didn't happen is observable instead of the misleading "owner notified" success log.
+- **Tests:** added to `tests/whatsapp-webhook.test.ts` — 4 parser tests (`LINK` parse, whitespace, `LINK` alone → INCOMPLETE, case-insensitive), 6 LINK command tests (owned/webhook-level: OWNER can LINK own, reject unowned, reject nonexistent, `LINK` alone → help, Sheena can LINK own, Sheena rejected on Owner A's), and an explicit **cross-owner security suite** (11 tests): Owner A cannot BLOCK/UNBLOCK/AVAILABILITY/LINK Owner B's property and vice-versa, and both owners can manage their own properties across all four commands. **Total: 25 files, 345 tests passing** (was 25/324). Typecheck clean, lint unchanged (20 pre-existing errors in unrelated files), build green.
+
+### Live schema parity — 0003–0018 merge + `properties.name` → `branded_name` (2026-09-07)
+- **Live Supabase audit** (`docs/supabase-audit-2026-07-12.md` basis): the deployed project (`ejwurxnkcxpenmhbqwdi`) sat at migrations **0001+0002 only** — no `/rpc/book_stays`, `/rpc/search_properties`, `/rpc/auth_role`, `/rpc/has_city_access`; still had `properties.name` and `deposit_holds.airwallex_authorisation_id`. Storefront + booking + dashboard real-mode paths would fail.
+- **Decision (user-confirmed):** DB = migration source of truth. Applied `0003`–`0018` in full (excluding `0010` demo-user seeding) via a single idempotent merge script for the Supabase SQL editor; 0001's `book_stays()` is recreated in the merge reading `v_property.branded_name` + writing `booking_groups.reference` (0018), and 0005's `search_properties` is extended to the 5-arg signature the app already calls (`p_where, p_in, p_out, p_guests, p_rooms`).
+- **Repo migrations kept coherent:** `0004_seo_naming.sql` now also recreates `book_stays()` post-rename; `0005_search.sql` now defines the 5-arg `search_properties` — a fresh 0001→0018 chain stays consistent.
+- **Code patched to `branded_name`** (real mode): `lib/data-server.ts` (8 selects + 8 mappings incl. payouts/commission/trace), `lib/data-guest.ts`, `lib/crm-admin.ts`, `lib/reconciliation.ts`, `app/api/webhooks/stripe/route.ts` + `whatsapp/route.ts` (incl. `findOwnedProperty` ilike + BOOKINGS list), `app/api/bookings/route.ts` (propsById fetch), `actions/properties.ts` (insert + update now write `branded_name`). Storefront `app/api/properties/route.ts` already selected `branded_name`.
+- **Known pre-existing drift (flagged, out of scope):** `data-server.ts` reads `reservations.nights` (no such column — falls back to mock) and `deposit_holds.amount_minor` (column is `hold_amount_minor` — falls back to mock).
+- **Verification:** `npm test` 25 files / 324 tests, typecheck clean, `npm run build` green. Lint unchanged (20 pre-existing errors in unrelated files).
+
+### Phase 7 schema drift — operators, country_of_residence, booking reference (2026-09-07)
+- **Migration `0018_phase7_schema.sql`** closes three real-mode gaps the app code already assumed:
+  1. `operators` table (id, profile_id, name, email, `assigned_cities text[]`, status, quality_score, inspections_done, verified_count, properties_count) matching the shape read in `actions/operators.ts` (5 sites) + `app/api/admin/operators/route.ts`. `operator_assignments` remains the per-city RLS source of truth.
+  2. `profiles.country_of_residence text` — written by `actions/auth.ts` on signup + first-session auto-upsert (3 sites).
+  3. `booking_groups.reference text` + partial unique index (`booking_groups_reference_uidx`) — read by `app/api/bookings/[reference]/route.ts` lookup.
+- **`book_stays()` RPC rewritten** (in `0001_schema.sql`): now takes `p_reference text` + `p_currency char(3)`, inserts the `booking_groups` row (with `reference`, charge/deposit totals, `pending`) **inside the same transaction** as the reservation inserts — the group and its reservations are now atomic. Route no longer needs a separate group insert.
+- **`app/api/bookings/route.ts`**: passes `p_reference`/`p_currency` to the RPC; the post-charge `booking_groups` write changed from `.insert()` to `.upsert({ onConflict: "id" })` (fill in charge intents / status after the RPC already created the row).
+- **Fixture cleanup**: all booking references in `lib/data.ts` + `lib/seed-data.ts` migrated from `PAY-2026-MMDD` / `DEPT-*` mock formats to the real 8-char base32 charset (`ABCDEFGHJKLMNPQRSTUVWXYZ23456789`). Deposit-hold `DEPT-*` and refund `B001` refs intentionally kept — they are not booking references.
+- **Verification:** new `tests/reference-format.test.ts` — 9 tests: mock booking response is 8-char base32, charset excludes lookalikes (I/O/0/1), claim/reconciliation-charge/finance-payment fixture refs all match, RPC call passes `p_reference`/`p_currency`, route uses upsert, migration 0018 provides all three pieces. **Total: 25 files, 324 tests passing** (was 24/315). Typecheck clean, build green.
+
+### Fincra beneficiary + payout-name fixes (2026-09-06)
+- `lib/fincra.ts:createFincraBeneficiary` hard-coded `address.state: "Lagos"` (wrong for any non-Lagos owner) and sent only `country + state` in the address object. Currency was already correctly `NGN` (the earlier note was stale).
+- **Fix:** `FincraBeneficiaryCreateInput` and `FincraBeneficiaryRecord` now accept optional `currency`, `addressState/City/Street/Zip`, and `uniqueIdentifier` — the address object is built dynamically and `state` is no longer hard-coded. `currency` defaults to `"NGN"`. Mock and real-mode paths both store these fields; the real-mode response mapping reads them back from `data.address`.
+- `lib/payouts.ts:splitAccountHolderName(fullName)` pure helper splits a full name into `{ firstName, lastName? }` (whitespace-collapsed, single-word names yield `lastName: undefined`). Used in `releaseEligiblePayouts` so the `beneficiary` object sent to Fincra's `/disbursements/payouts` now includes `lastName` when present (Fincra docs list it as part of the payout beneficiary shape).
+- **Verification:** new `tests/fincra-beneficiary.test.ts` — 11 tests: NGN default, caller-supplied currency, address fields, "no hard-coded Lagos" assertion, `uniqueIdentifier`, mock-mode idempotency, and `splitAccountHolderName` (2-word, 3-word, single-word, extra-whitespace, empty-string). **Total: 24 files, 315 tests passing** (was 23/304).
+
+### Fincra webhook signature — fix per Fincra docs (2026-09-06)
+- `lib/fincra.ts:verifyFincraWebhookSignature` was HMACing the raw request body, but Fincra's docs ([`validating-webhook`](https://docs.fincra.com/docs/validating-webhook)) explicitly state the payload must be "encrypted and unmodified as received" — they sign the compact JSON of the parsed `{event, data}` object. **Every real webhook would have failed signature verification (401), so no payout would ever be marked `paid` via the webhook** — only the polling path would confirm them.
+- **Fix:** `verifyFincraWebhookSignature` now takes the **parsed event** instead of the raw body. `compactJson()` re-serialises via `JSON.stringify` (no whitespace, default separators), matching Fincra's Python example using `json.dumps(payload, separators=(',', ':'))`. New `computeFincraWebhookSignature` export for tests + future replay tooling. Webhook route parses first, then verifies on the parsed object, then re-validates the schema with Zod (so a syntactically-valid-but-schema-bad payload still 400s, not 401).
+- **Verification:** new `tests/fincra-webhook-signature.test.ts` — 10 tests: positive match, whitespace-tolerant match, tamper-detection, missing/empty/wrong-length signature, wrong-secret rejection, round-trip via `parseFincraWebhookEvent`, and event-field mutation detection. **Total: 23 files, 304 tests passing** (was 22/294).
+
+### FX guard alert dedup (2026-09-06)
+- `lib/payouts.ts` `releaseEligiblePayouts` was emitting a fresh `fx_out_of_range` and `invalid_beneficiary` alert on every cron pass while the condition persisted — within 24h this could pile up dozens of identical rows per group.
+- **Fix:** new internal helper `hasRecentAlert(db, bookingGroupId, kind, windowMs)` checks for any un-dedup'd alert matching `(booking_group_id, kind)` within `ALERT_DEDUP_WINDOW_MS` (24h). Both FX-guard inserts now skip when one is already present. New constant test confirms the 24h window.
+
+### Bank-details re-registration idempotency (2026-09-06)
+- `actions/owner-payout-details.ts:saveOwnerPayoutDetails` was calling `createFincraBeneficiary` on every save and overwriting `fincra_beneficiary_id`, orphaning the prior Fincra-side beneficiary.
+- **Fix:** fetch the existing `owner_payout_details` row first; compare bank name / code / account number / account name / tax id; if all unchanged **and** `fincra_beneficiary_id` already exists, skip the Fincra call and reuse. If anything changed, register a fresh beneficiary (Fincra receives the same payload shape, so the new id is deterministic via `accountHolderName:accountNumber`).
+
+### Payout alert resolve path (2026-09-06)
+- `actions/finance.ts:resolveAlert` existed but (a) accepted any string and (b) wasn't wired into the new `/admin/payouts` page. Hardened it with Zod UUID validation, added an `audit_log` entry (`payout_alert.resolved`), and added a `Resolve` button to each open alert on the admin payouts view with an in-component toast (`useTransition`, revalidatePath covers `/admin/payouts`).
+
+### Admin owner-payouts ledger UI (2026-09-06)
+- New `/admin/payouts` page (`app/admin/payouts/page.tsx` + `payouts-client.tsx`) reads `getPayoutLedgerFromDB()` + `getPayoutAlertsFromDB()` server-side and renders: status summary tiles (pending / eligible / released / paid totals), an open-alerts panel (top 8 unresolved `payout_alerts` with severity pill + kind), and the full ledger as a filterable table (status dropdown + free-text owner/property search). Includes NGN payout column (FX × GBP share), retry count, Fincra reference, paid timestamp.
+- Nav entry "Owner Payouts" added under Finance. Read-only — all mutations still go through Server Actions.
+- Separate from `/admin/finance` (which renders the mock "approve before disbursement" queue); both can coexist.
+
+### Owner dashboard reads real owner_payouts (2026-09-06)
+- The owner "Payouts" tab previously rendered hardcoded mock data (`getOwnerPayouts()` in `lib/data.ts`) and showed a literal `"Paid"` label regardless of status.
+- **Fix:** `getOwnerPayoutsFromDB(ownerId)` in `lib/data-server.ts` reads `owner_payouts` joined with `properties.name`, maps each row to the existing `OwnerPayout` display shape (`period` = `Month YYYY` from the terminal date, `units` = property name), and derives a human label per status (`paid → "Paid"`, `released → "Disbursing"`, `eligible → "Eligible"`, `pending/failed/refunded` etc). Server pages `/dashboard/owner` (home) and `/dashboard/owner/payouts` pass the fetched list via a new optional `initialPayouts` prop (force-dynamic, falls back to module mock when unauthenticated / Supabase not configured / not owner). The dashboard now renders the actual status pill (green=paid, primary=eligible/released, danger=failed, warning=refunded), an empty-state message, and drops the bogus "Paid 2026-07-05" copy.
+
+### Refund flow consolidated through recordRefundSplit (2026-09-06)
+- The Stripe webhook (`app/api/webhooks/stripe/route.ts`) previously inlined the refund SQL directly — duplicate of `recordRefundSplit` in `lib/payouts.ts` and missing the `payout_alerts` insertion the rest of the payout lifecycle emits.
+- **Fix:** `recordRefundSplit` is now the single source of truth — it updates `booking_groups` + `owner_payouts`, inserts a `payout_alerts` row (`kind: 'refund'`, `severity: 'medium'`), and logs. The Stripe `record_refund` action delegates to it. New partial-refund test in `tests/payment-architecture.test.ts` confirms refund < owner_share keeps status `paid`.
+
+### Fincra payouts cron scheduled (2026-09-06)
+- `app/api/cron/payouts` (eligibility → release → poll) existed but was **not** in `vercel.json`, so the entire owner-payout lifecycle was dormant in production. Added `"path": "/api/cron/payouts", "schedule": "0 4 * * *"` (after inspections/feedback/reconcile/sweep so it runs against a fully reconciled set). Single-line change.
 
 ### vercel-react-best-practices skill installed (2026-08-16)
 - Installed the Vercel Engineering performance guide: `.agents/skills/vercel-react-best-practices/SKILL.md` (source: `.context/features/vercel.md`).
@@ -117,6 +180,5 @@ The core money-and-inventory flow is implemented, tested, and documented:
 - Enforced at: search bar, booking page, `POST /api/bookings` (422 `ADVANCE_14_DAYS`), `book_stays()` RPC (DB).
 
 ## Next up (ordered)
-1. Phase 6 — WhatsApp: owner LINK proof-of-ownership flow + owner-A-cannot-act-on-owner-B tests + owner notify number fix.
-2. Phase 7 — real-mode fixes: operators refs, assigned_cities, country_of_residence, booking reference.
-3. Phase 8 — final doc pass.
+1. Phase 7 — real-mode drift: apply `0018` migration to the live project; verify `operators` / `assigned_cities` / `country_of_residence` / `booking_groups.reference` reads against real schema.
+2. Phase 8 — final doc pass.
