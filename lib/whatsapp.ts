@@ -144,6 +144,7 @@ export type OwnerCommand =
   | { kind: "UNBLOCK"; unit: string; from: string; to: string }
   | { kind: "AVAILABILITY"; unit: string; month: string }
   | { kind: "BOOKINGS" }
+  | { kind: "LINK"; unit: string }
   | { kind: "HELP" }
   | { kind: "INCOMPLETE"; command: string; usage: string };
 
@@ -212,6 +213,13 @@ export function parseOwnerCommand(body: string): OwnerCommand | null {
   /* AVAILABILITY typed alone or with only a unit */
   if (upper === "AVAILABILITY" || /^AVAILABILITY\s/i.test(text)) {
     return { kind: "INCOMPLETE", command: "AVAILABILITY", usage: "AVAILABILITY <unit> <month>\nExample: AVAILABILITY Sunset Dove Sept" };
+  }
+
+  const link = text.match(/^LINK\s+(.+)$/i);
+  if (link) return { kind: "LINK", unit: link[1].trim() };
+
+  if (upper === "LINK") {
+    return { kind: "INCOMPLETE", command: "LINK", usage: "LINK <unit>\nExample: LINK Sunset Dove" };
   }
 
   return null; // strict: anything else is rejected

@@ -151,11 +151,11 @@ async function findOwnedProperty(
   if (supabaseAdminConfigured && db) {
     const { data } = await db
       .from("properties")
-      .select("id, name")
+      .select("id, branded_name")
       .eq("owner_id", ownerId)
-      .ilike("name", `%${unitName}%`)
+      .ilike("branded_name", `%${unitName}%`)
       .maybeSingle();
-    return data ? { id: data.id, name: data.name } : null;
+    return data ? { id: data.id, name: data.branded_name } : null;
   }
   return (
     getSeedProperties().find(
@@ -270,7 +270,7 @@ async function currentInspectionFor(
     const { data } = await db
       .from("inspections")
       .select(
-        "reservation_id, reservations!inner(id, property_id, properties!inner(id, name, city))",
+        "reservation_id, reservations!inner(id, property_id, properties!inner(id, branded_name, city))",
       )
       .eq("operator_id", operatorId)
       .is("result", null)
@@ -278,12 +278,12 @@ async function currentInspectionFor(
     if (!data) return null;
     const res = data.reservations as unknown as {
       property_id: string;
-      properties: { id: string; name: string; city: string };
+      properties: { id: string; branded_name: string; city: string };
     };
     return {
       reservationId: data.reservation_id,
       propertyId: res.property_id,
-      propertyName: res.properties.name,
+      propertyName: res.properties.branded_name,
       city: res.properties.city,
     };
   }
@@ -553,7 +553,7 @@ async function handleOwner(
         db,
         from,
         profile.id,
-        "Here's what I can help with:\n\n• BLOCK <dates> <unit> — block dates\n  e.g. BLOCK 15-20 Sept Sunset Dove\n• UNBLOCK <dates> <unit> — unblock dates\n• AVAILABILITY <unit> <month> — check calendar\n  e.g. AVAILABILITY Sunset Dove Sept\n• BOOKINGS — your upcoming stays\n• HELP — see this again",
+        "Here's what I can help with:\n\n• LINK <unit> — verify you own a listing\n  e.g. LINK Sunset Dove\n• BLOCK <dates> <unit> — block dates\n  e.g. BLOCK 15-20 Sept Sunset Dove\n• UNBLOCK <dates> <unit> — unblock dates\n• AVAILABILITY <unit> <month> — check calendar\n  e.g. AVAILABILITY Sunset Dove Sept\n• BOOKINGS — your upcoming stays\n• HELP — see this again",
         cmd.kind,
         true,
       );
@@ -615,8 +615,8 @@ async function handleOwner(
     case "BOOKINGS": {
       const allProps = supabaseAdminConfigured && db
         ? (
-            (await db.from("properties").select("id, name").in("id", profile.properties))
-              .data as Array<{ id: string; name: string }> ?? []
+            (await db.from("properties").select("id, branded_name").in("id", profile.properties))
+              .data as Array<{ id: string; branded_name: string }> ?? []
           )
         : getSeedProperties().filter((p) => profile.properties.includes(p.id));
 
@@ -627,11 +627,25 @@ async function handleOwner(
         const lines = reservations
           .map((r) => {
             const p = allProps.find((x) => x.id === r.property_id);
-            return `• ${p?.name ?? "Unknown"}: ${r.check_in}–${r.check_out} (${r.status})`;
+            return `• ${p?.branded_name ?? "Unknown"}: ${r.check_in}–${r.check_out} (${r.status})`;
           })
           .join("\n");
         await sendAndAudit(db, from, profile.id, `Your upcoming bookings:\n${lines}`, cmd.kind, true);
       }
+      return NextResponse.json({ ok: true });
+    }
+
+    case "LINK": {
+      const property = await findOwnedProperty(db, profile.id, cmd.unit);
+      if (!property) {
+        await sendAndAudit(db, from, profile.id, `I couldn't find a listing called "${cmd.unit}" under your account. Double-check the name and try again, or type HELP.`);
+        return NextResponse.json({ ok: true });
+      }
+      await sendAndAudit(
+        db, from, profile.id,
+        `✓ Ownership verified — ${property.name} is linked to your account. You can now manage it via WhatsApp.`,
+        cmd.kind, true,
+      );
       return NextResponse.json({ ok: true });
     }
 

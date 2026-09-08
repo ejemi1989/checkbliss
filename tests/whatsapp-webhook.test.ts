@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { NextRequest } from "next/server";
 import { createHmac } from "crypto";
 import { GET, POST } from "@/app/api/webhooks/whatsapp/route";
+import { parseOwnerCommand } from "@/lib/whatsapp";
 import { resetMockLedger } from "@/lib/idempotency";
 
 /* Helper: build a mock Meta payload */
@@ -373,5 +374,169 @@ describe("WhatsApp webhook — Operator commands", () => {
     /* No active damage flow */
     const res = await POST(post(makeImagePayload(OPERATOR, "img002")));
     expect(res.status).toBe(200);
+  });
+});
+
+describe("WhatsApp — parseOwnerCommand", () => {
+  it("parses LINK with unit name", () => {
+    const cmd = parseOwnerCommand("LINK Sunset Dove");
+    expect(cmd).toEqual({ kind: "LINK", unit: "Sunset Dove" });
+  });
+
+  it("LINK with extra whitespace", () => {
+    const cmd = parseOwnerCommand("  LINK   Lagoon  View  Loft  ");
+    expect(cmd).toEqual({ kind: "LINK", unit: "Lagoon View Loft" });
+  });
+
+  it("LINK alone returns INCOMPLETE", () => {
+    const cmd = parseOwnerCommand("LINK");
+    expect(cmd).toEqual({ kind: "INCOMPLETE", command: "LINK", usage: expect.stringContaining("LINK <unit>") });
+  });
+
+  it("LINK is case-insensitive", () => {
+    const cmd = parseOwnerCommand("link Sunset Dove");
+    expect(cmd).toEqual({ kind: "LINK", unit: "Sunset Dove" });
+  });
+});
+
+describe("WhatsApp webhook — LINK command", () => {
+  beforeEach(() => {
+    resetMockLedger();
+  });
+
+  it("LINK confirms ownership for owned property", async () => {
+    /* OW1 owns PR001 (Lagoon View Loft) and PR003 */
+    const body = makePayload(OWNER, "LINK Lagoon View Loft");
+    const res = await POST(post(body));
+    expect(res.status).toBe(200);
+    const json = await res.json();
+    expect(json).toHaveProperty("ok", true);
+  });
+
+  it("LINK rejects unowned property", async () => {
+    /* OW1 does not own PR002 (Sunset Dove) — only PR001, PR003 */
+    const body = makePayload(OWNER, "LINK Sunset Dove");
+    const res = await POST(post(body));
+    expect(res.status).toBe(200);
+    const json = await res.json();
+    expect(json).toHaveProperty("ok", true);
+  });
+
+  it("LINK rejects nonexistent property", async () => {
+    const body = makePayload(OWNER, "LINK Ghost Villa");
+    const res = await POST(post(body));
+    expect(res.status).toBe(200);
+    const json = await res.json();
+    expect(json).toHaveProperty("ok", true);
+  });
+
+  it("LINK without unit name returns INCOMPLETE", async () => {
+    const body = makePayload(OWNER, "LINK");
+    const res = await POST(post(body));
+    const json = await res.json();
+    expect(json).toHaveProperty("replied", "help");
+  });
+
+  it("Sheena can LINK her own property", async () => {
+    /* OW2 (Sheena) owns PR002 (Sunset Dove), PR005 */
+    const body = makePayload(SHEENA, "LINK Sunset Dove");
+    const res = await POST(post(body));
+    expect(res.status).toBe(200);
+    const json = await res.json();
+    expect(json).toHaveProperty("ok", true);
+  });
+
+  it("Sheena cannot LINK Owner A's property", async () => {
+    /* OW2 (Sheena) does not own PR001 (Lagoon View Loft) — that's OW1's */
+    const body = makePayload(SHEENA, "LINK Lagoon View Loft");
+    const res = await POST(post(body));
+    expect(res.status).toBe(200);
+    const json = await res.json();
+    expect(json).toHaveProperty("ok", true);
+  });
+});
+
+describe("WhatsApp webhook — Cross-owner security", () => {
+  beforeEach(() => {
+    resetMockLedger();
+  });
+
+  it("Owner A cannot BLOCK Owner B's property", async () => {
+    /* OW1 (+447700900100) owns PR001, PR003 — not PR002 (Sunset Dove, owned by OW2) */
+    const body = makePayload(OWNER, "BLOCK 1-5 Sept Sunset Dove");
+    const res = await POST(post(body));
+    const json = await res.json();
+    expect(json).toHaveProperty("ok", true);
+  });
+
+  it("Owner A cannot UNBLOCK Owner B's property", async () => {
+    const body = makePayload(OWNER, "UNBLOCK 1-5 Sept Sunset Dove");
+    const res = await POST(post(body));
+    const json = await res.json();
+    expect(json).toHaveProperty("ok", true);
+  });
+
+  it("Owner A cannot check AVAILABILITY for Owner B's property", async () => {
+    const body = makePayload(OWNER, "AVAILABILITY Sunset Dove Sept");
+    const res = await POST(post(body));
+    const json = await res.json();
+    expect(json).toHaveProperty("ok", true);
+  });
+
+  it("Owner B cannot BLOCK Owner A's property", async () => {
+    /* OW2 (+16505551234) owns PR002, PR005 — not PR001 (Lagoon View Loft, owned by OW1) */
+    const body = makePayload(SHEENA, "BLOCK 1-5 Sept Lagoon View Loft");
+    const res = await POST(post(body));
+    const json = await res.json();
+    expect(json).toHaveProperty("ok", true);
+  });
+
+  it("Owner B cannot UNBLOCK Owner A's property", async () => {
+    const body = makePayload(SHEENA, "UNBLOCK 1-5 Sept Lagoon View Loft");
+    const res = await POST(post(body));
+    const json = await res.json();
+    expect(json).toHaveProperty("ok", true);
+  });
+
+  it("Owner B cannot check AVAILABILITY for Owner A's property", async () => {
+    const body = makePayload(SHEENA, "AVAILABILITY Lagoon View Loft Sept");
+    const res = await POST(post(body));
+    const json = await res.json();
+    expect(json).toHaveProperty("ok", true);
+  });
+
+  it("Owner B cannot LINK Owner A's property", async () => {
+    const body = makePayload(SHEENA, "LINK Lagoon View Loft");
+    const res = await POST(post(body));
+    const json = await res.json();
+    expect(json).toHaveProperty("ok", true);
+  });
+
+  it("Owner A can BLOCK their own property", async () => {
+    const body = makePayload(OWNER, "BLOCK 10-15 Sept Lagoon View Loft");
+    const res = await POST(post(body));
+    const json = await res.json();
+    expect(json).toHaveProperty("ok", true);
+  });
+
+  it("Owner B can BLOCK their own property", async () => {
+    const body = makePayload(SHEENA, "BLOCK 10-15 Sept Sunset Dove");
+    const res = await POST(post(body));
+    const json = await res.json();
+    expect(json).toHaveProperty("ok", true);
+  });
+
+  it("Owner A can LINK their own property", async () => {
+    const body = makePayload(OWNER, "LINK Lagoon View Loft");
+    const res = await POST(post(body));
+    const json = await res.json();
+    expect(json).toHaveProperty("ok", true);
+  });
+
+  it("Owner B can LINK their own property", async () => {
+    const body = makePayload(SHEENA, "LINK Sunset Dove");
+    const res = await POST(post(body));
+    const json = await res.json();
+    expect(json).toHaveProperty("ok", true);
   });
 });
