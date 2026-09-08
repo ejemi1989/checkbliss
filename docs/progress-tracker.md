@@ -29,7 +29,23 @@ The core money-and-inventory flow is implemented, tested, and documented:
 
 ## Recently completed
 
-### Phase 6 — WhatsApp owner LINK proof-of-ownership + cross-owner security (2026-09-07)
+### Global CSS Scoping & Layout Shift Resolution Across All Routes (2026-09-08)
+- **Root Cause & Symptoms Fixed:** Resolved hydration and first-render/navigation layout shifts (FOUC) where pages like `/book/[slug]` rendered unstyled, stretched, or misaligned on initial client-side entry (Image 1 in user reports) but appeared properly styled on hard refresh (Image 2).
+- **CSS Isolation Architecture:** In Next.js App Router, legacy custom stylesheets (`app/landing.css`, `app/styles/main.css`, `app/styles/listings.css`, `app/styles/property.css`) injected into DOM `<head>` by client components or nested layouts persist across SPA navigation (`Link` / `router.push`). Un-scoped `:root` variable overrides, font-family declarations, and global element resets (`*`, `html`, `body`, `a`, `img`) in those legacy files were leaking onto subsequent routes, overriding Tailwind CSS v4 `@theme` tokens and utility classes (`max-w-[1240px]`, `mx-auto`, `px-8`, `grid-cols-[1fr_400px]`, etc.).
+- **Scoped Stylesheets:**
+  - `app/landing.css`: Scoped `:root` variables and resets under `.landing-page` container.
+  - `app/landing-client.tsx`: Wrapped homepage root with `className="landing-page"`.
+  - `app/styles/main.css`: Scoped `:root` variables, `img`, and `a` resets under `.lst-body, .prop-body`.
+  - `app/styles/listings.css`: Scoped `:root` variables under `.lst-body`.
+  - `app/styles/property.css`: Scoped `:root` variables and media query root variables under `.prop-body`.
+- **Verification:** `npm run typecheck` clean, `npm test` 25 test files / 345 tests passing, `npm run build` compiled 65/65 static pages with 0 warnings.
+
+### First-render font hydration & search layout CSS pollution fix (2026-09-08)
+- **Search page global CSS bleeding fix**: Scoped `.search`, `.field`, and `.search-btn` rules in `app/landing.css` (to `.search-wrap`) and `app/styles/main.css` (to `.hero`), and removed un-scoped global resets (`* { margin: 0; padding: 0 }`, `body { font-size: 20px; background: #E9ECE2 }`). Previously, navigating from the homepage or listing pages to `/search` left `landing.css` / `main.css` in the DOM `<head>`, causing global resets and square-edge `.search` styles to override `/search`'s Tailwind v4 layout (Image 1 vs Image 2).
+- **Font display setting (`display: "swap"`)**: Updated `Inter`, `Playfair_Display`, `Newsreader`, and `Hanken_Grotesk` in `app/layout.tsx` from `display: "optional"` to `display: "swap"`. `optional` was instructing browsers to permanently fall back to basic unstyled system fonts whenever Google Fonts took >100ms on first load, only applying custom fonts after hard refresh. `swap` guarantees custom typography renders consistently on first entry while swapping smoothly.
+- **Turbopack workspace root configuration**: Added `turbopack: { root: path.resolve(__dirname) }` in `next.config.ts`. Eliminates the Next.js workspace root inference warning caused by parent `pnpm-lock.yaml`, ensuring PostCSS, Tailwind CSS `@theme` tokens, and CSS layout assets resolve correctly on first route compile.
+- **Login panel responsive utilities**: Refactored `app/login/page.tsx` responsive image panel to use native Tailwind utility classes (`hidden lg:block`, `block lg:hidden`), removing inline media query style tag injection.
+- **Verification**: `npm run typecheck` clean, `npm test` 25 files / 345 tests passing, `npm run build` compiled 65/65 static pages with 0 warnings.
 - **Owner LINK command implemented** (user-confirmed: simple verify, not a token flow). `lib/whatsapp.ts` `OwnerCommand` gains `{ kind: "LINK"; unit: string }`; `parseOwnerCommand()` handles `LINK <unit>` (with `LINK` alone returning `INCOMPLETE` with usage). The `HELP` text now lists `LINK <unit>`.
 - **Webhook handler:** `app/api/webhooks/whatsapp/route.ts` `handleOwner()` adds a `LINK` case — resolves the unit via the same `findOwnedProperty(db, profile.id, unit)` used by BLOCK/UNBLOCK/AVAILABILITY, so **the sender's `owner_id` scoping is shared**. Owned → "✓ Ownership verified — `<name>` is linked to your account."; not owned / not found → rejection copy. Every other command already authed against the same `findOwnedProperty`, so cross-owner isolation is now exercised explicitly.
 - **Owner notify number fix:** both booking-confirmation notify paths (`app/api/webhooks/stripe/route.ts` + `lib/reconciliation.ts`) already guarded against a missing `whatsapp_e164` but silently skipped; they now emit a `warn` log (`Owner <id> has no WhatsApp number — booking notification skipped`) so a notify that didn't happen is observable instead of the misleading "owner notified" success log.
