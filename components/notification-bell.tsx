@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import type { NotifRole } from "@/lib/notifications";
-import { getNotifications, getUnreadCount, markRead, markAllRead } from "@/lib/notifications";
+import { getNotifications, getUnreadCount, markRead, markAllRead, deleteNotification, deleteAllNotifications } from "@/lib/notifications";
 
 export function NotificationBell({ role, userId, onViewAll }: { role: NotifRole; userId?: string; onViewAll?: () => void }) {
   const [open, setOpen] = useState(false);
@@ -33,6 +33,17 @@ export function NotificationBell({ role, userId, onViewAll }: { role: NotifRole;
     load();
   }
 
+  function handleDelete(id: string, e: React.MouseEvent) {
+    e.stopPropagation();
+    deleteNotification(id);
+    load();
+  }
+
+  function handleClearAll() {
+    deleteAllNotifications(role, uid);
+    load();
+  }
+
   const BellIcon = (
     <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
       <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
@@ -59,11 +70,18 @@ export function NotificationBell({ role, userId, onViewAll }: { role: NotifRole;
         <div className="absolute right-0 top-full mt-2 w-80 bg-white rounded-xl border border-hairline shadow-xl z-50 overflow-hidden animate-slideIn">
           <div className="flex items-center justify-between px-4 py-3 border-b border-hairline">
             <span className="text-xs font-semibold text-ink">{notifs.length} notifications</span>
-            {unread > 0 && (
-              <button onClick={handleMarkAll} className="text-[10px] font-medium text-primary hover:text-primary-dark cursor-pointer border-none bg-transparent">
-                Mark all read
-              </button>
-            )}
+            <div className="flex items-center gap-x-2">
+              {unread > 0 && (
+                <button onClick={handleMarkAll} className="text-[10px] font-medium text-primary hover:text-primary-dark cursor-pointer border-none bg-transparent">
+                  Mark all read
+                </button>
+              )}
+              {notifs.length > 0 && (
+                <button onClick={handleClearAll} className="text-[10px] font-medium text-danger hover:text-danger/80 cursor-pointer border-none bg-transparent">
+                  Clear all
+                </button>
+              )}
+            </div>
           </div>
 
           <div className="max-h-[360px] overflow-y-auto scroll-thin">
@@ -85,6 +103,13 @@ export function NotificationBell({ role, userId, onViewAll }: { role: NotifRole;
                         {new Date(n.created_at).toLocaleDateString("en-GB", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}
                       </p>
                     </div>
+                    <button
+                      onClick={(e) => handleDelete(n.id, e)}
+                      className="shrink-0 w-5 h-5 flex items-center justify-center rounded text-ink-tertiary hover:text-danger hover:bg-danger/10 transition-colors cursor-pointer border-none bg-transparent"
+                      aria-label="Delete notification"
+                    >
+                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
+                    </button>
                   </div>
                 </div>
               ))

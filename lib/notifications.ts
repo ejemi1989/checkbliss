@@ -53,6 +53,24 @@ export function markAllRead(role: NotifRole, userId?: string): void {
   targets.forEach((n) => { n.read = true; });
 }
 
+export function deleteNotification(notificationId: string): boolean {
+  const idx = store.findIndex((n) => n.id === notificationId);
+  if (idx === -1) return false;
+  store.splice(idx, 1);
+  return true;
+}
+
+export function deleteAllNotifications(role: NotifRole, userId?: string): number {
+  const before = store.length;
+  for (let i = store.length - 1; i >= 0; i--) {
+    const n = store[i];
+    if (n.role !== role) continue;
+    if (userId && n.user_id && n.user_id !== userId) continue;
+    store.splice(i, 1);
+  }
+  return before - store.length;
+}
+
 export function enqueueNotification(
   role: NotifRole,
   title: string,

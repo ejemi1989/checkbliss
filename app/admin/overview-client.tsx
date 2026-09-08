@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { formatMinor } from "@/lib/currency";
 import { getAdminClaims, getAdminOperators, getAdminAudit, getAdminStats } from "@/lib/data";
 

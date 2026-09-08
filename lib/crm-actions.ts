@@ -10,6 +10,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { createAdmin, supabaseAdminConfigured } from "@/lib/supabase/admin";
 import { sendWhatsAppTemplate } from "@/lib/whatsapp";
+import { log } from "@/lib/observability";
 
 /* in-memory mirror of mock crm_notes (parity with crm-admin.ts MOCK_NOTES) */
 const MOCK_NOTES: Record<string, { id: number; contact_e164: string; note: string; created_by: string; created_at: string }[]> = {};
@@ -105,6 +106,11 @@ export async function sendCrmBroadcast(formData: FormData) {
     recipients = customPhones.map((e) => ({ e164: e, name: e }));
   }
 
+  const missingNumber = recipients.filter((r) => !r.e164);
+  for (const r of missingNumber) {
+    log("crm-broadcast", "warn", `Recipient ${r.name} has no WhatsApp number — broadcast skipped`);
+  }
+
   const results = await Promise.all(
     recipients.map((r) =>
       r.e164
@@ -113,9 +119,10 @@ export async function sendCrmBroadcast(formData: FormData) {
     ),
   );
   const sent = results.filter((r) => r.ok).length;
+  const skipped = missingNumber.length;
 
   redirect(
     "/admin/crm/broadcast?result=" +
-      encodeURIComponent(JSON.stringify({ ok: true, recipient_count: recipients.length, sent })),
+      encodeURIComponent(JSON.stringify({ ok: true, recipient_count: recipients.length, sent, skipped })),
   );
 }

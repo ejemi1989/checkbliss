@@ -4,12 +4,21 @@ import { supabaseConfigured } from "@/lib/supabase";
 import { createAdmin, supabaseAdminConfigured } from "@/lib/supabase/admin";
 import { createBookingCharge, createDepositHold } from "@/lib/stripe";
 import { sendWhatsApp, getTemplate } from "@/lib/whatsapp";
+import { log } from "@/lib/observability";
 import { getSeedProperties, getSeedReservations, getSeedBlocks } from "@/lib/seed-data";
 import { computeSplit, createOwnerPayoutRows } from "@/lib/payouts";
 import { registerMockBookingGroup } from "@/lib/reconciliation";
 import { advanceRuleViolation, ADVANCE_RULE_MESSAGE } from "@/lib/booking-rules";
 
 const TURNSTILE_SECRET = process.env.TURNSTILE_SECRET_KEY;
+
+/* Mock-mode owner number map — mirrors MOCK_PROFILES in the WhatsApp webhook.
+   Owners without a known mock number are warned, not silently skipped. */
+const MOCK_OWNER_PHONES: Record<string, string> = {
+  OW1: "+447700900100",
+  OW2: "+16505551234",
+  OW3: "+447535434252",
+};
 
 async function verifyTurnstile(token: string): Promise<boolean> {
   if (!TURNSTILE_SECRET) return true;
@@ -326,10 +335,25 @@ export async function POST(request: NextRequest) {
         });
       }
 
-      const uniqueOwners = new Set(reservations.map((r) => r.property_name));
-      for (const propertyName of uniqueOwners) {
-        const msg = getTemplate("newBooking", propertyName, guest.name, items[0].check_in, items[items.length - 1].check_out, `£${(chargeTotalMinor / 100).toFixed(2)}`);
-        await sendWhatsApp("+2348000000000", msg);
+      const ownerIds = [...new Set(reservations.map((r) => r.owner_id))];
+      const { data: ownerRows } = await db
+        .from("profiles")
+        .select("id, whatsapp_e164")
+        .in("id", ownerIds);
+      const ownerNumberById = new Map((ownerRows ?? []).map((p) => [p.id as string, p.whatsapp_e164 as string | null]));
+      const notifiedOwners = new Set<string>();
+      for (const r of reservations) {
+        if (notifiedOwners.has(r.owner_id)) continue;
+        notifiedOwners.add(r.owner_id);
+        const phone = ownerNumberById.get(r.owner_id);
+        if (!phone) {
+          log("bookings", "warn", `Owner ${r.owner_id} has no WhatsApp number — booking notification skipped`);
+          continue;
+        }
+        const msg = getTemplate("newBooking", r.property_name, guest.name, items[0].check_in, items[items.length - 1].check_out, `£${(chargeTotalMinor / 100).toFixed(2)}`);
+        await sendWhatsApp(phone, msg).catch((err: unknown) => {
+          log("bookings", "warn", `Owner WhatsApp notify failed: ${err instanceof Error ? err.message : err}`);
+        });
       }
 
       await db.from("audit_log").insert({
@@ -556,10 +580,20 @@ async function handleMockBooking(
 
   console.log(`[mock bookings] Group ${groupId} (${reference}) created — ${items.length} stay(s), charge ${chargeTotalMinor}, hold ${depositHoldTotalMinor}`);
 
-  const uniqueOwners = [...new Set(resultReservations.map((r) => r.property_name))];
-  for (const propertyName of uniqueOwners) {
-    const msg = getTemplate("newBooking", propertyName, guest.name, items[0].check_in, items[items.length - 1].check_out, `£${(chargeTotalMinor / 100).toFixed(2)}`);
-    await sendWhatsApp("+2348000000000", msg);
+  const notifiedOwners = new Set<string>();
+  for (const r of resultReservations) {
+    const ownerId = (r.owner_id as string) ?? "";
+    if (notifiedOwners.has(ownerId)) continue;
+    notifiedOwners.add(ownerId);
+    const phone = MOCK_OWNER_PHONES[ownerId];
+    if (!phone) {
+      log("bookings", "warn", `Owner ${ownerId} has no WhatsApp number — booking notification skipped`);
+      continue;
+    }
+    const msg = getTemplate("newBooking", r.property_name, guest.name, items[0].check_in, items[items.length - 1].check_out, `£${(chargeTotalMinor / 100).toFixed(2)}`);
+    await sendWhatsApp(phone, msg).catch((err: unknown) => {
+      log("bookings", "warn", `Owner WhatsApp notify failed: ${err instanceof Error ? err.message : err}`);
+    });
   }
 
   return NextResponse.json(

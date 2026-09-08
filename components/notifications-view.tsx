@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import type { NotifRole } from "@/lib/notifications";
-import { getNotifications, getUnreadCount, markRead, markAllRead } from "@/lib/notifications";
+import { getNotifications, getUnreadCount, markRead, markAllRead, deleteNotification, deleteAllNotifications } from "@/lib/notifications";
 
 export function NotificationsView({ role, userId }: { role: NotifRole; userId?: string }) {
   const [tick, setTick] = useState(0);
@@ -27,20 +27,41 @@ export function NotificationsView({ role, userId }: { role: NotifRole; userId?: 
     load();
   }
 
+  function handleDelete(id: string, e: React.MouseEvent) {
+    e.stopPropagation();
+    deleteNotification(id);
+    load();
+  }
+
+  function handleClearAll() {
+    deleteAllNotifications(role, uid);
+    load();
+  }
+
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between mb-4">
         <p className="text-sm font-semibold text-ink">
           {notifs.length} notification{notifs.length !== 1 ? "s" : ""} · {unread} unread
         </p>
-        {unread > 0 && (
-          <button
-            onClick={handleMarkAll}
-            className="text-xs font-medium text-primary hover:text-primary-dark cursor-pointer border-none bg-transparent"
-          >
-            Mark all as read
-          </button>
-        )}
+        <div className="flex items-center gap-x-3">
+          {unread > 0 && (
+            <button
+              onClick={handleMarkAll}
+              className="text-xs font-medium text-primary hover:text-primary-dark cursor-pointer border-none bg-transparent"
+            >
+              Mark all as read
+            </button>
+          )}
+          {notifs.length > 0 && (
+            <button
+              onClick={handleClearAll}
+              className="text-xs font-medium text-danger hover:text-danger/80 cursor-pointer border-none bg-transparent"
+            >
+              Clear all
+            </button>
+          )}
+        </div>
       </div>
 
       {notifs.length === 0 ? (
@@ -83,6 +104,13 @@ export function NotificationsView({ role, userId }: { role: NotifRole; userId?: 
                     )}
                   </div>
                 </div>
+                <button
+                  onClick={(e) => handleDelete(n.id, e)}
+                  className="shrink-0 w-7 h-7 flex items-center justify-center rounded-lg text-ink-tertiary hover:text-danger hover:bg-danger/10 transition-colors cursor-pointer border-none bg-transparent"
+                  aria-label="Delete notification"
+                >
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
+                </button>
               </div>
             </div>
           ))}
