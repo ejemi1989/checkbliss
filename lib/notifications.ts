@@ -93,6 +93,45 @@ export function enqueueNotification(
 }
 
 /**
+ * Booking-confirmed notifications: admin always; the guest who booked; and
+ * each relevant owner of the booked properties (deduped).
+ *
+ * - Admin gets a role-scoped notification (visible to any admin).
+ * - The guest gets a notification scoped to their account when `guestUserId`
+ *   resolves, else role-scoped.
+ * - Each owner gets a user-scoped notification; when `ownerUserIds` is empty
+ *   the owner notification is role-scoped (mock-mode convention — the mock
+ *   owner session id differs from seed owner ids).
+ */
+export function notifyBookingConfirmed(params: {
+  reference: string;
+  guestName: string;
+  propertyNames: string[];
+  checkIn: string;
+  checkOut: string;
+  amountLabel: string;
+  ownerUserIds?: string[];
+  guestUserId?: string;
+}): void {
+  const stays = params.propertyNames.join(", ");
+  const range = `${params.checkIn} → ${params.checkOut}`;
+  const body = `${params.guestName} booked ${stays} · ${range} · ${params.amountLabel} · Ref ${params.reference}`;
+
+  enqueueNotification("admin", "New booking confirmed", body, "/admin");
+  enqueueNotification(
+    "guest",
+    "Booking confirmed",
+    `${stays} · ${range} · ${params.amountLabel} · Ref ${params.reference}`,
+    "/account/notifications",
+    params.guestUserId,
+  );
+
+  for (const ownerId of params.ownerUserIds?.length ? params.ownerUserIds : [undefined]) {
+    enqueueNotification("owner", "New booking", body, "/dashboard/owner/bookings", ownerId);
+  }
+}
+
+/**
  * Sends a notification to admin, the affected user, and optionally the actor.
  * Admin gets a role-scoped notification (always visible to any admin).
  * The affected user gets a user-scoped notification (visible only to them).

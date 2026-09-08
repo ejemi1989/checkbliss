@@ -22,12 +22,19 @@ The core money-and-inventory flow is implemented, tested, and documented:
 
 | Command | Last run | Result |
 |---------|----------|--------|
-| `npm test` | 2026-09-07 | 25 files, **345 tests passing** |
-| `npm run typecheck` | 2026-09-07 | clean |
-| `npm run lint` | 2026-09-07 | 20 pre-existing errors (unrelated files); new code clean |
-| `npm run build` | 2026-09-07 | compiled, 65/65 static pages |
+| `npm test` | 2026-09-08 | 26 files, **347 tests passing** |
+| `npm run typecheck` | 2026-09-08 | clean |
+| `npm run lint` | 2026-09-08 | 20 pre-existing errors (unrelated files); new code clean |
+| `npm run build` | 2026-09-08 | compiled, 65/65 static pages |
 
 ## Recently completed
+
+### Booking-confirmed in-app notifications (admin + guest + owners) (2026-09-08)
+- **Confirmed bookings now notify all three parties in-app** (previously only the owner got a WhatsApp message). New `notifyBookingConfirmed()` helper in `lib/notifications.ts` enqueues: an admin "New booking confirmed" notification (role-scoped, link `/admin`), a guest "Booking confirmed" notification (link `/account/notifications`), and one "New booking" notification per relevant owner (deduped).
+- **Booking route wiring** (`app/api/bookings/route.ts`): called after `confirm_booking_group()` in the configured path — owner notifications scoped by real owner profile id, guest scoped when their account resolves by email (`profiles.email` lookup); called after the WhatsApp loop in the mock path — owner notification role-scoped (mock owner session is `mock-owner`, seed owners are `OW1..OW6`), guest scoped to `mock-guest` when email is `guest@checkbliss.com`.
+- **Guest notification surface fixed** (was broken/dead): `app/account/guest-client.tsx` previously rendered the *Contact* form for the "notifications" tab and the tab itself was missing from the tab list. Now `"notifications"` is a real tab rendering `<NotificationsView role="guest" userId={user?.id} />`, and `app/account/account-layout.tsx` mounts a `<NotificationBell role="guest" userId={user?.id} />` in the header — matching the admin/owner/operator bell pattern. `/account/notifications` now works end-to-end.
+- **Tests:** `tests/booking-notifications.test.ts` (4 assertions) — admin/guest/owner notifications enqueued on a 201 booking, correct links/ref/amount, owner notification role-scoped in mock, guest scoped to `mock-guest` for `guest@checkbliss.com`.
+- **Verification:** `npm run typecheck` clean, `npm test` 26 files / **347 tests passing** (was 25/345), lint unchanged (20 pre-existing errors in unrelated files; new code clean), `npm run build` green.
 
 ### Global CSS Scoping & Layout Shift Resolution Across All Routes (2026-09-08)
 - **Root Cause & Symptoms Fixed:** Resolved hydration and first-render/navigation layout shifts (FOUC) where pages like `/book/[slug]` rendered unstyled, stretched, or misaligned on initial client-side entry (Image 1 in user reports) but appeared properly styled on hard refresh (Image 2).

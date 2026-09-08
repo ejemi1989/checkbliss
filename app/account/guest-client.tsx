@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { formatMinor } from "@/lib/currency";
 import { submitDispute } from "@/actions/disputes";
 import { updateProfileAction } from "@/actions/auth";
+import { NotificationsView } from "@/components/notifications-view";
 import type { AuthUser } from "@/lib/auth";
 import type { OwnerBookingView } from "@/lib/types";
 
@@ -38,6 +39,7 @@ export function GuestDashboard({
     { key: "history", label: "Past Stays" },
     { key: "claims", label: "Claims" },
     { key: "support", label: "Contact" },
+    { key: "notifications", label: "Notifications" },
     { key: "settings", label: "Settings" },
   ];
 
@@ -144,7 +146,7 @@ export function GuestDashboard({
           {tab === "support" && <ContactTab user={displayUser} />}
 
           {/* ── Notifications ── */}
-          {tab === "notifications" && <ContactTab user={displayUser} />}
+          {tab === "notifications" && <NotificationsView role="guest" userId={user?.id} />}
 
           {/* ── Settings ── */}
           {tab === "settings" && <SettingsTab user={displayUser} />}

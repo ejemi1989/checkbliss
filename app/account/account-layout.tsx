@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { logoutAction } from "@/actions/auth";
+import { NotificationBell } from "@/components/notification-bell";
 import type { AuthUser } from "@/lib/auth";
 
 const I = {
@@ -56,6 +57,7 @@ export function AccountLayout({ user, children }: { user: AuthUser | null; child
           </Link>
         </div>
         <div className="flex items-center gap-x-3">
+          <NotificationBell role="guest" userId={user?.id} />
           <div className="hidden sm:flex items-center gap-2">
             <div className="w-7 h-7 rounded-full bg-primary text-white text-[11px] font-sans font-semibold flex items-center justify-center">{initials}</div>
             <span className="text-xs font-sans font-medium text-ink-secondary">{displayName}</span>

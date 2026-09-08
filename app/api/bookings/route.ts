@@ -9,6 +9,7 @@ import { getSeedProperties, getSeedReservations, getSeedBlocks } from "@/lib/see
 import { computeSplit, createOwnerPayoutRows } from "@/lib/payouts";
 import { registerMockBookingGroup } from "@/lib/reconciliation";
 import { advanceRuleViolation, ADVANCE_RULE_MESSAGE } from "@/lib/booking-rules";
+import { notifyBookingConfirmed } from "@/lib/notifications";
 
 const TURNSTILE_SECRET = process.env.TURNSTILE_SECRET_KEY;
 
@@ -361,6 +362,24 @@ export async function POST(request: NextRequest) {
         target_id: groupId,
         detail: `Group ${groupId} (${reference}) — ${items.length} stay(s), charge ${chargeTotalMinor}, commission ${totalSplit.commissionMinor}, owner share ${totalSplit.ownerShareMinor}, hold ${depositHoldTotalMinor}. Payment setup: ${charge.intentId}`,
       });
+
+      // In-app notifications mirror the WhatsApp loop: admin always, the guest
+      // (scoped when they have an account), and each relevant owner.
+      const { data: guestProfile } = await db
+        .from("profiles")
+        .select("id")
+        .eq("email", guest.email)
+        .maybeSingle();
+      notifyBookingConfirmed({
+        reference,
+        guestName: guest.name,
+        propertyNames: reservations.map((r) => r.property_name),
+        checkIn: items[0].check_in,
+        checkOut: items[items.length - 1].check_out,
+        amountLabel: `£${(chargeTotalMinor / 100).toFixed(2)}`,
+        ownerUserIds: ownerIds.filter((id): id is string => Boolean(id)),
+        guestUserId: (guestProfile?.id as string | undefined) ?? undefined,
+      });
     } catch (writeError) {
       // Any post-payment persistence failure: release the dates so inventory
       // is never silently held; the customer can retry. Payment can be
@@ -595,6 +614,22 @@ async function handleMockBooking(
       log("bookings", "warn", `Owner WhatsApp notify failed: ${err instanceof Error ? err.message : err}`);
     });
   }
+
+  // In-app notifications mirror the WhatsApp loop: admin, the mock guest, and
+  // owners. Owner notifications are role-scoped here because the mock owner
+  // session id ("mock-owner") differs from seed owner ids (OW1..OW6); the
+  // configured path scopes per owner id.
+  const guestUserId = guest.email.toLowerCase() === "guest@checkbliss.com" ? "mock-guest" : undefined;
+  notifyBookingConfirmed({
+    reference,
+    guestName: guest.name,
+    propertyNames: resultReservations.map((r) => r.property_name),
+    checkIn: items[0].check_in,
+    checkOut: items[items.length - 1].check_out,
+    amountLabel: `£${(chargeTotalMinor / 100).toFixed(2)}`,
+    ownerUserIds: [],
+    guestUserId,
+  });
 
   return NextResponse.json(
     {
