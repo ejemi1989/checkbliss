@@ -298,13 +298,13 @@ async function confirmGroupFromReconciliation(
   // Owner notification — same content as the webhook path.
   const { data: ownerRow } = await db
     .from("reservations")
-    .select("guest_name, check_in, check_out, properties!inner(name, owner_id)")
+    .select("guest_name, check_in, check_out, properties!inner(branded_name, owner_id)")
     .eq("booking_group_id", groupId)
     .limit(1)
     .maybeSingle();
 
   if (ownerRow) {
-    const prop = ownerRow.properties as unknown as { name: string; owner_id: string };
+    const prop = ownerRow.properties as unknown as { branded_name: string; owner_id: string };
     const { data: ownerProfile } = await db
       .from("profiles")
       .select("whatsapp_e164")
@@ -320,10 +320,12 @@ async function confirmGroupFromReconciliation(
           .select("charge_total_minor")
           .eq("id", groupId)
           .maybeSingle())?.data?.charge_total_minor ?? 0;
-      const msg = `New booking confirmed!\n\n${prop.name}\n${guestName}\n${checkIn} – ${checkOut}\nTotal: £${(totalMinor / 100).toFixed(2)}`;
+      const msg = `New booking confirmed!\n\n${prop.branded_name}\n${guestName}\n${checkIn} – ${checkOut}\nTotal: £${(totalMinor / 100).toFixed(2)}`;
       await sendWhatsApp(ownerProfile.whatsapp_e164, msg).catch((err: unknown) => {
         log("reconcile", "warn", `Owner WhatsApp notify failed: ${err instanceof Error ? err.message : err}`);
       });
+    } else {
+      log("reconcile", "warn", `Owner ${prop.owner_id} has no WhatsApp number — booking notification skipped`);
     }
   }
 

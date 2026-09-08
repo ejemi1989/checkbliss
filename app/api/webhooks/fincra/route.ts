@@ -25,14 +25,22 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ ok: true });
   }
 
-  if (!verifyFincraWebhookSignature(rawBody, signature)) {
+  let parsedJson: unknown;
+  try {
+    parsedJson = JSON.parse(rawBody);
+  } catch {
+    log("fincra-webhook", "warn", "Rejected — invalid JSON");
+    return new NextResponse("Invalid JSON", { status: 400 });
+  }
+
+  if (!verifyFincraWebhookSignature(parsedJson, signature)) {
     log("fincra-webhook", "warn", "Rejected — signature mismatch");
     return new NextResponse("Invalid signature", { status: 401 });
   }
 
   let parsed;
   try {
-    parsed = parseFincraWebhookEvent(JSON.parse(rawBody));
+    parsed = parseFincraWebhookEvent(parsedJson);
   } catch (err) {
     if (err instanceof ZodError) {
       log("fincra-webhook", "warn", "Rejected — malformed payload", { issues: err.issues });

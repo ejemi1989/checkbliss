@@ -3,6 +3,7 @@
 import { useState, useMemo, useEffect, useRef, useTransition } from "react";
 import { formatMinor } from "@/lib/currency";
 import { getOwnerBookings, getOwnerPayouts, getCalendarBookings, getOwnerProperties } from "@/lib/data";
+import type { OwnerPayout as OwnerPayoutType } from "@/lib/types";
 import { blockDates, unblockDates } from "@/actions/properties";
 import { saveOwnerPayoutDetails } from "@/actions/owner-payout-details";
 import type { AuthUser } from "@/lib/auth";
@@ -27,7 +28,7 @@ const I = {
 };
 
 const bookings = getOwnerBookings();
-const payouts = getOwnerPayouts();
+const defaultPayouts = getOwnerPayouts();
 const calendarBookings = getCalendarBookings();
 const properties = getOwnerProperties();
 const damageClaims = getSeedDamageClaims().filter((c) => ["PR001", "PR002"].includes(c.property_id)).slice(0, 4);
@@ -37,9 +38,22 @@ function fmt(n: number) { return formatMinor(n); }
 function statusColor(s: string) {
   switch (s) {
     case "confirmed": case "checked_in": case "completed": case "paid": return "text-success";
-    case "pending": case "pending_payment": return "text-primary";
-    case "cancelled": return "text-danger";
+    case "pending": case "pending_payment": case "eligible": case "released": return "text-primary";
+    case "cancelled": case "failed": return "text-danger";
+    case "refunded": return "text-warning";
     default: return "text-ink-secondary";
+  }
+}
+
+function payoutStatusLabel(s: string): string {
+  switch (s) {
+    case "paid": return "Paid";
+    case "released": return "Disbursing";
+    case "eligible": return "Eligible";
+    case "pending": return "Pending";
+    case "failed": return "Failed";
+    case "refunded": return "Refunded";
+    default: return s.charAt(0).toUpperCase() + s.slice(1);
   }
 }
 
@@ -58,10 +72,12 @@ export function OwnerDashboard({
   user,
   initialTab,
   initialPayoutDetails,
+  initialPayouts,
 }: {
   user: AuthUser | null;
   initialTab?: OwnerTab;
   initialPayoutDetails?: OwnerPayoutDetailsData | null;
+  initialPayouts?: OwnerPayoutType[];
 }) {
   const [tab, setTab] = useState<OwnerTab>(initialTab ?? "home");
   const [month, setMonth] = useState<number | null>(null);
@@ -80,6 +96,7 @@ export function OwnerDashboard({
 
   const todayRef = useRef<Date | null>(null);
   const [today, setToday] = useState<Date | null>(null);
+  const payouts = initialPayouts ?? defaultPayouts;
   useEffect(() => {
     const next = new Date();
     if (!todayRef.current || todayRef.current.getTime() !== next.getTime()) {
@@ -458,15 +475,17 @@ export function OwnerDashboard({
                   <span className="text-2xl font-bold tabular-nums text-primary">{fmt(payouts[0]?.amount_minor ?? 0)}</span>
                 </div>
                 <div className="space-y-2">
-                  {payouts.map((p) => (
+                  {payouts.length === 0 ? (
+                    <p className="text-sm text-ink-secondary py-6 text-center">No payouts yet — earnings appear here after each booking completes its inspection + settlement window.</p>
+                  ) : payouts.map((p) => (
                     <div key={p.id} className="flex items-center justify-between p-3 rounded-xl border border-hairline hover:bg-primary-bg transition-colors">
                       <div>
                         <p className="text-sm font-semibold text-ink">{p.period} — {p.units}</p>
-                        <p className="text-xs text-ink-secondary">Paid {p.paid_at}</p>
+                        <p className="text-xs text-ink-secondary">{p.paid_at}</p>
                       </div>
                       <div className="text-right">
                         <p className="text-sm font-bold tabular-nums text-ink">{fmt(p.amount_minor)}</p>
-                        <span className={`inline-block mt-0.5 text-[11px] font-semibold ${statusColor(p.status)}`}>Paid</span>
+                        <span className={`inline-block mt-0.5 text-[11px] font-semibold uppercase tracking-wide ${statusColor(p.status)}`}>{payoutStatusLabel(p.status)}</span>
                       </div>
                     </div>
                   ))}

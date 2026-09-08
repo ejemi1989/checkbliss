@@ -42,26 +42,45 @@ export async function saveOwnerPayoutDetails(input: z.infer<typeof BankDetailsSc
     return { ok: true, beneficiaryId: `mock_benef_${session.id}` };
   }
 
+  const db = createAdmin();
+
+  const { data: existing } = await db
+    .from("owner_payout_details")
+    .select("fincra_beneficiary_id, nigerian_bank_account_name, nigerian_bank_account_number, nigerian_bank_name, bank_code, tax_identification_number")
+    .eq("owner_id", session.id)
+    .maybeSingle();
+
+  const fieldsUnchanged = existing
+    && existing.nigerian_bank_name === data.nigerianBankName
+    && existing.bank_code === data.bankCode
+    && existing.nigerian_bank_account_number === data.nigerianBankAccountNumber
+    && existing.nigerian_bank_account_name === data.nigerianBankAccountName
+    && (existing.tax_identification_number ?? null) === (data.taxIdentificationNumber || null);
+
   let beneficiaryId: string;
-  try {
-    const beneficiary = await createFincraBeneficiary({
-      firstName: data.nigerianBankAccountName.split(" ")[0] || data.nigerianBankAccountName,
-      lastName: data.nigerianBankAccountName.split(" ").slice(1).join(" ") || undefined,
-      accountHolderName: data.nigerianBankAccountName,
-      bankName: data.nigerianBankName,
-      bankCode: data.bankCode,
-      accountNumber: data.nigerianBankAccountNumber,
-      type: "individual",
-      country: "NG",
-    });
-    beneficiaryId = `${beneficiary.accountHolderName}:${beneficiary.accountNumber}`;
-  } catch (err) {
-    log("payouts", "error", `Fincra beneficiary registration failed for owner ${session.id}: ${String(err)}`);
-    return { ok: false, code: "REGISTRATION_FAILED", message: err instanceof Error ? err.message : String(err) };
+  if (fieldsUnchanged && existing?.fincra_beneficiary_id) {
+    beneficiaryId = existing.fincra_beneficiary_id;
+    log("payouts", "info", `Bank details unchanged for owner ${session.id} — reusing beneficiary ${beneficiaryId}`);
+  } else {
+    try {
+      const beneficiary = await createFincraBeneficiary({
+        firstName: data.nigerianBankAccountName.split(" ")[0] || data.nigerianBankAccountName,
+        lastName: data.nigerianBankAccountName.split(" ").slice(1).join(" ") || undefined,
+        accountHolderName: data.nigerianBankAccountName,
+        bankName: data.nigerianBankName,
+        bankCode: data.bankCode,
+        accountNumber: data.nigerianBankAccountNumber,
+        type: "individual",
+        country: "NG",
+      });
+      beneficiaryId = `${beneficiary.accountHolderName}:${beneficiary.accountNumber}`;
+    } catch (err) {
+      log("payouts", "error", `Fincra beneficiary registration failed for owner ${session.id}: ${String(err)}`);
+      return { ok: false, code: "REGISTRATION_FAILED", message: err instanceof Error ? err.message : String(err) };
+    }
   }
 
   try {
-    const db = createAdmin();
     const now = new Date().toISOString();
     const { error } = await db
       .from("owner_payout_details")

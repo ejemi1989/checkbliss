@@ -261,12 +261,38 @@ export async function getFincraBeneficiaries(): Promise<FincraBeneficiaryRecord[
 /*  Webhook signature + payload                                        */
 /* ------------------------------------------------------------------ */
 
-export function verifyFincraWebhookSignature(rawBody: string, signatureHeader: string | null): boolean {
+/**
+ * Fincra signs the webhook with HMAC-SHA512 over the compact JSON of the
+ * {event, data} payload object. Their docs state the payload must be
+ * "encrypted and unmodified as received" and provide a Python example using
+ * `json.dumps(payload, separators=(',', ':'))`. We parse the raw body, then
+ * re-emit it as compact JSON before HMACing — this strips incidental
+ * whitespace differences without changing the data.
+ * See https://docs.fincra.com/docs/validating-webhook
+ */
+function compactJson(value: unknown): string {
+  return JSON.stringify(value);
+}
+
+export function verifyFincraWebhookSignature(
+  event: FincraWebhookEvent | unknown,
+  signatureHeader: string | null,
+): boolean {
   if (!WEBHOOK_SECRET) return false;
   if (!signatureHeader) return false;
-  const expected = createHmac("SHA512", WEBHOOK_SECRET).update(rawBody).digest("hex");
+  const expected = createHmac("SHA512", WEBHOOK_SECRET)
+    .update(compactJson(event))
+    .digest("hex");
   if (expected.length !== signatureHeader.length) return false;
   return timingSafeEqual(Buffer.from(expected, "hex"), Buffer.from(signatureHeader, "hex"));
+}
+
+/**
+ * Compute the expected signature for a webhook event. Exposed for testing
+ * and for server-side replay tooling.
+ */
+export function computeFincraWebhookSignature(event: FincraWebhookEvent | unknown): string {
+  return createHmac("SHA512", WEBHOOK_SECRET).update(compactJson(event)).digest("hex");
 }
 
 export const FincraWebhookEventSchema = z.object({
@@ -341,12 +367,24 @@ export interface FincraBeneficiaryCreateInput {
   accountNumber: string;
   type?: "individual" | "corporate";
   country?: string;
+  currency?: string;
+  addressState?: string;
+  addressCity?: string;
+  addressStreet?: string;
+  addressZip?: string;
+  uniqueIdentifier?: string;
 }
 
 export interface FincraBeneficiaryRecord extends FincraBeneficiary {
   email?: string;
   phoneNumber?: string;
   bankName: string;
+  currency?: string;
+  addressState?: string;
+  addressCity?: string;
+  addressStreet?: string;
+  addressZip?: string;
+  uniqueIdentifier?: string;
 }
 
 const mockBeneficiaries = new Map<string, FincraBeneficiaryRecord>();
@@ -370,13 +408,25 @@ export async function createFincraBeneficiary(
       country: input.country ?? "NG",
       email: input.email,
       phoneNumber: input.phoneNumber,
+      currency: input.currency ?? "NGN",
+      addressState: input.addressState,
+      addressCity: input.addressCity,
+      addressStreet: input.addressStreet,
+      addressZip: input.addressZip,
+      uniqueIdentifier: input.uniqueIdentifier,
     };
     mockBeneficiaries.set(key, record);
     log("fincra:mock", "info", `Beneficiary ${input.accountHolderName} → ${input.bankName} ${input.accountNumber.slice(-4)}`);
     return record;
   }
 
-  const body = {
+  const addressBody: Record<string, string> = { country: input.country ?? "NG" };
+  if (input.addressState) addressBody.state = input.addressState;
+  if (input.addressCity) addressBody.city = input.addressCity;
+  if (input.addressStreet) addressBody.street = input.addressStreet;
+  if (input.addressZip) addressBody.zip = input.addressZip;
+
+  const body: Record<string, unknown> = {
     firstName: input.firstName,
     lastName: input.lastName,
     email: input.email,
@@ -386,15 +436,13 @@ export async function createFincraBeneficiary(
       name: input.bankName,
       code: input.bankCode,
     },
-    address: {
-      country: input.country ?? "NG",
-      state: "Lagos",
-    },
+    address: addressBody,
     type: input.type ?? "individual",
-    currency: "NGN",
+    currency: input.currency ?? "NGN",
     paymentDestination: "bank_account",
     destinationAddress: input.accountNumber,
   };
+  if (input.uniqueIdentifier) body.uniqueIdentifier = input.uniqueIdentifier;
 
   const data = await fincraFetch<{
     id?: string;
@@ -407,11 +455,14 @@ export async function createFincraBeneficiary(
     country?: string;
     email?: string;
     phoneNumber?: string;
+    uniqueIdentifier?: string;
+    address?: Record<string, string> | null;
   }>(`/profile/beneficiaries/business/${BUSINESS_ID}`, {
     method: "POST",
     body: JSON.stringify(body),
   });
 
+  const respAddress = (data as { address?: Record<string, string> | null }).address ?? {};
   return {
     firstName: data.firstName ?? input.firstName,
     lastName: data.lastName ?? input.lastName,
@@ -423,6 +474,12 @@ export async function createFincraBeneficiary(
     country: data.country ?? input.country ?? "NG",
     email: data.email ?? input.email,
     phoneNumber: data.phoneNumber ?? input.phoneNumber,
+    currency: input.currency ?? "NGN",
+    addressState: respAddress.state ?? input.addressState,
+    addressCity: respAddress.city ?? input.addressCity,
+    addressStreet: respAddress.street ?? input.addressStreet,
+    addressZip: respAddress.zip ?? input.addressZip,
+    uniqueIdentifier: (data as { uniqueIdentifier?: string }).uniqueIdentifier ?? input.uniqueIdentifier,
   };
 }
 

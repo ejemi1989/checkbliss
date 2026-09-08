@@ -9,6 +9,7 @@ import type {
   UserRecord,
   AuditEntry,
   OwnerBookingView,
+  OwnerPayout,
   AdminBookingView,
   AdminStat,
   PayoutLedgerEntry,
@@ -149,7 +150,7 @@ export async function getAdminPropertiesFromDB(): Promise<Property[]> {
       return {
         id: r.id as string,
         slug: r.slug as string,
-        name: r.name as string,
+        name: r.branded_name as string,
         city: r.city as string,
         neighbourhood: r.neighbourhood as string,
         owner_id: r.owner_id as string,
@@ -301,7 +302,7 @@ export async function getAdminBookingsFromDB(): Promise<AdminBookingView[]> {
       .select(
         `id, guest_name, guest_email, check_in, check_out, status,
          total_minor, nights, guest_count, property_id,
-         properties(name), booking_groups(reference)`
+         properties(branded_name), booking_groups(reference)`
       )
       .order("created_at", { ascending: false })
       .limit(50);
@@ -312,7 +313,7 @@ export async function getAdminBookingsFromDB(): Promise<AdminBookingView[]> {
       const prop = (r.properties as Record<string, unknown>) ?? {};
       return {
         id: r.id as string,
-        property_name: (prop.name as string) ?? "",
+        property_name: (prop.branded_name as string) ?? "",
         property_id: r.property_id as string,
         unit: "",
         guest: (r.guest_name as string) ?? "",
@@ -401,7 +402,7 @@ export async function getOperatorBookingsFromDB(
       .select(
         `id, guest_name, guest_email, check_in, check_out, status,
          total_minor, nights, guest_count, property_id,
-         properties!inner(name, city), booking_groups(reference)`
+         properties!inner(branded_name, city), booking_groups(reference)`
       )
       .in("properties.city", assignedCities)
       .order("created_at", { ascending: false })
@@ -413,7 +414,7 @@ export async function getOperatorBookingsFromDB(
       const prop = (r.properties as Record<string, unknown>) ?? {};
       return {
         id: r.id as string,
-        property_name: (prop.name as string) ?? "",
+        property_name: (prop.branded_name as string) ?? "",
         property_id: r.property_id as string,
         unit: "",
         guest: (r.guest_name as string) ?? "",
@@ -507,7 +508,7 @@ export async function getOwnerBookingsFromDB(
       .select(
         `id, guest_name, check_in, check_out, status,
          total_minor, nights, guest_count,
-         properties(name)`
+properties(branded_name)`
       )
       .in("property_id", propIds)
       .order("created_at", { ascending: false })
@@ -517,7 +518,7 @@ export async function getOwnerBookingsFromDB(
 
     return data.map((r: Record<string, unknown>) => {
       const prop = (r.properties as Record<string, unknown>) ?? {};
-      const propName = (prop.name as string) ?? "";
+      const propName = (prop.branded_name as string) ?? "";
       return {
         id: r.id as string,
         unit: propName,
@@ -621,7 +622,7 @@ export async function getPayoutLedgerFromDB(): Promise<PayoutLedgerEntry[]> {
         `id, booking_group_id, owner_id, owner_share_minor, status,
          payout_ngn_minor, fx_rate, fincra_reference,
          requested_at, released_at, paid_at, attempts, last_error, created_at,
-         profiles!owner_id(full_name), properties(name)`
+         profiles!owner_id(full_name), properties(branded_name)`
       )
       .order("created_at", { ascending: false })
       .limit(100);
@@ -680,13 +681,78 @@ export async function getPayoutAlertsFromDB(): Promise<PayoutAlert[]> {
   }
 }
 
+/* ------------------------------------------------------------------ */
+/*  Owner Payouts — signed-in owner's view                             */
+/* ------------------------------------------------------------------ */
+
+function formatPayoutPeriod(isoDate: string): string {
+  if (!isoDate) return "—";
+  const d = new Date(isoDate);
+  if (Number.isNaN(d.getTime())) return "—";
+  const month = d.toLocaleString("en-GB", { month: "long", timeZone: "UTC" });
+  return `${month} ${d.getUTCFullYear()}`;
+}
+
+export async function getOwnerPayoutsFromDB(ownerId: string): Promise<OwnerPayout[]> {
+  if (!supabaseAdminConfigured) return getMockPayoutsForOwner(ownerId);
+  try {
+    const db = createAdmin();
+    const { data, error } = await db
+      .from("owner_payouts")
+      .select(
+        `id, owner_share_minor, status, paid_at, released_at, requested_at, created_at,
+         properties!owner_payouts_property_id_fkey(branded_name)`
+      )
+      .eq("owner_id", ownerId)
+      .order("created_at", { ascending: false })
+      .limit(50);
+
+    if (error || !data) return getMockPayoutsForOwner(ownerId);
+
+    return data.map((r: Record<string, unknown>) => {
+      const property = (r.properties as Record<string, unknown> | null) ?? {};
+      const propertyName = (property.branded_name as string) ?? "—";
+      const periodDate = (r.paid_at as string) ?? (r.released_at as string) ?? (r.requested_at as string) ?? (r.created_at as string) ?? "";
+      const paidAt =
+        r.status === "paid" && r.paid_at
+          ? new Date(r.paid_at as string).toISOString().slice(0, 10)
+          : r.status === "released"
+            ? "Pending — disbursing"
+            : r.status === "eligible"
+              ? "Eligible — awaiting settlement"
+              : r.status === "failed"
+                ? "Failed"
+                : r.status === "refunded"
+                  ? "Refunded"
+                  : "Pending";
+      return {
+        id: r.id as string,
+        period: formatPayoutPeriod(periodDate),
+        amount_minor: (r.owner_share_minor as number) ?? 0,
+        paid_at: paidAt,
+        status: (r.status as string) ?? "pending",
+        units: propertyName,
+      };
+    });
+  } catch {
+    return getMockPayoutsForOwner(ownerId);
+  }
+}
+
+function getMockPayoutsForOwner(_ownerId: string): OwnerPayout[] {
+  return [
+    { id: "P001", period: "June 2026", amount_minor: 300000, paid_at: "2026-07-05", status: "paid", units: "All units" },
+    { id: "P002", period: "May 2026", amount_minor: 240000, paid_at: "2026-06-05", status: "paid", units: "All units" },
+  ];
+}
+
 export async function getCommissionRecordsFromDB(): Promise<CommissionRecord[]> {
   if (!supabaseAdminConfigured) return getMockCommissionRecords();
   try {
     const db = createAdmin();
     const { data, error } = await db
       .from("booking_groups")
-      .select("id, commission_minor, charge_total_minor, status, created_at, reservations(properties(name))")
+      .select("id, commission_minor, charge_total_minor, status, created_at, reservations(properties(branded_name))")
       .order("created_at", { ascending: false })
       .limit(50);
 
@@ -698,7 +764,7 @@ export async function getCommissionRecordsFromDB(): Promise<CommissionRecord[]> 
       return {
         id: `CR-${r.id}`,
         bookingGroupId: r.id as string,
-        propertyName: (property.name as string) ?? "",
+        propertyName: (property.branded_name as string) ?? "",
         commissionMinor: (r.commission_minor as number) ?? 0,
         totalMinor: (r.charge_total_minor as number) ?? 0,
         date: ((r.created_at as string) ?? "").slice(0, 10),
@@ -706,6 +772,7 @@ export async function getCommissionRecordsFromDB(): Promise<CommissionRecord[]> 
       };
     });
   } catch {
+
     return getMockCommissionRecords();
   }
 }
@@ -782,7 +849,7 @@ export async function getBookingTraceFromDB(bookingGroupId: string): Promise<Boo
 
     const { data: reservations } = await db
       .from("reservations")
-      .select("id, property_id, commission_minor, owner_share_minor, check_in, check_out, properties(name, owner_id, profiles!owner_id(full_name))")
+      .select("id, property_id, commission_minor, owner_share_minor, check_in, check_out, properties(branded_name, owner_id, profiles!owner_id(full_name))")
       .eq("booking_group_id", bookingGroupId);
 
     return {
@@ -804,7 +871,7 @@ export async function getBookingTraceFromDB(bookingGroupId: string): Promise<Boo
         const property = (r.properties as Record<string, unknown>) ?? {};
         const profile = (property.profiles as Record<string, unknown>) ?? {};
         return {
-          property: (property.name as string) ?? "",
+          property: (property.branded_name as string) ?? "",
           owner: (profile.full_name as string) ?? "",
           checkIn: (r.check_in as string) ?? "",
           checkOut: (r.check_out as string) ?? "",

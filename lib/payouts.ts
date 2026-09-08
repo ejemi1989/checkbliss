@@ -18,6 +18,7 @@ export const RETRY_BASE_DELAY_MS = 60_000;
 export const RETRY_MAX_DELAY_MS = 900_000;
 export const FX_EXPECTED_MIN = 2000;
 export const FX_EXPECTED_MAX = 3500;
+export const ALERT_DEDUP_WINDOW_MS = 24 * 60 * 60 * 1000;
 
 /* ------------------------------------------------------------------ */
 /*  Split computation                                                  */
@@ -49,6 +50,18 @@ export function isPayoutEligible(reservations: PayoutReservationCheck[], inspect
   if (openClaims > 0) return false;
 
   return true;
+}
+
+/**
+ * Split a full account-holder name into firstName + lastName for Fincra's
+ * payout beneficiary shape. Whitespace-separated; lastName is undefined when
+ * the input is a single token (Fincra accepts this — lastName is not required).
+ */
+export function splitAccountHolderName(fullName: string): { firstName: string; lastName?: string } {
+  const parts = fullName.trim().split(/\s+/).filter(Boolean);
+  if (parts.length === 0) return { firstName: fullName };
+  if (parts.length === 1) return { firstName: parts[0] };
+  return { firstName: parts[0], lastName: parts.slice(1).join(" ") };
 }
 
 export interface PayoutReservationCheck {
@@ -250,6 +263,26 @@ export async function evaluatePayoutEligibility(): Promise<string[]> {
 }
 
 /* ------------------------------------------------------------------ */
+/*  Alert dedup — suppress repeat alerts for the same (group, kind)   */
+/* ------------------------------------------------------------------ */
+
+async function hasRecentAlert(
+  db: ReturnType<typeof createAdmin>,
+  bookingGroupId: string,
+  kind: string,
+  windowMs: number,
+): Promise<boolean> {
+  const since = new Date(Date.now() - windowMs).toISOString();
+  const { count } = await db
+    .from("payout_alerts")
+    .select("*", { count: "exact", head: true })
+    .eq("booking_group_id", bookingGroupId)
+    .eq("kind", kind)
+    .gte("created_at", since);
+  return (count ?? 0) > 0;
+}
+
+/* ------------------------------------------------------------------ */
 /*  Release eligible payouts (settlement hold expired → Fincra call)  */
 /* ------------------------------------------------------------------ */
 
@@ -345,13 +378,18 @@ export async function releaseEligiblePayouts(): Promise<string[]> {
         const ngnMinor = convertGbpToNgnMinor(payout.owner_share_minor, GBP_TO_NGN_RATE);
 
         if (!isFxWithinRange(GBP_TO_NGN_RATE, FX_EXPECTED_MIN, FX_EXPECTED_MAX)) {
-          await db.from("payout_alerts").insert({
-            severity: "high",
-            kind: "fx_out_of_range",
-            booking_group_id: group.id,
-            owner_payout_id: payout.id,
-            message: `GBP→NGN rate ${GBP_TO_NGN_RATE} outside range [${FX_EXPECTED_MIN}, ${FX_EXPECTED_MAX}]`,
-          });
+          const alreadyAlerted = await hasRecentAlert(db, group.id, "fx_out_of_range", ALERT_DEDUP_WINDOW_MS);
+          if (!alreadyAlerted) {
+            await db.from("payout_alerts").insert({
+              severity: "high",
+              kind: "fx_out_of_range",
+              booking_group_id: group.id,
+              owner_payout_id: payout.id,
+              message: `GBP→NGN rate ${GBP_TO_NGN_RATE} outside range [${FX_EXPECTED_MIN}, ${FX_EXPECTED_MAX}]`,
+            });
+          } else {
+            log("payouts", "info", `Skipped fx_out_of_range alert — dedup window covers recent alert for group ${group.id}`);
+          }
         }
 
         const idempotencyKey = `fincra-${group.id}-${payout.id}`;
@@ -370,13 +408,16 @@ export async function releaseEligiblePayouts(): Promise<string[]> {
               attempts: (payout.attempts ?? 0) + 1,
             })
             .eq("id", payout.id);
-          await db.from("payout_alerts").insert({
-            severity: "high",
-            kind: "invalid_beneficiary",
-            booking_group_id: group.id,
-            owner_payout_id: payout.id,
-            message: `Owner ${payout.owner_id} has incomplete Nigerian bank details on file (need account number, bank code, and account name)`,
-          });
+          const alreadyAlerted = await hasRecentAlert(db, group.id, "invalid_beneficiary", ALERT_DEDUP_WINDOW_MS);
+          if (!alreadyAlerted) {
+            await db.from("payout_alerts").insert({
+              severity: "high",
+              kind: "invalid_beneficiary",
+              booking_group_id: group.id,
+              owner_payout_id: payout.id,
+              message: `Owner ${payout.owner_id} has incomplete Nigerian bank details on file (need account number, bank code, and account name)`,
+            });
+          }
           continue;
         }
 
@@ -418,9 +459,12 @@ export async function releaseEligiblePayouts(): Promise<string[]> {
           }
         }
 
+        const accountHolderName = ownerDetails.nigerian_bank_account_name;
+        const { firstName, lastName } = splitAccountHolderName(accountHolderName);
         const beneficiary = {
-          firstName: ownerDetails.nigerian_bank_account_name.split(" ")[0] || ownerDetails.nigerian_bank_account_name,
-          accountHolderName: ownerDetails.nigerian_bank_account_name,
+          firstName,
+          lastName,
+          accountHolderName,
           accountNumber: ownerDetails.nigerian_bank_account_number,
           bankCode: ownerDetails.bank_code,
           type: "individual" as const,
@@ -571,6 +615,7 @@ export async function recordRefundSplit(opts: RefundSplitOpts): Promise<void> {
         record.status = "refunded";
       }
     }
+    log("payouts", "info", `Mock refund recorded — group ${opts.bookingGroupId} (${opts.totalRefundedMinor} minor)`);
     return;
   }
 
@@ -586,6 +631,15 @@ export async function recordRefundSplit(opts: RefundSplitOpts): Promise<void> {
   await db.from("owner_payouts")
     .update({ status: "refunded" })
     .eq("booking_group_id", opts.bookingGroupId);
+
+  await db.from("payout_alerts").insert({
+    severity: "medium",
+    kind: "refund",
+    booking_group_id: opts.bookingGroupId,
+    message: `Refund recorded — ${opts.totalRefundedMinor} minor. Reason: ${opts.reason}`,
+  });
+
+  log("payouts", "info", `Refund recorded — group ${opts.bookingGroupId} (${opts.totalRefundedMinor} minor): ${opts.reason}`);
 }
 
 /* ------------------------------------------------------------------ */

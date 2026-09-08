@@ -5,6 +5,7 @@ import { checkAndProcess } from "@/lib/idempotency";
 import { enqueue } from "@/lib/outbox";
 import { log } from "@/lib/observability";
 import { routeStripeEvent } from "@/lib/stripe-events";
+import { recordRefundSplit } from "@/lib/payouts";
 import { sendWhatsApp } from "@/lib/whatsapp";
 import Stripe from "stripe";
 
@@ -108,20 +109,12 @@ export async function POST(request: NextRequest) {
     }
 
     if (action.kind === "record_refund") {
-      await db.from("booking_groups")
-        .update({
-          refunded_minor: action.refundAmount,
-          platform_payout_status: "failed",
-          owner_payout_status: "refunded",
-        })
-        .eq("charge_intent_id", action.chargeId)
-        .or(`id.eq.${action.bookingGroupId}`);
-
-      await db.from("owner_payouts")
-        .update({ status: "refunded" })
-        .eq("booking_group_id", action.bookingGroupId);
-
-      log("stripe-webhook", "info", `Refund recorded: ${action.refundAmount} on charge ${action.chargeId}`);
+      await recordRefundSplit({
+        bookingGroupId: action.bookingGroupId,
+        totalRefundedMinor: action.refundAmount,
+        reason: `stripe.refund on charge ${action.chargeId}`,
+      });
+      log("stripe-webhook", "info", `Refund delegated to recordRefundSplit: ${action.refundAmount} on charge ${action.chargeId}`);
       continue;
     }
 
@@ -179,13 +172,13 @@ export async function POST(request: NextRequest) {
 
       const { data: ownerRow } = await db
         .from("reservations")
-        .select("guest_name, check_in, check_out, properties!inner(name, owner_id)")
+        .select("guest_name, check_in, check_out, properties!inner(branded_name, owner_id)")
         .eq("booking_group_id", groupId)
         .limit(1)
         .maybeSingle();
 
       if (ownerRow) {
-        const prop = ownerRow.properties as unknown as { name: string; owner_id: string };
+        const prop = ownerRow.properties as unknown as { branded_name: string; owner_id: string };
         const { data: ownerProfile } = await db
           .from("profiles")
           .select("whatsapp_e164")
@@ -193,7 +186,7 @@ export async function POST(request: NextRequest) {
           .maybeSingle();
         if (ownerProfile?.whatsapp_e164) {
           const guestName = ownerRow.guest_name ?? "a guest";
-          const propertyName = prop.name;
+          const propertyName = prop.branded_name;
           const checkIn = ownerRow.check_in;
           const checkOut = ownerRow.check_out;
           const totalMinor = (await db
@@ -206,6 +199,8 @@ export async function POST(request: NextRequest) {
           await sendWhatsApp(ownerProfile.whatsapp_e164, msg).catch((err: unknown) => {
             log("stripe-webhook", "warn", `Owner WhatsApp notify failed: ${err instanceof Error ? err.message : err}`);
           });
+        } else {
+          log("stripe-webhook", "warn", `Owner ${prop.owner_id} has no WhatsApp number — booking notification skipped`);
         }
       }
 

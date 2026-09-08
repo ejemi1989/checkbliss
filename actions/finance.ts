@@ -143,20 +143,36 @@ export async function flagDiscrepancy(recordId: string) {
   return { ok: true };
 }
 
+const AlertIdSchema = z.object({ alertId: z.string().uuid() });
+
 export async function resolveAlert(alertId: string) {
+  const parsed = AlertIdSchema.safeParse({ alertId });
+  if (!parsed.success) {
+    return { ok: false, code: "VALIDATION", message: "Invalid alert id" };
+  }
+
   if (!supabaseAdminConfigured) {
-    console.log(`[mock] Alert ${alertId} resolved`);
+    console.log(`[mock] Alert ${parsed.data.alertId} resolved`);
     revalidatePath("/admin/finance");
+    revalidatePath("/admin/payouts");
     return { ok: true };
   }
 
   try {
     const db = createAdmin();
+    const now = new Date().toISOString();
     await db.from("payout_alerts")
-      .update({ resolved: true, resolved_at: new Date().toISOString() })
-      .eq("id", alertId);
+      .update({ resolved: true, resolved_at: now })
+      .eq("id", parsed.data.alertId);
+
+    await db.from("audit_log").insert({
+      action: "payout_alert.resolved",
+      target_id: parsed.data.alertId,
+      detail: `Payout alert ${parsed.data.alertId} marked resolved`,
+    });
 
     revalidatePath("/admin/finance");
+    revalidatePath("/admin/payouts");
     return { ok: true };
   } catch (err) {
     return { ok: false, code: "RESOLVE_FAILED", message: String(err) };

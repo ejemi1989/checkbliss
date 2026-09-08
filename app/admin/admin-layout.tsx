@@ -23,13 +23,14 @@ const I = {
   hamburger: <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="3" y1="6" x2="21" y2="6" /><line x1="3" y1="12" x2="21" y2="12" /><line x1="3" y1="18" x2="21" y2="18" /></svg>,
 };
 
-type AdminSection = "overview" | "claims" | "operators" | "finance" | "properties" | "users" | "audit" | "notifications" | "crm" | "settings";
+type AdminSection = "overview" | "claims" | "operators" | "finance" | "payouts" | "properties" | "users" | "audit" | "notifications" | "crm" | "settings";
 
 const NAV_ITEMS: { id: AdminSection; icon: keyof typeof I; label: string; href: string }[] = [
   { id: "overview", icon: "barChart3", label: "Dashboard", href: "/admin" },
   { id: "claims", icon: "shield", label: "Damage Claims", href: "/admin/claims" },
   { id: "operators", icon: "userCog", label: "Operators", href: "/admin/operators" },
   { id: "finance", icon: "coins", label: "Finance", href: "/admin/finance" },
+  { id: "payouts", icon: "coins", label: "Owner Payouts", href: "/admin/payouts" },
   { id: "properties", icon: "building2", label: "Properties", href: "/admin/properties" },
   { id: "users", icon: "users", label: "Users", href: "/admin/users" },
   { id: "audit", icon: "list", label: "Audit Log", href: "/admin/audit" },
