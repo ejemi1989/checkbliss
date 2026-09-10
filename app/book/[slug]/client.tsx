@@ -58,7 +58,7 @@ type Step = "dates" | "guest" | "payment";
 export function BookingFlow(props: Props) {
   const router = useRouter();
   const {
-    propertyId, propertySlug, propertyName, city, neighbourhood,
+    propertySlug, propertyName, city, neighbourhood,
     neighbourhoodSlug, buildingSlug,
     nightlyRateMinor, depositMinor, currency,
     extendedCheckoutOffered, extendedCheckoutPriceMinor,
@@ -144,6 +144,13 @@ export function BookingFlow(props: Props) {
   }
 
   async function createBookingIntents() {
+    const datesOk = validateStep("dates");
+    const guestOk = validateStep("guest");
+    if (!datesOk || !guestOk) {
+      setStep(!datesOk ? "dates" : "guest");
+      setError("Please complete the highlighted fields before confirming.");
+      return;
+    }
     if (TURNSTILE_SITE_KEY && !turnstileToken) {
       setError("Please complete the CAPTCHA verification.");
       return;
@@ -152,7 +159,7 @@ export function BookingFlow(props: Props) {
     setError(null);
     const body = {
       guest: { name: guestName, email: guestEmail, phone: guestPhone, guests: guestCount },
-      items: [{ property_id: propertyId, check_in: checkIn, check_out: checkOut, extended_checkout: extendedCheckout }],
+      items: [{ property_id: propertySlug, check_in: checkIn, check_out: checkOut, extended_checkout: extendedCheckout }],
       turnstile_token: turnstileToken || "mock-token",
     };
     try {

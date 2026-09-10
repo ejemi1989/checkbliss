@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { stripeConfigured } from "@/lib/stripe";
+import { stripeConfigured, stripeWebhookConfigured } from "@/lib/stripe";
 import { createAdmin, supabaseAdminConfigured } from "@/lib/supabase/admin";
 import { checkAndProcess } from "@/lib/idempotency";
 import { enqueue } from "@/lib/outbox";
@@ -24,7 +24,7 @@ export async function POST(request: NextRequest) {
   const signature = request.headers.get("stripe-signature") ?? "";
   const webhookSecret = process.env.STRIPE_WEBHOOK_SECRET;
 
-  if (!stripeConfigured || !webhookSecret) {
+  if (!stripeConfigured || !stripeWebhookConfigured) {
     try {
       const parsed = JSON.parse(rawBody);
       console.log(`[mock stripe webhook] ${parsed.type ?? "unknown event"} — ${parsed.id ?? parsed.data?.object?.id ?? "no id"}`);
@@ -36,7 +36,7 @@ export async function POST(request: NextRequest) {
 
   let event: Stripe.Event;
   try {
-    event = getStripe().webhooks.constructEvent(rawBody, signature, webhookSecret);
+    event = getStripe().webhooks.constructEvent(rawBody, signature, webhookSecret!);
   } catch {
     return new NextResponse("Invalid signature", { status: 400 });
   }

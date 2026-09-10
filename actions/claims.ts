@@ -7,7 +7,7 @@ import type { ActionResponse, DamageClaim } from "@/lib/types";
 import { getAdminClaims } from "@/lib/data";
 import { getSeedProperties } from "@/lib/seed-data";
 import { checkAdminGate } from "@/lib/admin-gate";
-import { notifyBoth } from "@/lib/notifications";
+import { notifyBoth } from "@/lib/notifications-server";
 import { getSession } from "@/actions/auth";
 
 const DecisionSchema = z.object({
@@ -84,10 +84,11 @@ export async function decideClaim(
 
     const updateData: Record<string, unknown> = {
       admin_decision: decision,
-      decided_at: new Date().toISOString(),
+      admin_decided_at: new Date().toISOString(),
+      admin_reviewer_id: actorId ?? null,
     };
     if (decision === "adjust" && amountMinor) {
-      updateData.adjusted_amount_minor = amountMinor;
+      updateData.resolved_amount_minor = amountMinor;
     }
 
     await db.from("damage_claims").update(updateData).eq("id", claimId);
@@ -97,15 +98,21 @@ export async function decideClaim(
       detail: `Claim ${decision}${amountMinor ? ` (amount: ${amountMinor})` : ""}`,
     });
 
-    // Append-only event log — full state machine audit trail
-    await db.from("damage_claim_events").insert({
-      claim_id: claimId,
-      event_type: decision === "reject" ? "rejected" : decision === "approve" ? "approved" : "adjusted",
-      actor_id: actorId,
-      actor_role: actorRole,
-      new_state: decision === "reject" ? "rejected" : decision === "approve" ? "approved" : "adjusted",
-      notes: `Admin decision: ${decision}${amountMinor ? ` (amount: ${amountMinor})` : ""}`,
-    });
+    // Append-only event log — best-effort: damage_claim_events is optional in
+    // the live schema, so a missing table must never fail an already-applied
+    // decision (stripe capture + DB update happened above).
+    try {
+      await db.from("damage_claim_events").insert({
+        claim_id: claimId,
+        event_type: decision === "reject" ? "rejected" : decision === "approve" ? "approved" : "adjusted",
+        actor_id: actorId,
+        actor_role: actorRole,
+        new_state: decision === "reject" ? "rejected" : decision === "approve" ? "approved" : "adjusted",
+        notes: `Admin decision: ${decision}${amountMinor ? ` (amount: ${amountMinor})` : ""}`,
+      });
+    } catch {
+      // table may not exist yet — decision still stands
+    }
 
     // Notify admin and property owner
     const reservation = claimRecord.reservation as Record<string, unknown> | undefined;
@@ -145,7 +152,7 @@ export async function getClaims(): Promise<ActionResponse<DamageClaim[]>> {
     const { data } = await db
       .from("damage_claims")
       .select("*")
-      .order("submitted_at", { ascending: false });
+      .order("created_at", { ascending: false });
     return { ok: true, data: (data ?? []) as DamageClaim[] };
   } catch (err) {
     return {

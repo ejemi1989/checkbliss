@@ -1,18 +1,41 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import type { NotifRole } from "@/lib/notifications";
-import { getNotifications, getUnreadCount, markRead, markAllRead, deleteNotification, deleteAllNotifications } from "@/lib/notifications";
+import {
+  fetchNotifications,
+  markReadAction,
+  markAllReadAction,
+  deleteNotificationAction,
+  deleteAllNotificationsAction,
+} from "@/actions/notifications";
 
 export function NotificationBell({ role, userId, onViewAll }: { role: NotifRole; userId?: string; onViewAll?: () => void }) {
   const [open, setOpen] = useState(false);
-  const [tick, setTick] = useState(0);
+  const [notifs, setNotifs] = useState<Array<{
+    id: string;
+    title: string;
+    body: string;
+    created_at: string;
+    read: boolean;
+  }>>([]);
+  const [unread, setUnread] = useState(0);
 
-  const uid = role === "admin" ? undefined : userId;
-  const notifs = getNotifications(role, uid);
-  const unread = getUnreadCount(role, uid);
+  const load = useCallback(async () => {
+    const { notifs: fetched, unread: unreadCount } = await fetchNotifications(role, userId);
+    setNotifs(fetched);
+    setUnread(unreadCount);
+  }, [role, userId]);
 
-  function load() { setTick((t) => t + 1); }
+  useEffect(() => {
+    let cancelled = false;
+    void fetchNotifications(role, userId).then(({ notifs: fetched, unread: unreadCount }) => {
+      if (cancelled) return;
+      setNotifs(fetched);
+      setUnread(unreadCount);
+    });
+    return () => { cancelled = true; };
+  }, [role, userId]);
 
   useEffect(() => {
     function onClick(e: MouseEvent) {
@@ -23,25 +46,25 @@ export function NotificationBell({ role, userId, onViewAll }: { role: NotifRole;
     return () => document.removeEventListener("mousedown", onClick);
   }, []);
 
-  function handleMarkRead(id: string) {
-    markRead(id);
-    load();
+  async function handleMarkRead(id: string) {
+    await markReadAction(id);
+    await load();
   }
 
-  function handleMarkAll() {
-    markAllRead(role, uid);
-    load();
+  async function handleMarkAll() {
+    await markAllReadAction(role, userId);
+    await load();
   }
 
-  function handleDelete(id: string, e: React.MouseEvent) {
+  async function handleDelete(id: string, e: React.MouseEvent) {
     e.stopPropagation();
-    deleteNotification(id);
-    load();
+    await deleteNotificationAction(id);
+    await load();
   }
 
-  function handleClearAll() {
-    deleteAllNotifications(role, uid);
-    load();
+  async function handleClearAll() {
+    await deleteAllNotificationsAction(role, userId);
+    await load();
   }
 
   const BellIcon = (
@@ -54,7 +77,7 @@ export function NotificationBell({ role, userId, onViewAll }: { role: NotifRole;
   return (
     <div id="notif-bell-container" className="relative">
       <button
-        onClick={() => { setOpen(!open); load(); }}
+        onClick={() => { setOpen(!open); if (!open) load(); }}
         className="relative w-8 h-8 flex items-center justify-center rounded-lg hover:bg-primary-bg transition-colors text-ink-secondary cursor-pointer border-none bg-transparent"
         aria-label="Notifications"
       >

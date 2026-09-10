@@ -2,7 +2,13 @@ import "server-only";
 import Stripe from "stripe";
 
 const SECRET_KEY = process.env.STRIPE_SECRET_KEY ?? "";
-export const stripeConfigured = Boolean(SECRET_KEY);
+const WEBHOOK_SECRET = process.env.STRIPE_WEBHOOK_SECRET ?? "";
+/* Real Stripe mode requires a secret *API key* (sk_test_/sk_live_). A webhook
+   secret (whsec_) or publishable key (pk_) in this slot is a misconfiguration —
+   treat it as unconfigured so mock mode engages instead of calling Stripe with
+   an invalid key. */
+export const stripeConfigured = SECRET_KEY.startsWith("sk_") || SECRET_KEY.startsWith("rk_");
+export const stripeWebhookConfigured = WEBHOOK_SECRET.startsWith("whsec_");
 
 let _stripe: Stripe | null = null;
 function getStripe(): Stripe {

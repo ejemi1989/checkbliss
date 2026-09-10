@@ -13,6 +13,16 @@
 -- ============================================================================
 
 -- ------------------------------------------------------------------ --
+--  0. auth_role() — RLS helper (from 0002_rls.sql)                  --
+-- ------------------------------------------------------------------ --
+
+create or replace function auth_role() returns user_role
+language sql stable
+as $$
+  select role from profiles where id = auth.uid();
+$$;
+
+-- ------------------------------------------------------------------ --
 --  1. book_stays() — recreate for branded_name + booking_groups.ref --
 -- ------------------------------------------------------------------ --
 
@@ -220,6 +230,7 @@ comment on column booking_groups.reference is
 
 -- ============================================================================
 --  Post-check (should print "ready" for each):
+--    select 1 where exists (select 1 from pg_proc where proname = 'auth_role');
 --    select 1 where exists (select 1 from pg_proc where proname = 'book_stays' and pronargs = 8);
 --    select 1 where exists (select 1 from pg_proc where proname = 'search_properties' and pronargs = 5);
 --    select 1 where exists (select 1 from information_schema.tables where table_name = 'operators');

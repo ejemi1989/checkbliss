@@ -3,7 +3,7 @@
 import { z } from "zod";
 import { createAdmin, supabaseAdminConfigured } from "@/lib/supabase/admin";
 import { checkOperatorGate } from "@/lib/operator-gate";
-import { notifyBoth } from "@/lib/notifications";
+import { notifyBoth } from "@/lib/notifications-server";
 import { getSession } from "@/actions/auth";
 import { getOperatorClaims, getAdminProperties } from "@/lib/data";
 import { getSeedProperties } from "@/lib/seed-data";

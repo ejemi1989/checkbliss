@@ -6,7 +6,7 @@ import type { ActionResponse, Operator } from "@/lib/types";
 import { getAdminOperators } from "@/lib/data";
 import { getSeedProperties } from "@/lib/seed-data";
 import { checkAdminGate } from "@/lib/admin-gate";
-import { notifyBoth } from "@/lib/notifications";
+import { notifyBoth } from "@/lib/notifications-server";
 import { getSession } from "@/actions/auth";
 
 const CreateOperatorSchema = z.object({

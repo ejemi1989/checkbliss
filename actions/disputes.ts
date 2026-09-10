@@ -4,7 +4,7 @@ import { z } from "zod";
 import { createAdmin, supabaseAdminConfigured } from "@/lib/supabase/admin";
 import type { ActionResponse } from "@/lib/types";
 import { getSeedProperties } from "@/lib/seed-data";
-import { notifyBoth } from "@/lib/notifications";
+import { notifyBoth } from "@/lib/notifications-server";
 import { getSession } from "@/actions/auth";
 
 const DisputeSchema = z.object({

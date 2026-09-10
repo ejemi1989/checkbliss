@@ -1,110 +1,64 @@
-# CheckinBliss — Map View (Split Listings Map Pane)
+# Architecture of Mapbox GL JS
 
-Persistent interactive Mapbox map pane alongside the editorial listing rail on city pages (`/lagos`, `/abuja`) and search results. For a coding agent. Grounded in PRD v2.3: premium browsing experience with a luxury-property map display. Mapbox GL JS v3.26.0.
+## `Map` and its subsystems
 
----
+## Main thread / worker split
 
-## 1. Principles
+## How (vector tile) rendering works
 
-- **Map is a browse aid, not a filtering tool.** The map shows property locations and prices — users browse the rail, not the map.
-- **Mapbox GL JS client-side only.** Token is `NEXT_PUBLIC_MAPBOX_TOKEN` — a **public** token (`pk.` prefix), never a secret token (`sk.`).
-- **Graceful degradation is mandatory.** If no token, wrong token type, or tiles fail to load → show a styled fallback (brand-consistent "Map unavailable" placeholder). Never a broken white/grey canvas.
-- **Mobile hides the map entirely** (≤640px: scrolling page, no map). Tablet (≤1080px): map becomes a full-screen overlay toggled by a floating button.
+### Parsing and layout
 
----
+Vector tiles are fetched and parsed on WebWorker threads.  "Parsing" a vector tile involves:
+ - Deserializing source layers, feature properties, and feature geometries from the PBF.  This is handled by the [`@mapbox/vector-tile`](https://github.com/mapbox/vector-tile-js) library.
+ - Transforming that data into _render-ready_ data that can be used by WebGL shaders to draw the map.  We refer to this process as "layout," and it carried out by `WorkerTile`, the `Bucket` classes, and `ProgramConfiguration`.
+ - Indexing feature geometries into a `FeatureIndex`, used for spatial queries (e.g. `queryRenderedFeatures`).
 
-## 2. Architecture
+`WorkerTile#parse()` takes a (deserialized) vector tile, fetches additional resources if they're needed (fonts, images), and then creates a `Bucket` for each 'family' of style layers that share the same underlying features and 'layout' properties (see `src/style-spec/group_by_layout.ts`).
 
-### 2.1 Component tree
+[Bucket](./src/data/bucket.ts) is the single point of knowledge about turning vector tiles into WebGL buffers. Each bucket holds the vertex and element array data needed to render its group of style layers (see [ArrayGroup](./src/data/bucket.ts)).  The particular bucket types each know how to populate that data for their layer types.
 
-```
-app/(listings)/page.tsx (Server Component, hardcoded props)
-  └─ ListingsClient (Client Component)
-       └─ MapBox (Client Component, mapbox-gl)
-            ├─ Ref: HTMLDivElement (map container)
-            ├─ useEffect: initialise Mapbox GL Map
-            └─ Fallback: "Map unavailable" when token missing OR tiles fail
-```
+### Rendering with WebGL
 
-### 2.2 Token authentication
-
-| Concern | Detail |
-|---|---|
-| Token var | `NEXT_PUBLIC_MAPBOX_TOKEN` |
-| Prefix | **Must** be `pk.` (public token scoped for client-side tile loading) |
-| `sk.` prefix | Rejected silently by Mapbox tile CDN — map renders blank |
-| URL restriction | Should be restricted to `checkinbliss.vercel.app` + `localhost` in Mapbox dashboard |
-| Missing token | Shows "Map unavailable" fallback immediately (never mounts a doomed map) |
-
-### 2.3 Mapbox GL JS lifecycle (`components/map-box.tsx`)
-
-| Phase | Behaviour |
-|---|---|
-| **Mount** | If `NEXT_PUBLIC_MAPBOX_TOKEN` is falsy → render fallback immediately; never call `new mapboxgl.Map()` |
-| **Initialise** | `mapboxgl.accessToken = token` → `new mapboxgl.Map({ container, style: "mapbox://styles/mapbox/light-v11", center, zoom, interactive })` |
-| **Markers** | For each `MapMarker`: create an HTML element (pill badge with price label), `new mapboxgl.Marker({ element, anchor: "bottom" }).setLngLat().addTo(map)` |
-| **Error** | Listen for `map.on("error")` — if tile/authentication errors occur → unmount the map and show fallback UI |
-| **Unmount** | `useEffect` cleanup: remove all markers, `map.remove()` |
-
----
-
-## 3. Marker design
-
-Property markers are circular pill badges matching the CheckinBliss design tokens:
+Once bucket data has been transferred to the main thread, it looks like this:
 
 ```
-<span style="
-  background: var(--color-brass);
-  color: var(--color-card);
-  padding: 4px 8px;
-  border-radius: 999px;
-  font-size: 11px;
-  font-weight: 600;
-  white-space: nowrap;
-  box-shadow: 0 2px 8px rgba(0,0,0,.2);
-">$240</span>
+Tile
+  |
+  +- buckets[layer-id]: Bucket
+  |    |
+  |    + ArrayGroup {
+  |        globalProperties: { zoom }
+  |        layoutVertexArray,
+  |        indexArray,
+  |        indexArray2,
+  |        layerData: {
+  |          [style layer id]: {
+  |            programConfiguration,
+  |            paintVertexArray,
+  |            paintPropertyStatistics
+  |          }
+  |          ...
+  |        }
+  |    }
+  |
+  +- buckets[...]: Bucket
+        ...
 ```
+_Note that a particular bucket may appear multiple times in `tile.buckets`--once for each layer in a given layout 'family'._
 
-- Label: `$${price}` (from `ListingProperty.price`)
-- Default color: `#2F3D2C` (brass)
-- Interactive markers show a `Popup` on click (search-results map only)
+ - Rendering happens style-layer by style-layer, in `Painter#renderPass()`, which delegates to the layer-specific `drawXxxx()` methods in `src/render/draw_*.ts`.
+ - The `drawXxxx()` methods, in turn, render a layer tile by tile, by:
+   - Obtaining a property configured shader program from the `Painter`
+   - Setting _uniform_ values based on the style layer's properties
+   - Binding layout buffer data (via `BufferGroup`) and calling `gl.drawElements()`
 
----
+Compiling and caching GL shader programs is managed by the `Painter` and `ProgramConfiguration` classes.  In particular, an instance of `ProgramConfiguration` handles, for a given (tile, style layer) pair:
+ - Expanding a `#pragma mapbox` statement in our shader source into either a _uniform_ or _attribute_, _varying_, and _local_ variable declaration, depending on whether or not the relevant style property is data-driven.
+ - Creating and populating a _paint_ vertex array for data-driven properties, corresponding to the `attributes` declared in the shader. (This happens at layout time, on the worker side.)
 
-## 4. Map pane layout rules
 
-| Breakpoint | Behaviour |
-|---|---|
-| Desktop (>1080px) | Split grid: results rail (62.5%) + map pane (37.5%). Both visible. |
-| Tablet (≤1080px) | Map is a fixed full-screen overlay, toggled by a floating green pill button ("Show map" / "Hide map") |
-| Mobile (≤640px) | Map pane and toggle button hidden (`display: none !important`); no map at all |
-| Map pane closeable | Desktop user can toggle the map off with the same "Hide map" button |
+## SourceCache
 
----
+## Transform
 
-## 5. Fallback states
-
-| State | Trigger | UI |
-|---|---|---|
-| No token | `!NEXT_PUBLIC_MAPBOX_TOKEN` | Dark background (`bg-ink/90`), map-pin SVG icon, "Map unavailable" text in `white/40` |
-| Map error | `map.on("error", ...)` where error is authentication/network/tile-load | Same fallback as "No token" — replaces the canvas entirely |
-| Zero markers | `markers.length === 0` | Map centred on city default (Lagos: 6.4295/3.4219; Abuja: 9.0695/7.4837), no markers |
-| Pane hidden | `mapOpen === false` or mobile viewport | `mappane--hidden` class hides the aside |
-
----
-
-## 6. Implementation checklist
-
-- [ ] `NEXT_PUBLIC_MAPBOX_TOKEN` is a `pk.` (public) token, not `sk.` (secret)
-- [ ] Public token URL-restricted in Mapbox dashboard to `checkinbliss.vercel.app` + localhost
-- [ ] `map-box.tsx`: fallback renders when token is missing or truthy-falsy
-- [ ] `map-box.tsx`: `map.on("error")` handler catches tile/auth errors → shows fallback
-- [ ] `map-box.tsx`: cleanup properly removes map instance + markers on unmount/update
-- [ ] Markers styled with CheckinBliss design tokens (brass pills, not default Mapbox teardrops)
-- [ ] Lagos page shows map centre at 6.4295, 3.4219 with zoom 11
-- [ ] Abuja page shows map centre at 9.0695, 7.4837 with zoom 11
-- [ ] Desktop: split pane with map visible
-- [ ] Tablet: map overlay toggles correctly
-- [ ] Mobile: map hidden entirely
-- [ ] Map closeable by user on desktop (toggle persists across remounts)
-- [ ] Works in mock mode (no token → fallback shown)
+## Controls

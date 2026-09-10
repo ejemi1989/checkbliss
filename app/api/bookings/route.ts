@@ -9,7 +9,7 @@ import { getSeedProperties, getSeedReservations, getSeedBlocks } from "@/lib/see
 import { computeSplit, createOwnerPayoutRows } from "@/lib/payouts";
 import { registerMockBookingGroup } from "@/lib/reconciliation";
 import { advanceRuleViolation, ADVANCE_RULE_MESSAGE } from "@/lib/booking-rules";
-import { notifyBookingConfirmed } from "@/lib/notifications";
+import { notifyBookingConfirmed } from "@/lib/notifications-server";
 
 const TURNSTILE_SECRET = process.env.TURNSTILE_SECRET_KEY;
 

@@ -22,12 +22,31 @@ The core money-and-inventory flow is implemented, tested, and documented:
 
 | Command | Last run | Result |
 |---------|----------|--------|
-| `npm test` | 2026-09-08 | 26 files, **347 tests passing** |
-| `npm run typecheck` | 2026-09-08 | clean |
-| `npm run lint` | 2026-09-08 | 20 pre-existing errors (unrelated files); new code clean |
-| `npm run build` | 2026-09-08 | compiled, 65/65 static pages |
+| `npm test` | 2026-09-10 | 27 files, **352 tests passing** |
+| `npm run typecheck` | 2026-09-10 | clean |
+| `npm run lint` | 2026-09-10 | touched files clean; 22 pre-existing errors (unrelated files) |
+| `npm run build` | 2026-09-09 | compiled, full route tree generated, 0 errors |
 
 ## Recently completed
+
+### Live-Stripe webhook readiness audit + config hardening (2026-09-10)
+- **Found swapped Stripe keys.** `.env` had `STRIPE_SECRET_KEY=whsec_…` (a webhook signing secret) and an *empty* `STRIPE_WEBHOOK_SECRET` — every real-mode Stripe call would have been authenticated with an invalid key. Corrected:
+  - `STRIPE_WEBHOOK_SECRET` now holds the `whsec_…` value; `STRIPE_SECRET_KEY` is emptied so mock mode engages.
+- **Key-shape guard.** `lib/stripe.ts` now exports `stripeConfigured = SECRET_KEY.startsWith("sk_")` and `stripeWebhookConfigured = WEBHOOK_SECRET.startsWith("whsec_")`. A `whsec_`/`pk_`/empty value in the wrong slot no longer flips real-Stripe mode on (mirrors the AGENTS.md "set but wrong ⇒ mock won't engage" trap). The webhook route gate in `app/api/webhooks/stripe/route.ts` uses both flags, so events are only processed with a valid API key **and** webhook secret.
+- **Audit findings (blockers to true live processing).**
+  1. `STRIPE_WEBHOOK_SECRET` was empty → route short-circuited to the mock path; real events never reached signature verification. (Fixed above.)
+  2. `supabaseAdminConfigured` is false locally (`SUPABASE_DATA_LOADED` unset) → signed events are dropped at the DB gate. Set `SUPABASE_DATA_LOADED=true` once migrations are applied.
+  3. Live DB lacks payment/admin tables → `payment_intent.succeeded` for a booking charge would 500 on `booking_groups.stripe_charge_id` and the `inspection_schedule` upsert; `charge.refunded` → `recordRefundSplit` writes to missing `owner_payouts`. Consolidated idempotent bundle shipped as `scripts/apply-payment-migrations.sql` (0015 payment arch + 0016 reconciliation + fincra renames + 0017 bank_code + 0019 admin features, folded so it's paste-once into the Supabase SQL editor, safe to re-run).
+  - Latent inconsistency noted: `routeStripeEvent` watches `metadata.purpose === "hold"` but `createDepositHold` sets `type: "deposit_hold"` — that action never fires; the route's inline deposit branch (`route.ts`) is the live path. Left in place (harmless).
+- **Verification:** `npm run typecheck` clean, `npm test` 27 files / **352 tests passing**, touched files lint-clean, webhook route returns 200 on the running dev server. `.env.example` documents the `sk_`/`whsec_` prefixes and the `SUPABASE_DATA_LOADED` gate.
+- **Persistent notification centre.** `notifications` (0019) rows are written via the service-role client through the new `lib/notifications-server.ts`: `notifyBoth()` / `notifyBookingConfirmed()` still do the in-memory enqueue (mock mode + tests identical) and now also insert role/user-scoped rows when Supabase is configured. The 9 server callers (`app/api/bookings/route.ts`, `actions/{properties,curation,claims,claims-operator,disputes,operators,inspections,verification}.ts`) switched to `@/lib/notifications-server`.
+- **Client read surface.** New `actions/notifications.ts` (`fetchNotifications`, `markReadAction`, `markAllReadAction`, `deleteNotificationAction`, `deleteAllNotificationsAction`) — server actions that read DB rows (falling back to the in-memory store) and `revalidatePath("/", "layout")` on every mutation. `components/notifications-view.tsx` and `components/notification-bell.tsx` now fetch through these actions instead of touching the store synchronously; both use a cancelled-flag async effect to satisfy `react-hooks/set-state-in-effect`. `/admin/notifications` verified live (200 + `fetchNotifications("admin")` fires on the running dev server).
+- **Live-schema drift audit** (via REST OpenAPI `definitions` + probe queries): confirmed the live DB lacks the 0015/0016 payment tables (`owner_payouts`, `owner_payout_details`, `payout_alerts`, `reconciliation_log`, `inspection_schedule`) and 0019 tables; `profiles` has no `is_suspended`, `reservations` has no `nights`, `deposit_holds.amount_minor` → `hold_amount_minor`, `booking_groups` lacks 0015 columns. `lib/data-server.ts` was hardened accordingly:
+  - `getAdminUsersFromDB` feature-detects `is_suspended` (retry without it), `getAdminStatsFromDB` adds a real Active Bookings count and uses `.not("status","in",[…])`,
+  - payout/commission/ledger/reconciliation selectors tolerate embedded rows returned as arrays vs objects and missing columns,
+  - `getReconciliationFromDB` builds records from `reconciliation_log.intent_id` matching with a real `monthLabel`.
+  - Migration bundle 0015+0016+0019 (reconciliation/payment + admin_features) still needs applying to the live project to serve real data — see `supabase/migrations/0019_admin_features.sql`.
+- **Verification:** `npm run typecheck` clean, `npm test` 27 files / **352 tests passing**, lint unchanged (22 pre-existing errors in unrelated files; new code clean).
 
 ### Booking-confirmed in-app notifications (admin + guest + owners) (2026-09-08)
 - **Confirmed bookings now notify all three parties in-app** (previously only the owner got a WhatsApp message). New `notifyBookingConfirmed()` helper in `lib/notifications.ts` enqueues: an admin "New booking confirmed" notification (role-scoped, link `/admin`), a guest "Booking confirmed" notification (link `/account/notifications`), and one "New booking" notification per relevant owner (deduped).
@@ -97,6 +116,12 @@ The core money-and-inventory flow is implemented, tested, and documented:
 
 ### Payout alert resolve path (2026-09-06)
 - `actions/finance.ts:resolveAlert` existed but (a) accepted any string and (b) wasn't wired into the new `/admin/payouts` page. Hardened it with Zod UUID validation, added an `audit_log` entry (`payout_alert.resolved`), and added a `Resolve` button to each open alert on the admin payouts view with an in-component toast (`useTransition`, revalidatePath covers `/admin/payouts`).
+
+### Demo-role routing fix — admin login lands on the admin dashboard (2026-09-09)
+- **Symptom:** logging in as `admin@checkbliss.com` in real (Supabase) mode redirected to the guest `/account` dashboard instead of `/admin`. Root cause: seed migration `0010_seed_demo_users.sql` (which sets `admin@checkbliss.com` → role `admin`) is **excluded** from applied migrations, so the account is auto-created at first login with role **`guest`** → `roleRoutes["guest"]` → `/account`.
+- **Fix:** added `DEMO_EMAIL_ROLES` + `demoRoleForEmail()` in `lib/auth.ts` mapping the six demo emails to their intended roles. Both `loginAction` and `getSession()` in `actions/auth.ts` now (a) auto-create missing profiles with the demo role instead of defaulting to `guest`, and (b) **self-heal** an existing mismatched demo profile (e.g. already auto-created as `guest`) by upgrading `profiles.role` on login / session read — idempotent, only writes on mismatch.
+- **Result:** real-mode demo logins now land on the correct dashboard (`/admin`, `/dashboard/owner`, `/dashboard/operator`, `/account`) even while migration 0010 is excluded.
+- **Verification:** new `tests/auth-roles.test.ts` (5 tests) covers demo-email→role mapping, case/whitespace insensitivity, non-demo null, and operator city scoping. Full suite 352 passed, typecheck + lint clean, production build green.
 
 ### Admin owner-payouts ledger UI (2026-09-06)
 - New `/admin/payouts` page (`app/admin/payouts/page.tsx` + `payouts-client.tsx`) reads `getPayoutLedgerFromDB()` + `getPayoutAlertsFromDB()` server-side and renders: status summary tiles (pending / eligible / released / paid totals), an open-alerts panel (top 8 unresolved `payout_alerts` with severity pill + kind), and the full ledger as a filterable table (status dropdown + free-text owner/property search). Includes NGN payout column (FX × GBP share), retry count, Fincra reference, paid timestamp.
@@ -186,7 +211,7 @@ The core money-and-inventory flow is implemented, tested, and documented:
 - **Same-class audit:** `components/admin/bookings-view.tsx` (dead code, not imported) and `app/dashboard/operator/client.tsx` (`today.toISOString()` — UTC-based, timezone-immune) checked; `components/hero-search.tsx` `viewDate`/`minDate` only render after the calendar opens (not SSR). No further changes needed.
 - **`data-scroll-behavior="smooth"`** added to `<html>` in `app/layout.tsx` — silences the Next.js `missing-data-scroll-behavior` dev warning raised by `html { scroll-behavior: smooth }` (`app/landing.css`) with `experimental.scrollRestoration` enabled.
 - **Verification:** Playwright sweeps (direct loads + client navigation, en-GB locale, Africa/Lagos / Europe/London / Pacific/Auckland timezones) all clean except benign mapbox WebGL GPU-stall noise on `/search`; production sweep on `checkbliss-gamma.vercel.app` clean. 287 tests, typecheck, build green.
-- **Tooling note:** a full `.env` (Supabase + Stripe + WhatsApp) forces real mode locally, so mock login silently fails — the repo's own Phase 7 item (`country_of_residence` schema cache drift). Run `env NEXT_PUBLIC_SUPABASE_URL= NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY= SUPABASE_SECRET_KEY= npm run dev` to force mock mode for dashboard testing.
+- **Tooling note:** a full `.env` (Supabase + Stripe + WhatsApp) forces real mode locally, so mock login silently fails — the repo's own Phase 7 item (`country_of_residence` schema cache drift). Run **`npm run dev:mock`** to force mock mode (blanked Supabase/Stripe keys via a transient `.env.local`). Note this replaced the older `env NEXT_PUBLIC_SUPABASE_URL= ... npm run dev` guidance, which no longer works on Next 16 because `next dev` reloads `.env` and re-populates the keys on every start.
 
 ### Customer account + search filters + dashboards (2026-08-14)
 - **Customer account:** `guest@checkbliss.com` added to mock allowlist (mock login → `/account`); all `/account/*` server components redirect to `/login` when unauthenticated; bookings wired to `reservations` via `getGuestBookingsFromDB()` filtered by `guest_email`, with mock fallback for the seeded guest; upcoming vs. past split derived from `check_out >= today`. New actions: `updateProfileAction` (Zod-validated `full_name`/`phone`), `requestPasswordResetAction` (calls `supabase.auth.resetPasswordForEmail` in real mode, returns neutral success in mock). New page `/forgot-password`. Settings form posts to `updateProfileAction` and surfaces saved/error state.

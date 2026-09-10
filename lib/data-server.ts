@@ -18,7 +18,7 @@ import type {
   FxRecord,
   BookingTrace,
 } from "./types";
-import type { OwnerDirectoryEntry } from "./data";
+import type { OwnerDirectoryEntry, PendingPayout, ReconciliationRecord } from "./data";
 import {
   getAdminClaims as getMockAdminClaims,
   getAdminOperators as getMockAdminOperators,
@@ -36,7 +36,23 @@ import {
   getCommissionRecords as getMockCommissionRecords,
   getFxHistory as getMockFxHistory,
   getCommissionSummary as getMockCommissionSummary,
+  getPendingPayouts as getMockPendingPayouts,
+  getReconciliation as getMockReconciliation,
 } from "./data";
+
+export type ReconciliationView = {
+  records: ReconciliationRecord[];
+  matchedTotal: number;
+  unmatchedTotal: number;
+  monthLabel?: string;
+};
+
+function daysBetween(left: string, right: string): number {
+  const a = new Date(left).getTime();
+  const b = new Date(right).getTime();
+  if (Number.isNaN(a) || Number.isNaN(b)) return 0;
+  return Math.max(0, Math.round((b - a) / 86_400_000));
+}
 
 /* ------------------------------------------------------------------ */
 /*  Admin Claims                                                        */
@@ -49,38 +65,40 @@ export async function getAdminClaimsFromDB(): Promise<DamageClaim[]> {
     const { data, error } = await db
       .from("damage_claims")
       .select(
-        `id, reservation_id, property_id, description, estimated_cost_minor,
-         operator_notes, admin_decision, adjusted_amount_minor, dispute_status,
-         submitted_at, decided_at, decided_by,
-         reservations(guest_name, guest_email, check_in, check_out, property_name),
+        `id, reservation_id, description, estimated_cost_minor,
+         admin_decision, admin_reviewer_id, admin_decided_at,
+         guest_dispute_status, resolved_amount_minor, created_at,
+         reservations(id, property_id, guest_name, guest_email, check_in, check_out,
+           properties(branded_name)),
          photos`
       )
-      .order("submitted_at", { ascending: false });
+      .order("created_at", { ascending: false });
 
     if (error || !data) return getMockAdminClaims();
 
     return data.map((r: Record<string, unknown>) => {
       const res = (r.reservations as Record<string, unknown>) ?? {};
+      const prop = (res.properties as Record<string, unknown>) ?? {};
       const photos = Array.isArray(r.photos) ? r.photos : [];
       return {
         id: r.id as string,
         reservation_id: r.reservation_id as string,
-        property_name: (res.property_name as string) ?? "",
-        property_id: r.property_id as string,
+        property_name: (prop.branded_name as string) ?? "",
+        property_id: (res.property_id as string) ?? "",
         guest_name: (res.guest_name as string) ?? "",
         guest_email: (res.guest_email as string) ?? "",
         booking_ref: (r.reservation_id as string) ?? "",
         stay_dates: `${(res.check_in as string) ?? ""}–${(res.check_out as string) ?? ""}`,
         description: r.description as string,
         estimated_cost_minor: r.estimated_cost_minor as number,
-        operator_notes: (r.operator_notes as string) ?? "",
+        operator_notes: "",
         photo_count: photos.length,
-        admin_decision: r.admin_decision as DamageClaim["admin_decision"],
-        adjusted_amount_minor: r.adjusted_amount_minor as number | null,
-        dispute_status: (r.dispute_status as DamageClaim["dispute_status"]) ?? "none",
-        submitted_at: r.submitted_at as string,
-        decided_at: r.decided_at as string | null,
-        decided_by: r.decided_by as string | null,
+        admin_decision: (r.admin_decision as DamageClaim["admin_decision"]) ?? "pending",
+        adjusted_amount_minor: (r.resolved_amount_minor as number | null) ?? null,
+        dispute_status: (r.guest_dispute_status as DamageClaim["dispute_status"]) ?? "none",
+        submitted_at: (r.created_at as string) ?? "",
+        decided_at: (r.admin_decided_at as string | null) ?? null,
+        decided_by: (r.admin_reviewer_id as string | null) ?? null,
       };
     });
   } catch {
@@ -97,32 +115,36 @@ export async function getAdminOperatorsFromDB(): Promise<Operator[]> {
   try {
     const db = createAdmin();
     const { data, error } = await db
-      .from("profiles")
+      .from("operators")
       .select(
-        `id, full_name, email, assigned_cities,
-         operator_assignments(city)`
+        `id, name, email, city, assigned_cities, status, quality_score,
+         inspections_done, verified_count, properties_count, created_at,
+         profiles!operators_profile_id_fkey(full_name)`
       )
-      .eq("role", "operator");
+      .order("created_at", { ascending: false });
 
     if (error || !data) return getMockAdminOperators();
 
     return data.map((r: Record<string, unknown>) => {
-      const assignments = Array.isArray(r.operator_assignments)
-        ? (r.operator_assignments as Array<{ city: string }>)
+      const profile = (r.profiles as Record<string, unknown>) ?? {};
+      const submittedCities = Array.isArray(r.assigned_cities)
+        ? (r.assigned_cities as string[]).filter(Boolean)
         : [];
-      const cities = assignments.map((a) => a.city);
+      const status = (r.status as string) ?? "onboarding";
       return {
         id: r.id as string,
-        name: (r.full_name as string) ?? "",
+        name: (r.name as string) || (profile.full_name as string) || "",
         email: (r.email as string) ?? "",
-        city: cities[0] ?? "",
-        assigned_cities: cities,
-        properties_count: 0,
-        verified_count: 0,
-        status: "active" as Operator["status"],
-        quality_score: 0,
-        inspections_done: 0,
-        created_at: "",
+        city: (r.city as string) ?? submittedCities[0] ?? "",
+        assigned_cities: submittedCities,
+        properties_count: (r.properties_count as number) ?? 0,
+        verified_count: (r.verified_count as number) ?? 0,
+        status: ["active", "suspended", "onboarding"].includes(status)
+          ? (status as Operator["status"])
+          : "active",
+        quality_score: (r.quality_score as number) ?? 0,
+        inspections_done: (r.inspections_done as number) ?? 0,
+        created_at: (r.created_at as string) ?? "",
       };
     });
   } catch {
@@ -141,12 +163,29 @@ export async function getAdminPropertiesFromDB(): Promise<Property[]> {
     const { data, error } = await db
       .from("properties")
       .select("*, profiles!owner_id(full_name)")
-      .order("created_at", { ascending: false });
+      .order("created_at", { ascending: false })
+      .limit(50);
 
     if (error || !data) return getMockAdminProperties();
 
+    const ids = data.map((p: Record<string, unknown>) => p.id as string);
+    const agg = new Map<string, { bookings: number; revenue: number }>();
+    if (ids.length > 0) {
+      const { data: reservations } = await db
+        .from("reservations")
+        .select("property_id, total_minor")
+        .in("property_id", ids);
+      for (const r of (reservations ?? []) as Array<Record<string, unknown>>) {
+        const cur = agg.get(r.property_id as string) ?? { bookings: 0, revenue: 0 };
+        cur.bookings += 1;
+        cur.revenue += (r.total_minor as number) ?? 0;
+        agg.set(r.property_id as string, cur);
+      }
+    }
+
     return data.map((r: Record<string, unknown>) => {
       const owner = (r.profiles as Record<string, unknown>) ?? {};
+      const stats = agg.get(r.id as string) ?? { bookings: 0, revenue: 0 };
       return {
         id: r.id as string,
         slug: r.slug as string,
@@ -157,14 +196,14 @@ export async function getAdminPropertiesFromDB(): Promise<Property[]> {
         owner_name: (owner.full_name as string) ?? "",
         status: r.status as Property["status"],
         bedrooms: r.bedrooms as number,
-        bathrooms: r.bathrooms as number,
-        max_guests: r.max_guests as number,
+        bathrooms: 0,
+        max_guests: r.sleeps as number,
         nightly_price_minor: r.nightly_rate_minor as number,
         currency: (r.currency as string) ?? "GBP",
         extended_checkout_offered: (r.extended_checkout_offered as boolean) ?? false,
         extended_checkout_price_minor: (r.extended_checkout_price_minor as number) ?? 0,
-        bookings_count: 0,
-        revenue_minor: 0,
+        bookings_count: stats.bookings,
+        revenue_minor: stats.revenue,
         image_url: "",
       };
     });
@@ -193,7 +232,7 @@ export async function getAdminFinanceFromDB(): Promise<FinanceRecord[]> {
 
     const { data: holds, error: holdsErr } = await db
       .from("deposit_holds")
-      .select(`id, reservation_id, amount_minor, status, created_at`)
+      .select(`id, reservation_id, hold_amount_minor, status, created_at`)
       .order("created_at", { ascending: false })
       .limit(10);
 
@@ -215,7 +254,7 @@ export async function getAdminFinanceFromDB(): Promise<FinanceRecord[]> {
       type: "deposit_hold" as const,
       guest_or_owner: "",
       property: "",
-      amount_minor: (r.amount_minor as number) ?? 0,
+      amount_minor: (r.hold_amount_minor as number) ?? 0,
       date: (r.created_at as string)?.slice(0, 10) ?? "",
       status: r.status === "captured" ? "captured" : "held",
       ref: (r.reservation_id as string) ?? "-",
@@ -235,18 +274,40 @@ export async function getAdminUsersFromDB(): Promise<UserRecord[]> {
   if (!supabaseAdminConfigured) return getMockAdminUsers();
   try {
     const db = createAdmin();
-    const { data, error } = await db
+    type ProfileRow = {
+      id: string;
+      full_name: string;
+      email: string;
+      role: string;
+      created_at: string;
+      is_suspended?: boolean;
+    };
+    let rows: ProfileRow[] = [];
+    let withSuspended = true;
+
+    const first = await db
       .from("profiles")
-      .select("id, full_name, email, role")
+      .select("id, full_name, email, role, created_at, is_suspended")
       .order("created_at", { ascending: false })
       .limit(100);
 
-    if (error || !data) return getMockAdminUsers();
+    if (first.error || !first.data) {
+      withSuspended = false;
+      const fallback = await db
+        .from("profiles")
+        .select("id, full_name, email, role, created_at")
+        .order("created_at", { ascending: false })
+        .limit(100);
+      if (fallback.error || !fallback.data) return getMockAdminUsers();
+      rows = fallback.data as ProfileRow[];
+    } else {
+      rows = first.data as ProfileRow[];
+    }
 
-    return data.map((r: Record<string, unknown>) => ({
-      id: r.id as string,
-      name: (r.full_name as string) ?? "",
-      email: (r.email as string) ?? "",
+    return rows.map((r) => ({
+      id: r.id,
+      name: r.full_name ?? "",
+      email: r.email ?? "",
       type:
         r.role === "owner"
           ? "Owner"
@@ -254,7 +315,10 @@ export async function getAdminUsersFromDB(): Promise<UserRecord[]> {
             ? "Operator"
             : "Guest",
       bookings_or_properties: 0,
-      status: "active" as UserRecord["status"],
+      status:
+        withSuspended && r.is_suspended === true
+          ? "suspended"
+          : "active",
     }));
   } catch {
     return getMockAdminUsers();
@@ -301,7 +365,7 @@ export async function getAdminBookingsFromDB(): Promise<AdminBookingView[]> {
       .from("reservations")
       .select(
         `id, guest_name, guest_email, check_in, check_out, status,
-         total_minor, nights, guest_count, property_id,
+         total_minor, guest_count, property_id,
          properties(branded_name), booking_groups(reference)`
       )
       .order("created_at", { ascending: false })
@@ -322,7 +386,7 @@ export async function getAdminBookingsFromDB(): Promise<AdminBookingView[]> {
         check_out: r.check_out as string,
         status: r.status as string,
         amount_minor: (r.total_minor as number) ?? 0,
-        nights: (r.nights as number) ?? 0,
+        nights: daysBetween(r.check_in as string, r.check_out as string),
         guest_count: (r.guest_count as number) ?? 0,
       };
     });
@@ -345,40 +409,41 @@ export async function getOperatorClaimsFromDB(
     const { data, error } = await db
       .from("damage_claims")
       .select(
-        `id, reservation_id, property_id, description, estimated_cost_minor,
-         operator_notes, admin_decision, adjusted_amount_minor, dispute_status,
-         submitted_at, decided_at, decided_by,
-         reservations(guest_name, guest_email, check_in, check_out, property_name),
-         photos,
-         properties!inner(city)`
+        `id, reservation_id, description, estimated_cost_minor,
+         admin_decision, admin_reviewer_id, admin_decided_at,
+         guest_dispute_status, resolved_amount_minor, created_at,
+         reservations(id, property_id, guest_name, guest_email, check_in, check_out,
+           properties(branded_name, city)),
+         photos`
       )
-      .in("properties.city", assignedCities)
-      .order("submitted_at", { ascending: false });
+      .in("reservations.properties.city", assignedCities)
+      .order("created_at", { ascending: false });
 
     if (error || !data) return [];
 
     return data.map((r: Record<string, unknown>) => {
       const res = (r.reservations as Record<string, unknown>) ?? {};
+      const prop = (res.properties as Record<string, unknown>) ?? {};
       const photos = Array.isArray(r.photos) ? r.photos : [];
       return {
         id: r.id as string,
         reservation_id: r.reservation_id as string,
-        property_name: (res.property_name as string) ?? "",
-        property_id: r.property_id as string,
+        property_name: (prop.branded_name as string) ?? "",
+        property_id: (res.property_id as string) ?? "",
         guest_name: (res.guest_name as string) ?? "",
         guest_email: (res.guest_email as string) ?? "",
         booking_ref: (r.reservation_id as string) ?? "",
         stay_dates: `${(res.check_in as string) ?? ""}–${(res.check_out as string) ?? ""}`,
         description: r.description as string,
         estimated_cost_minor: r.estimated_cost_minor as number,
-        operator_notes: (r.operator_notes as string) ?? "",
+        operator_notes: "",
         photo_count: photos.length,
-        admin_decision: r.admin_decision as DamageClaim["admin_decision"],
-        adjusted_amount_minor: r.adjusted_amount_minor as number | null,
-        dispute_status: (r.dispute_status as DamageClaim["dispute_status"]) ?? "none",
-        submitted_at: r.submitted_at as string,
-        decided_at: r.decided_at as string | null,
-        decided_by: r.decided_by as string | null,
+        admin_decision: (r.admin_decision as DamageClaim["admin_decision"]) ?? "pending",
+        adjusted_amount_minor: (r.resolved_amount_minor as number | null) ?? null,
+        dispute_status: (r.guest_dispute_status as DamageClaim["dispute_status"]) ?? "none",
+        submitted_at: (r.created_at as string) ?? "",
+        decided_at: (r.admin_decided_at as string | null) ?? null,
+        decided_by: (r.admin_reviewer_id as string | null) ?? null,
       };
     });
   } catch {
@@ -401,7 +466,7 @@ export async function getOperatorBookingsFromDB(
       .from("reservations")
       .select(
         `id, guest_name, guest_email, check_in, check_out, status,
-         total_minor, nights, guest_count, property_id,
+         total_minor, guest_count, property_id,
          properties!inner(branded_name, city), booking_groups(reference)`
       )
       .in("properties.city", assignedCities)
@@ -423,7 +488,7 @@ export async function getOperatorBookingsFromDB(
         check_out: r.check_out as string,
         status: r.status as string,
         amount_minor: (r.total_minor as number) ?? 0,
-        nights: (r.nights as number) ?? 0,
+        nights: daysBetween(r.check_in as string, r.check_out as string),
         guest_count: (r.guest_count as number) ?? 0,
       };
     });
@@ -446,8 +511,8 @@ export async function getOwnersForCityFromDB(
     const { data, error } = await db
       .from("profiles")
       .select(
-        `id, full_name, email, phone,
-         properties!owner_id(id, name, city, status)`
+        `id, full_name, email, whatsapp_e164,
+         properties!owner_id(id, branded_name, city, status)`
       )
       .eq("role", "owner");
 
@@ -468,7 +533,7 @@ export async function getOwnersForCityFromDB(
           id: r.id as string,
           name: (r.full_name as string) ?? "",
           email: (r.email as string) ?? "",
-          whatsapp: (r.phone as string) ?? "",
+          whatsapp: (r.whatsapp_e164 as string) ?? "",
           city: cities[0] ?? "",
           properties_count: props.length,
           total_bookings: 0,
@@ -507,8 +572,8 @@ export async function getOwnerBookingsFromDB(
       .from("reservations")
       .select(
         `id, guest_name, check_in, check_out, status,
-         total_minor, nights, guest_count,
-properties(branded_name)`
+         total_minor, guest_count,
+         properties(branded_name)`
       )
       .in("property_id", propIds)
       .order("created_at", { ascending: false })
@@ -519,6 +584,7 @@ properties(branded_name)`
     return data.map((r: Record<string, unknown>) => {
       const prop = (r.properties as Record<string, unknown>) ?? {};
       const propName = (prop.branded_name as string) ?? "";
+      const nights = daysBetween(r.check_in as string, r.check_out as string);
       return {
         id: r.id as string,
         unit: propName,
@@ -527,7 +593,7 @@ properties(branded_name)`
         check_out: r.check_out as string,
         status: r.status as string,
         amount_minor: (r.total_minor as number) ?? 0,
-        nights: (r.nights as number) ?? 0,
+        nights,
         guest_count: (r.guest_count as number) ?? 0,
         property: propName,
         city: "",
@@ -551,22 +617,30 @@ export async function getAdminStatsFromDB(): Promise<AdminStat[]> {
     const now = new Date();
     const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
 
-    const [{ count: totalProps }, { count: activeOps }, { count: monthRev, data: revData }] =
-      await Promise.all([
-        db
-          .from("properties")
-          .select("id", { count: "exact", head: true })
-          .eq("status", "approved"),
-        db
-          .from("profiles")
-          .select("id", { count: "exact", head: true })
-          .eq("role", "operator"),
-        db
-          .from("reservations")
-          .select("total_minor")
-          .gte("created_at", monthStart)
-          .neq("status", "cancelled"),
-      ]);
+    const [
+      { count: totalProps },
+      { count: activeOps },
+      { count: activeBookings },
+      { data: revData },
+    ] = await Promise.all([
+      db
+        .from("properties")
+        .select("id", { count: "exact", head: true })
+        .eq("status", "approved"),
+      db
+        .from("profiles")
+        .select("id", { count: "exact", head: true })
+        .eq("role", "operator"),
+      db
+        .from("reservations")
+        .select("id", { count: "exact", head: true })
+        .not("status", "in", ["cancelled", "completed"]),
+      db
+        .from("reservations")
+        .select("total_minor")
+        .gte("created_at", monthStart)
+        .neq("status", "cancelled"),
+    ]);
 
     const mtRevenue = (revData ?? []).reduce(
       (sum: number, r: Record<string, unknown>) =>
@@ -583,7 +657,7 @@ export async function getAdminStatsFromDB(): Promise<AdminStat[]> {
       },
       {
         label: "Active Bookings",
-        value: "0",
+        value: String(activeBookings ?? 0),
         sub: "Across all properties",
         accent: false,
       },
@@ -832,6 +906,196 @@ export async function getCommissionSummaryFromDB(): Promise<{ daily: number; wee
     };
   } catch {
     return getMockCommissionSummary();
+  }
+}
+
+export async function getPendingPayoutsFromDB(): Promise<PendingPayout[]> {
+  if (!supabaseAdminConfigured) return getMockPendingPayouts();
+  try {
+    const db = createAdmin();
+    const { data, error } = await db
+      .from("owner_payouts")
+      .select(
+        `id, owner_share_minor, status, requested_at, created_at,
+         booking_group_id,
+         profiles!owner_id(full_name, email),
+         properties!property_id(branded_name),
+         reservations!reservation_id(check_in, check_out)`
+      )
+      .order("created_at", { ascending: false })
+      .limit(250);
+
+    if (error || !data) return getMockPendingPayouts();
+
+    type LedgerRow = {
+      owner_share_minor: number;
+      status: string;
+      requested_at: string | null;
+      created_at: string;
+      booking_group_id: string;
+      profiles: Record<string, unknown>[] | Record<string, unknown> | null;
+      properties: Record<string, unknown>[] | Record<string, unknown> | null;
+      reservations: Record<string, unknown>[] | Record<string, unknown> | null;
+    };
+
+    const firstRow = (v: unknown): Record<string, unknown> =>
+      Array.isArray(v) ? ((v[0] ?? {}) as Record<string, unknown>) : ((v ?? {}) as Record<string, unknown>);
+
+    const byOwnerPeriod = new Map<string, PendingPayout>();
+    for (const r of data as unknown as LedgerRow[]) {
+      const profile = firstRow(r.profiles);
+      const property = firstRow(r.properties);
+      const reservation = firstRow(r.reservations);
+      const owner = (profile.full_name as string) || "Owner";
+      const email = (profile.email as string) ?? "";
+      const created = (r.requested_at as string) ?? r.created_at;
+      const period = created ? created.slice(0, 7) : "";
+      const key = `${owner}|${period}`;
+
+      const cur = byOwnerPeriod.get(key) ?? {
+        id: `PO-${owner.trim().replace(/\s+/g, "-").toLowerCase()}-${period}`,
+        owner,
+        owner_email: email,
+        period,
+        units: 0,
+        nights: 0,
+        revenue_minor: 0,
+        fee_minor: 0,
+        payout_minor: 0,
+        status: "pending" as PendingPayout["status"],
+        requested_at: created,
+        property_ids: [],
+      };
+      cur.units += property.branded_name ? 1 : 0;
+      cur.nights += daysBetween(
+        (reservation.check_in as string) ?? created,
+        (reservation.check_out as string) ?? created,
+      );
+      const share = (r.owner_share_minor as number) ?? 0;
+      cur.payout_minor += share;
+      cur.fee_minor += Math.round(share / 0.88 * 0.12);
+      cur.revenue_minor += Math.round(share / 0.88);
+      if (r.status === "pending" && cur.status === "approved") cur.status = "pending";
+      if (r.status === "rejected") cur.status = "rejected";
+      if (r.status === "pending") cur.status = "pending";
+      if (r.booking_group_id) cur.property_ids.push(r.booking_group_id.slice(0, 8));
+      byOwnerPeriod.set(key, cur);
+    }
+
+    return [...byOwnerPeriod.values()].sort((a, b) =>
+      (b.requested_at ?? "").localeCompare(a.requested_at ?? ""),
+    );
+  } catch {
+    return getMockPendingPayouts();
+  }
+}
+
+export async function getReconciliationFromDB(): Promise<ReconciliationView> {
+  if (!supabaseAdminConfigured) return getMockReconciliation();
+  try {
+    const db = createAdmin();
+    const [charges, groups, holds, payouts, log] = await Promise.all([
+      db
+        .from("reservations")
+        .select(
+          "id, total_minor, created_at, booking_group_id, status, properties(branded_name)"
+        )
+        .limit(100),
+      db.from("booking_groups").select("id, reference, charge_intent_id, charge_status, created_at"),
+      db
+        .from("deposit_holds")
+        .select("id, reservation_id, hold_amount_minor, created_at, status")
+        .limit(50),
+      db
+        .from("owner_payouts")
+        .select("id, owner_share_minor, fincra_reference, created_at, status")
+        .limit(50),
+      db.from("reconciliation_log").select("intent_id, disposition, created_at").order("created_at", { ascending: false }).limit(200),
+    ]);
+
+    if (charges.error || groups.error || holds.error || payouts.error || log.error) {
+      return getMockReconciliation();
+    }
+
+    const resolved = new Set(
+      (log.data ?? []).map((l: Record<string, unknown>) => l.intent_id as string),
+    );
+
+    const groupById = new Map(
+      (groups.data ?? []).map((g: Record<string, unknown>) => [g.id as string, g]),
+    );
+
+    const records: ReconciliationRecord[] = [];
+    const dateNow = new Date().toISOString().slice(0, 7);
+
+    for (const r of (charges.data ?? []) as Array<Record<string, unknown>>) {
+      const group = groupById.get(r.booking_group_id as string) as
+        | Record<string, unknown>
+        | undefined;
+      const prop = (r.properties as Record<string, unknown>) ?? {};
+      const amount = (r.total_minor as number) ?? 0;
+      const intent = (group?.charge_intent_id as string | undefined) ?? `pi_${r.id}`;
+      records.push({
+        id: `R-${r.id}`,
+        type: (r.status as string) === "cancelled" ? "refund" : "booking_charge",
+        amount_minor: amount,
+        stripe_id: intent.slice(0, 12),
+        booking_ref: (group?.reference as string) ?? "",
+        property: (prop.branded_name as string) ?? "",
+        date: ((r.created_at as string) ?? "").slice(0, 10),
+        matched: resolved.has(intent),
+        matched_with: resolved.has(intent) ? "reconciled" : undefined,
+      });
+    }
+
+    for (const h of (holds.data ?? []) as Array<Record<string, unknown>>) {
+      const amount = (h.hold_amount_minor as number) ?? 0;
+      const intent = `pi_hold_${h.reservation_id}`.slice(0, 12);
+      records.push({
+        id: `H-${h.id}`,
+        type: "deposit_hold",
+        amount_minor: amount,
+        stripe_id: intent,
+        booking_ref: (h.reservation_id as string) ?? "",
+        date: ((h.created_at as string) ?? "").slice(0, 10),
+        matched: resolved.has(`hold_${h.id}`),
+        matched_with: resolved.has(`hold_${h.id}`) ? "reconciled" : undefined,
+      });
+    }
+
+    for (const p of (payouts.data ?? []) as Array<Record<string, unknown>>) {
+      const amount = (p.owner_share_minor as number) ?? 0;
+      const ref = (p.fincra_reference as string) ?? `po_${p.id}`.slice(0, 12);
+      records.push({
+        id: `P-${p.id}`,
+        type: "payout",
+        amount_minor: amount,
+        stripe_id: ref,
+        booking_ref: (p.booking_group_id as string) ?? "",
+        date: ((p.created_at as string) ?? "").slice(0, 10),
+        matched: resolved.has(ref),
+        matched_with: resolved.has(ref) ? "reconciled" : undefined,
+      });
+    }
+
+    const bannerDate = (charges.data?.[0] as Record<string, unknown>)?.created_at as string | undefined;
+    const monthLabel = bannerDate
+      ? new Date(bannerDate).toLocaleString("en-GB", { month: "long", year: "numeric", timeZone: "UTC" })
+      : new Date(`${dateNow}-01`).toLocaleString("en-GB", { month: "long", year: "numeric", timeZone: "UTC" });
+
+    const matchedTotal = records.filter((r) => r.matched).reduce((s, r) => s + r.amount_minor, 0);
+    const unmatchedTotal = records.filter((r) => !r.matched).reduce((s, r) => s + r.amount_minor, 0);
+
+    return {
+      records: records
+        .sort((a, b) => b.date.localeCompare(a.date))
+        .slice(0, 60),
+      matchedTotal,
+      unmatchedTotal,
+      monthLabel,
+    };
+  } catch {
+    return getMockReconciliation();
   }
 }
 

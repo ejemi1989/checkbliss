@@ -6,7 +6,7 @@ import { z } from "zod";
 import { createClient, supabaseServerConfigured } from "@/lib/supabase/server";
 import { createAdmin } from "@/lib/supabase/admin";
 import type { AuthUser, Role } from "@/lib/auth";
-import { mockOperatorCities } from "@/lib/auth";
+import { demoRoleForEmail, mockOperatorCities } from "@/lib/auth";
 
 const roleRoutes: Record<Role, string> = {
   admin: "/admin",
@@ -112,9 +112,12 @@ export async function loginAction(_prev: unknown, formData: FormData) {
   if (!profile) {
     const meta = data.user.user_metadata as Record<string, unknown> | undefined;
     const metaRole = (meta?.role as string | undefined) ?? "";
-    const autoRole = (metaRole === "operator" || metaRole === "owner")
-      ? metaRole
-      : "guest";
+    // Route demo credentials to their intended dashboard even when the
+    // demo-user seed (0010) was excluded and the profile is auto-created.
+    const demoRole = demoRoleForEmail(email);
+    const knownMetaRole =
+      metaRole === "operator" || metaRole === "owner" ? (metaRole as Role) : "guest";
+    const autoRole: Role = demoRole ?? knownMetaRole;
     try {
       const { error: insertErr } = await admin.from("profiles").upsert(
         {
@@ -148,7 +151,17 @@ export async function loginAction(_prev: unknown, formData: FormData) {
     redirect(redirectPath);
   }
 
-  redirect(roleRoutes[profile.role as Role] ?? "/login");
+  // Route demo credentials to their intended dashboard. If a demo account's
+  // profile exists but has the wrong role (e.g. auto-created as `guest`
+  // before this fix / excluded seed), upgrade it so the correct dashboard
+  // is shown and stays correct on subsequent logins.
+  const demoRole = demoRoleForEmail(email);
+  const effectiveRole = demoRole ?? profile.role;
+  if (demoRole && profile.role !== demoRole) {
+    await admin.from("profiles").update({ role: demoRole }).eq("id", data.user.id);
+  }
+
+  redirect(roleRoutes[effectiveRole as Role] ?? "/login");
 }
 
 export async function signupAction(_prev: unknown, formData: FormData) {
@@ -263,9 +276,10 @@ export async function getSession(): Promise<AuthUser | null> {
     if (!profile) {
       const meta = user.user_metadata as Record<string, unknown> | undefined;
       const metaRole = (meta?.role as string | undefined) ?? "";
-      const autoRole = (metaRole === "operator" || metaRole === "owner")
-        ? metaRole
-        : "guest";
+      const demoRole = demoRoleForEmail(user.email);
+      const knownMetaRole =
+        metaRole === "operator" || metaRole === "owner" ? (metaRole as Role) : "guest";
+      const autoRole: Role = demoRole ?? knownMetaRole;
       await admin.from("profiles").upsert(
         {
           id: user.id,
@@ -299,6 +313,15 @@ export async function getSession(): Promise<AuthUser | null> {
       if (opRow?.assigned_cities) {
         assignedCities = opRow.assigned_cities as string[];
       }
+    }
+
+    // Self-heal demo accounts whose stored role drifted from the intended
+    // one (e.g. auto-created as `guest` when demo seed 0010 was excluded).
+    // Idempotent: only writes when the role actually mismatches.
+    const sessionDemoRole = demoRoleForEmail(user.email);
+    if (sessionDemoRole && profile.role !== sessionDemoRole) {
+      await admin.from("profiles").update({ role: sessionDemoRole }).eq("id", user.id);
+      profile.role = sessionDemoRole;
     }
 
     return {

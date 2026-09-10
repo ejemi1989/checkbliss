@@ -64,6 +64,30 @@ export function filterByAssignedCities<T extends { city: string }>(
   return items;
 }
 
+/**
+ * Demo login emails → intended role.
+ *
+ * Used in real (Supabase) mode to route demo credentials to the right
+ * dashboard even when the demo-user seed migration (0010) was not applied
+ * (it is excluded from the standard merge). Without this, an
+ * `admin@checkbliss.com` login that has no `profiles` row is auto-created
+ * as `guest` and lands on the guest `/account` dashboard instead of `/admin`.
+ */
+export const DEMO_EMAIL_ROLES: Record<string, Role> = {
+  "admin@checkbliss.com": "admin",
+  "owner@checkbliss.com": "owner",
+  "guest@checkbliss.com": "guest",
+  "operator-lagos@checkbliss.com": "operator",
+  "operator-abuja@checkbliss.com": "operator",
+  "operator@checkbliss.com": "operator",
+};
+
+/** Returns the intended role for a known demo email, or null for real users. */
+export function demoRoleForEmail(email: string | undefined): Role | null {
+  if (!email) return null;
+  return DEMO_EMAIL_ROLES[email.trim().toLowerCase()] ?? null;
+}
+
 /** Mock-mode operator assignment: derive assigned cities from email. */
 export function mockOperatorCities(email: string | undefined): string[] {
   if (!email) return [];
