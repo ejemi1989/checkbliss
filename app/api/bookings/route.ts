@@ -97,7 +97,7 @@ async function compensateFailedGroup(
     .from("booking_groups")
     .update({ status: "cancelled" })
     .eq("id", groupId)
-    .eq("status", "pending_payment");
+    .in("status", ["pending", "pending_payment"]);
 }
 
 export async function POST(request: NextRequest) {
@@ -200,7 +200,10 @@ export async function POST(request: NextRequest) {
       throw new Error("book_stays returned an unexpected number of reservations");
     }
 
-    const propertyIds = [...new Set(items.map((i) => i.property_id))];
+    // book_stays resolves property_id (slugs and legacy ids both work); its
+    // returned rows carry the canonical uuid per reservation, so re-read the
+    // properties by those uuids — never by the raw request value.
+    const propertyIds = [...new Set(reservedRows.map((r) => r.property_id))];
     const { data: propsData } = await db
       .from("properties")
       .select("id, branded_name, owner_id, nightly_rate_minor, deposit_minor, extended_checkout_offered, extended_checkout_price_minor, currency")
@@ -214,8 +217,11 @@ export async function POST(request: NextRequest) {
     for (let idx = 0; idx < items.length; idx++) {
       const item = items[idx];
       const reserved = reservedRows[idx];
-      const property = propsById.get(item.property_id);
-      if (!property) throw new Error(`Property ${item.property_id} missing after reservation`);
+      const property = propsById.get(reserved.property_id);
+      if (!property) {
+        await compensateFailedGroup(db, groupId);
+        throw new Error(`Property ${reserved.property_id} missing after reservation`);
+      }
 
       const nights = computeNights(item.check_in, item.check_out);
       const split = computeSplit(reserved.total_minor);
@@ -223,7 +229,7 @@ export async function POST(request: NextRequest) {
       reservations.push({
         id: reserved.reservation_id,
         booking_group_id: groupId,
-        property_id: item.property_id,
+        property_id: reserved.property_id,
         property_name: property.branded_name,
         owner_id: property.owner_id,
         check_in: item.check_in,
