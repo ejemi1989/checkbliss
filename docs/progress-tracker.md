@@ -29,6 +29,15 @@ The core money-and-inventory flow is implemented, tested, and documented:
 
 ## Recently completed
 
+### Owner dashboard wires real DB data (2026-09-11)
+- Owner bookings, properties, and calendar now come from real, owner-scoped Supabase queries instead of hardcoded seed data (`getOwnerBookingsFromDB`, new `getOwnerPropertiesFromDB`).
+- `getOwnerPropertiesFromDB` computes current-month revenue, booking count, and occupancy per property from live reservations.
+- `app/dashboard/owner/page.tsx` fetches payouts + bookings + properties server-side and passes them into the client component; client falls back to mock only when unconfigured.
+- Calendar tab now derives from real bookings and the block/unblock dropdown lists the owner's actual properties (with real uuids) instead of hardcoded "The Palms Maisonette"/"Sunset Dove".
+- Occupancy stat computed from real data instead of hardcoded "68%".
+- Owner layout remains visually distinct from admin (top header + lagoon "Owner" badge vs admin fixed sidebar + "Founder access").
+- Verified: typecheck clean, build clean, 352 tests passing, lint on touched files = 2 pre-existing warnings.
+
 ### Live-Stripe webhook readiness audit + config hardening (2026-09-10)
 - **Found swapped Stripe keys.** `.env` had `STRIPE_SECRET_KEY=whsec_…` (a webhook signing secret) and an *empty* `STRIPE_WEBHOOK_SECRET` — every real-mode Stripe call would have been authenticated with an invalid key. Corrected:
   - `STRIPE_WEBHOOK_SECRET` now holds the `whsec_…` value; `STRIPE_SECRET_KEY` is emptied so mock mode engages.

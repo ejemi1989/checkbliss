@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { NotificationBell } from "@/components/notification-bell";
+import { logoutAction } from "@/actions/auth";
 import type { AuthUser } from "@/lib/auth";
 
 /* ---------- icons ---------- */
@@ -77,7 +78,9 @@ export function OperatorLayout({ user, children }: { user: AuthUser | null; chil
         </div>
         <div className="flex items-center gap-x-3">
           <NotificationBell role="operator" userId={user?.id} />
-          <Link href="/logout" className="text-xs font-sans font-medium text-ink-secondary hover:text-ink transition-colors bg-transparent border-none no-underline">Sign out</Link>
+          <form action={logoutAction} className="m-0">
+            <button type="submit" className="text-xs font-sans font-medium text-ink-secondary hover:text-ink transition-colors bg-transparent border-none p-0 cursor-pointer">Sign out</button>
+          </form>
         </div>
       </header>
 

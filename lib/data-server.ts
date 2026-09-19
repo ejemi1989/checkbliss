@@ -31,6 +31,7 @@ import {
   getOperatorBookings as getMockOperatorBookings,
   getOwnersForCity as getMockOwnersForCity,
   getOwnerBookings as getMockOwnerBookings,
+  getOwnerProperties as getMockOwnerProperties,
   getPayoutLedger as getMockPayoutLedger,
   getPayoutAlerts as getMockPayoutAlerts,
   getCommissionRecords as getMockCommissionRecords,
@@ -818,6 +819,106 @@ function getMockPayoutsForOwner(_ownerId: string): OwnerPayout[] {
     { id: "P001", period: "June 2026", amount_minor: 300000, paid_at: "2026-07-05", status: "paid", units: "All units" },
     { id: "P002", period: "May 2026", amount_minor: 240000, paid_at: "2026-06-05", status: "paid", units: "All units" },
   ];
+}
+
+export type OwnerPropertyView = {
+  id?: string;
+  name: string;
+  unit: string;
+  meta: string;
+  monthly_minor: number;
+  bookings: string;
+  occ: string;
+  active: boolean;
+  beds: number;
+  baths: number;
+  sleeps: number;
+};
+
+export async function getOwnerPropertiesFromDB(
+  ownerId: string,
+): Promise<OwnerPropertyView[]> {
+  if (!supabaseAdminConfigured) return getMockOwnerProperties();
+  try {
+    const db = createAdmin();
+    const { data: props, error: propsErr } = await db
+      .from("properties")
+      .select("id, branded_name, city, neighbourhood, bedrooms, bathrooms, max_guests, status")
+      .eq("owner_id", ownerId)
+      .order("branded_name");
+
+    if (propsErr || !props || props.length === 0) return getMockOwnerProperties();
+
+    const propIds = props.map((p: Record<string, unknown>) => p.id as string);
+
+    const { data: resData } = await db
+      .from("reservations")
+      .select(
+        "property_id, total_minor, check_in, check_out, status"
+      )
+      .in("property_id", propIds);
+
+    const now = new Date();
+    const monthStart = new Date(now.getFullYear(), now.getMonth(), 1).getTime();
+    const nightsInMonth = new Date(
+      now.getFullYear(),
+      now.getMonth() + 1,
+      0,
+    ).getDate();
+
+    type PropAgg = {
+      count: number;
+      revenue: number;
+      nightsBooked: number;
+    };
+    const agg: Record<string, PropAgg> = {};
+    for (const r of (resData ?? []) as Array<{
+      property_id: string;
+      total_minor: number;
+      check_in: string;
+      check_out: string;
+      status: string;
+    }>) {
+      if (r.status === "cancelled") continue;
+      const a = (agg[r.property_id] ??= { count: 0, revenue: 0, nightsBooked: 0 });
+      a.count += 1;
+      const checkIn = new Date(r.check_in).getTime();
+      const checkOut = new Date(r.check_out).getTime();
+      if (Number.isNaN(checkIn) || Number.isNaN(checkOut)) continue;
+      const inStart = Math.max(checkIn, monthStart);
+      const inEnd = Math.min(checkOut, monthStart + nightsInMonth * 86_400_000);
+      if (inEnd > inStart) {
+        a.revenue += ((r.total_minor as number) ?? 0);
+        a.nightsBooked += Math.round((inEnd - inStart) / 86_400_000);
+      }
+    }
+
+    return props.map((p: Record<string, unknown>) => {
+      const beds = (p.bedrooms as number) ?? 0;
+      const baths = (p.bathrooms as number) ?? 0;
+      const sleeps = (p.max_guests as number) ?? 2;
+      const active = (p.status as string) === "approved";
+      const a = agg[p.id as string] ?? { count: 0, revenue: 0, nightsBooked: 0 };
+      const occ = Math.round((a.nightsBooked / nightsInMonth) * 100);
+      const neighbourhood = (p.neighbourhood as string) ?? "";
+      const city = (p.city as string) ?? "";
+      return {
+        id: p.id as string,
+        name: (p.branded_name as string) ?? "",
+        unit: [neighbourhood, city].filter(Boolean).join(", ") || "Listing",
+        meta: `${beds > 0 ? beds + " BR" : ""} · ${sleeps} guests max`,
+        monthly_minor: a.revenue,
+        bookings: String(a.count),
+        occ: `${occ}%`,
+        active,
+        beds,
+        baths,
+        sleeps,
+      };
+    });
+  } catch {
+    return getMockOwnerProperties();
+  }
 }
 
 export async function getCommissionRecordsFromDB(): Promise<CommissionRecord[]> {

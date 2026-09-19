@@ -3,7 +3,8 @@
 import { useState, useMemo, useEffect, useRef, useTransition } from "react";
 import { formatMinor } from "@/lib/currency";
 import { getOwnerBookings, getOwnerPayouts, getCalendarBookings, getOwnerProperties } from "@/lib/data";
-import type { OwnerPayout as OwnerPayoutType } from "@/lib/types";
+import type { OwnerPayout as OwnerPayoutType, OwnerBookingView } from "@/lib/types";
+import type { OwnerPropertyView } from "@/lib/data-server";
 import { blockDates, unblockDates } from "@/actions/properties";
 import { saveOwnerPayoutDetails } from "@/actions/owner-payout-details";
 import type { AuthUser } from "@/lib/auth";
@@ -27,10 +28,10 @@ const I = {
   helpCircle: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10" /><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" /><line x1="12" y1="17" x2="12.01" y2="17" /></svg>,
 };
 
-const bookings = getOwnerBookings();
+const bookingsFallback: OwnerBookingView[] = getOwnerBookings();
 const defaultPayouts = getOwnerPayouts();
-const calendarBookings = getCalendarBookings();
-const properties = getOwnerProperties();
+const calendarBookingsFallback = getCalendarBookings();
+const propertiesFallback: OwnerPropertyView[] = getOwnerProperties();
 const damageClaims = getSeedDamageClaims().filter((c) => ["PR001", "PR002"].includes(c.property_id)).slice(0, 4);
 
 function fmt(n: number) { return formatMinor(n); }
@@ -73,16 +74,20 @@ export function OwnerDashboard({
   initialTab,
   initialPayoutDetails,
   initialPayouts,
+  initialBookings,
+  initialProperties,
 }: {
   user: AuthUser | null;
   initialTab?: OwnerTab;
   initialPayoutDetails?: OwnerPayoutDetailsData | null;
   initialPayouts?: OwnerPayoutType[];
+  initialBookings?: OwnerBookingView[];
+  initialProperties?: OwnerPropertyView[];
 }) {
   const [tab, setTab] = useState<OwnerTab>(initialTab ?? "home");
   const [month, setMonth] = useState<number | null>(null);
   const [year, setYear] = useState<number | null>(null);
-  const [bookingModal, setBookingModal] = useState<(typeof bookings)[0] | null>(null);
+  const [bookingModal, setBookingModal] = useState<OwnerBookingView | null>(null);
   const [claimModal, setClaimModal] = useState<(typeof damageClaims)[0] | null>(null);
   const [blockStart, setBlockStart] = useState("");
   const [blockEnd, setBlockEnd] = useState("");
@@ -97,6 +102,8 @@ export function OwnerDashboard({
   const todayRef = useRef<Date | null>(null);
   const [today, setToday] = useState<Date | null>(null);
   const payouts = initialPayouts ?? defaultPayouts;
+  const bookings = initialBookings ?? bookingsFallback;
+  const properties = initialProperties ?? propertiesFallback;
   useEffect(() => {
     const next = new Date();
     if (!todayRef.current || todayRef.current.getTime() !== next.getTime()) {
@@ -116,6 +123,21 @@ export function OwnerDashboard({
   }, []);
 
   /* calendar logic */
+  const calendarBookings = useMemo(() => {
+    if (bookings.length > 0) {
+      return bookings.map((b) => {
+        const dates: string[] = [];
+        const start = new Date(`${b.check_in}T00:00:00`);
+        const end = new Date(`${b.check_out}T00:00:00`);
+        for (let t = new Date(start); t < end; t.setDate(t.getDate() + 1)) {
+          dates.push(`${t.getFullYear()}-${String(t.getMonth() + 1).padStart(2, "0")}-${String(t.getDate()).padStart(2, "0")}`);
+        }
+        return { dates, unit: b.unit, guest: b.guest };
+      });
+    }
+    return calendarBookingsFallback;
+  }, [bookings]);
+
   const bookingsByDate: Record<string, (typeof calendarBookings)[0]> = {};
   calendarBookings.forEach((b) => b.dates.forEach((d) => { bookingsByDate[d] = b; }));
 
@@ -154,7 +176,8 @@ export function OwnerDashboard({
   /* stats */
   const totalRevenue = bookings.reduce((s, b) => s + (b.status === "cancelled" ? 0 : b.amount_minor), 0);
   const activeBookings = bookings.filter((b) => b.status === "confirmed" || b.status === "pending").length;
-  const occupancyPct = "68%";
+  const occupancyValues = properties.map((p) => parseInt(p.occ, 10)).filter((n) => !Number.isNaN(n));
+  const occupancyPct = occupancyValues.length > 0 ? `${Math.round(occupancyValues.reduce((s, n) => s + n, 0) / occupancyValues.length)}%` : "—";
 
   return (
     <>
@@ -364,16 +387,18 @@ export function OwnerDashboard({
                     <input type="date" value={blockStart} onChange={(e) => setBlockStart(e.target.value)} className="border border-hairline rounded-lg px-3 py-1.5 text-xs outline-none focus:border-primary text-ink" />
                     <span className="text-xs text-ink-secondary">to</span>
                     <input type="date" value={blockEnd} onChange={(e) => setBlockEnd(e.target.value)} className="border border-hairline rounded-lg px-3 py-1.5 text-xs outline-none focus:border-primary text-ink" />
-                    <select className="border border-hairline rounded-lg px-2 py-1.5 text-xs outline-none text-ink">
-                      <option>The Palms Maisonette</option>
-                      <option>Sunset Dove</option>
+                    <select id="owner-block-property" className="border border-hairline rounded-lg px-2 py-1.5 text-xs outline-none text-ink">
+                      {properties.map((p) => (
+                        <option key={p.id ?? p.name} value={p.id ?? p.name}>{p.name}</option>
+                      ))}
                     </select>
                     <button
                       disabled={!blockStart || !blockEnd || pendingBlock === "block"}
                       onClick={async () => {
                         setPendingBlock("block");
-                        const sel = document.querySelector("select") as HTMLSelectElement;
-                        const pid = sel?.value === "Sunset Dove" ? "P002" : "P001";
+                        const sel = document.getElementById("owner-block-property") as HTMLSelectElement | null;
+                        const pid = sel?.value;
+                        if (!pid) { notify("No property selected", "error"); setPendingBlock(null); return; }
                         const r = await blockDates({ propertyId: pid, starts: blockStart, ends: blockEnd });
                         notify(r.ok ? "Dates blocked." : r.message ?? "Error", r.ok ? "success" : "error");
                         setPendingBlock(null);
@@ -384,8 +409,9 @@ export function OwnerDashboard({
                       disabled={!blockStart || !blockEnd || pendingBlock === "unblock"}
                       onClick={async () => {
                         setPendingBlock("unblock");
-                        const sel = document.querySelector("select") as HTMLSelectElement;
-                        const pid = sel?.value === "Sunset Dove" ? "P002" : "P001";
+                        const sel = document.getElementById("owner-block-property") as HTMLSelectElement | null;
+                        const pid = sel?.value;
+                        if (!pid) { notify("No property selected", "error"); setPendingBlock(null); return; }
                         const r = await unblockDates({ propertyId: pid, starts: blockStart, ends: blockEnd });
                         notify(r.ok ? "Dates unblocked." : r.message ?? "Error", r.ok ? "success" : "error");
                         setPendingBlock(null);
