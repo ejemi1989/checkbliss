@@ -55,11 +55,36 @@ export async function POST(request: NextRequest) {
   const db = createAdmin();
   const actions = routeStripeEvent(event as unknown as Parameters<typeof routeStripeEvent>[0]);
 
+  try {
+    await processActions(db, actions, event, async () => {
+      await db.from("audit_log").insert({
+        action: `stripe.${event.type}`,
+        target_id: event.id,
+        detail: `Event ${event.type} (${(event.data.object as { id?: string }).id ?? "n/a"})`,
+      });
+    });
+  } catch (err) {
+    log("stripe-webhook", "error", `Handler failure for ${event.type} (${event.id})`, {
+      error: err instanceof Error ? err.message : String(err),
+    });
+    return NextResponse.json({ ok: false, error: "handler_failure" }, { status: 500 });
+  }
+
+  return NextResponse.json({ ok: true });
+}
+
+async function processActions(
+  db: ReturnType<typeof createAdmin>,
+  actions: ReturnType<typeof routeStripeEvent>,
+  event: Stripe.Event,
+  writeAudit: () => Promise<unknown>,
+) {
   for (const action of actions) {
     if (action.kind === "noop") continue;
 
     if (action.kind === "ignore") {
-      return NextResponse.json({ ok: true, ignored: true });
+      await writeAudit();
+      return;
     }
 
     if (action.kind === "update_booking_group_charge") {
@@ -215,11 +240,5 @@ export async function POST(request: NextRequest) {
     }
   }
 
-  await db.from("audit_log").insert({
-    action: `stripe.${event.type}`,
-    target_id: event.id,
-    detail: `Event ${event.type} (${(event.data.object as { id?: string }).id ?? "n/a"})`,
-  });
-
-  return NextResponse.json({ ok: true });
+  await writeAudit();
 }
