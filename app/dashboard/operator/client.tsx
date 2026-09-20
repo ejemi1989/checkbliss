@@ -207,34 +207,45 @@ export function OperatorDashboard({ user, initialTab }: { user: AuthUser | null;
         </div>
       )}
 
-      {/* Stats */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-            {stats.map((s) => (
-              <div key={s.label} className={`p-5 rounded-xl border ${s.accent ? "bg-primary text-white border-transparent" : "bg-white border-hairline hover:-translate-y-0.5 hover:shadow-[0_8px_24px_rgba(0,0,0,0.06)]"} transition-all cursor-default`}>
-                <p className={`text-xs font-sans font-semibold uppercase tracking-[0.1em] ${s.accent ? "text-blue-100" : "text-ink-secondary"}`}>{s.label}</p>
-                <p className={`font-sans text-[clamp(1.5rem,2.4vw,2rem)] font-medium mt-2 tabular-nums ${s.accent ? "text-white" : "text-primary"}`}>{s.value}</p>
-                <p className={`text-xs mt-1 ${s.accent ? "text-blue-200" : s.subColor} font-medium`}>{s.sub}</p>
-              </div>
-            ))}
+      {/* Stats — editorial grid, no card boxes */}
+      <div className="mb-12 grid grid-cols-1 gap-x-8 gap-y-8 sm:grid-cols-2 lg:grid-cols-4 lg:divide-x lg:divide-hairline">
+        {stats.map((s, i) => (
+          <div key={s.label} className={i > 0 ? "lg:pl-8" : ""}>
+            <p className="text-[10px] font-sans font-semibold uppercase tracking-[0.18em] text-ink-tertiary">{s.label}</p>
+            <p className={`font-display text-[2.25rem] leading-none tracking-tight mt-2 tabular-nums ${s.accent ? "text-primary" : "text-ink"}`}>{s.value}</p>
+            <p className={`mt-2 text-xs ${s.accent ? "text-primary-dark" : "text-ink-secondary"}`}>{s.sub}</p>
           </div>
+        ))}
+      </div>
 
           {/* ---------- TODAY ---------- */}
           {tab === "today" && (
-            <div className="space-y-6">
-              <div className="bg-white rounded-xl border border-hairline p-6">
-                <h2 className="font-sans text-lg font-medium text-ink mb-5">Today&rsquo;s Schedule</h2>
+            <div className="space-y-12">
+              {/* Editorial section: Today's Schedule */}
+              <section>
+                <div className="flex items-end justify-between gap-4 pb-5 mb-6 border-b border-hairline">
+                  <div>
+                    <p className="text-[11px] font-sans font-semibold uppercase tracking-[0.18em] text-primary">On the ground</p>
+                    <h2 className="font-display text-2xl tracking-tight text-ink mt-1.5">Today&rsquo;s Schedule</h2>
+                  </div>
+                  {todayInspections.length > 0 && (
+                    <span className="text-[10px] font-sans font-semibold uppercase tracking-[0.1em] rounded-full border border-primary/30 text-primary-dark bg-primary-bg px-2.5 py-1">
+                      {todayInspections.length} scheduled
+                    </span>
+                  )}
+                </div>
                 {todayInspections.length > 0 ? (
-                  <div className="space-y-3">
+                  <ul className="divide-y divide-hairline border-y border-hairline">
                     {todayInspections.map((i) => (
-                      <div key={i.id} className="flex items-start justify-between p-4 rounded-xl border border-hairline hover:bg-primary-bg transition-colors">
-                        <div>
-                          <p className="font-sans text-base font-medium text-ink">{i.property_name}</p>
-                          <div className="flex items-center gap-x-4 mt-1.5 text-xs text-ink-secondary">
-                            <span>Checkout: {i.checkout_date} at {i.checkout_time}</span>
+                      <li key={i.id} className="flex items-start justify-between gap-4 py-5 px-1 transition-colors hover:bg-bone-secondary/40">
+                        <div className="flex-1 min-w-0">
+                          <p className="font-display text-lg tracking-tight text-ink">{i.property_name}</p>
+                          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-1.5 text-xs text-ink-secondary">
+                            <span>Checkout {i.checkout_date} · {i.checkout_time}</span>
                             <span>{i.guest_name}</span>
                           </div>
                         </div>
-                        <div className="flex gap-x-2">
+                        <div className="flex gap-x-2 shrink-0">
                           <button
                             disabled={pendingAction === `start-${i.id}`}
                             onClick={() => action(`start-${i.id}`, async () => { const r = await startInspection({ inspectionId: i.id }); if (r.ok) setInspections((prev) => prev.map((x) => x.id === i.id ? { ...x, status: "in_progress" } : x)); notify(r.ok ? `Inspection ${i.id} started` : r.message, r.ok ? "success" : "error"); })}
@@ -246,36 +257,41 @@ export function OperatorDashboard({ user, initialTab }: { user: AuthUser | null;
                             className="px-3 py-1.5 rounded-lg text-xs font-medium border border-hairline text-ink-secondary hover:bg-primary-bg transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-wait"
                           >{pendingAction === `complete-${i.id}` ? "Completing..." : "Complete"}</button>
                         </div>
-                      </div>
+                      </li>
                     ))}
-                  </div>
+                  </ul>
                 ) : (
-                  <div className="text-center py-6">
-                    {I.calendar}
-                    <p className="text-sm text-ink-secondary mt-2">No inspections scheduled for today.</p>
-                    <p className="text-xs text-ink-secondary mt-1">{pendingInspections.length} pending inspections overall.</p>
+                  <div className="text-center py-12 border border-dashed border-hairline rounded-xl">
+                    <div className="w-10 h-10 rounded-full bg-primary-bg flex items-center justify-center text-primary mx-auto mb-4">
+                      {I.calendar}
+                    </div>
+                    <p className="font-display text-base text-ink">Nothing scheduled for today</p>
+                    <p className="text-xs text-ink-secondary mt-1.5">{pendingInspections.length} pending inspections across your city.</p>
                   </div>
                 )}
-              </div>
+              </section>
 
-              {/* Quick status */}
-              <div className="bg-white rounded-xl border border-hairline p-6">
-                <h2 className="font-sans text-lg font-medium text-ink mb-5">Pipeline Overview</h2>
-                <div className="grid grid-cols-4 gap-3">
+              {/* Editorial section: Pipeline Overview */}
+              <section>
+                <div className="pb-5 mb-6 border-b border-hairline">
+                  <p className="text-[11px] font-sans font-semibold uppercase tracking-[0.18em] text-primary">Curation</p>
+                  <h2 className="font-display text-2xl tracking-tight text-ink mt-1.5">Pipeline Overview</h2>
+                </div>
+                <div className="grid grid-cols-2 gap-px bg-hairline sm:grid-cols-4 rounded-xl overflow-hidden border border-hairline">
                   {[
                     { label: "Draft", count: pipeline.filter((p) => p.status === "draft").length, color: "bg-ink-secondary" },
                     { label: "Pending", count: pipeline.filter((p) => p.status === "pending_review").length, color: "bg-primary" },
                     { label: "Approved", count: pipeline.filter((p) => p.status === "approved").length, color: "bg-success" },
                     { label: "Suspended", count: pipeline.filter((p) => p.status === "suspended").length, color: "bg-danger" },
                   ].map((s) => (
-                    <div key={s.label} className="p-4 rounded-xl border border-hairline bg-primary-bg text-center">
-                      <div className={`w-2.5 h-2.5 rounded-full inline-block ${s.color}`} />
-                      <p className="font-sans text-2xl font-medium mt-2 text-ink tabular-nums">{s.count}</p>
-                      <p className="text-xs text-ink-secondary">{s.label}</p>
+                    <div key={s.label} className="bg-canvas p-5 text-center">
+                      <div className={`w-2 h-2 rounded-full inline-block ${s.color}`} />
+                      <p className="font-display text-3xl tracking-tight text-ink mt-3 tabular-nums">{s.count}</p>
+                      <p className="text-[10px] font-sans font-semibold uppercase tracking-[0.14em] text-ink-tertiary mt-2">{s.label}</p>
                     </div>
                   ))}
                 </div>
-              </div>
+              </section>
             </div>
           )}
 

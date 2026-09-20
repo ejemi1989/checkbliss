@@ -188,107 +188,140 @@ export function OwnerDashboard({
         </div>
       )}
 
-      {/* stats — only on dashboard home */}
+      {/* stats — only on dashboard home, editorial grid */}
       {tab === "home" && (
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-            <div className="p-4 rounded-xl border bg-white border-hairline hover:-translate-y-0.5 hover:shadow-[0_8px_24px_rgba(0,0,0,0.06)] transition-all cursor-default">
-              <p className="text-xs font-medium text-ink-secondary">Revenue (MTD)</p>
-              <p className="text-2xl font-bold mt-1 tabular-nums text-primary">{fmt(totalRevenue)}</p>
-              <p className="text-xs mt-1 font-medium text-success">↑ 12% vs May</p>
-            </div>
-            <div className="p-4 rounded-xl border bg-white border-hairline hover:-translate-y-0.5 hover:shadow-[0_8px_24px_rgba(0,0,0,0.06)] transition-all cursor-default">
-              <p className="text-xs font-medium text-ink-secondary">Active Bookings</p>
-              <p className="text-2xl font-bold mt-1 tabular-nums text-ink">{activeBookings}</p>
-              <p className="text-xs mt-1 font-medium text-ink-secondary">{properties.length} units</p>
-            </div>
-            <div className="p-4 rounded-xl border bg-white border-hairline hover:-translate-y-0.5 hover:shadow-[0_8px_24px_rgba(0,0,0,0.06)] transition-all cursor-default">
-              <p className="text-xs font-medium text-ink-secondary">Occupancy</p>
-              <p className="text-2xl font-bold mt-1 tabular-nums text-ink">{occupancyPct}</p>
-              <p className="text-xs mt-1 font-medium text-ink-secondary">This month</p>
-            </div>
-            <div className="p-4 rounded-xl border bg-primary text-white border-transparent transition-all cursor-default">
-              <p className="text-xs font-medium text-blue-100">Next Payout</p>
-              <p className="text-2xl font-bold mt-1 tabular-nums text-white">{fmt(payouts[0]?.amount_minor ?? 0)}</p>
-              <p className="text-xs mt-1 font-medium text-blue-200">Expected Jul 5</p>
-            </div>
+        <div className="mb-12 grid grid-cols-1 gap-x-8 gap-y-8 sm:grid-cols-2 lg:grid-cols-4 lg:divide-x lg:divide-hairline">
+          <div>
+            <p className="text-[10px] font-sans font-semibold uppercase tracking-[0.18em] text-ink-tertiary">Revenue (MTD)</p>
+            <p className="font-display text-[2.25rem] leading-none tracking-tight mt-2 tabular-nums text-primary">{fmt(totalRevenue)}</p>
+            <p className="mt-2 text-xs text-success">↑ 12% vs May</p>
           </div>
-          )}
+          <div className="lg:pl-8">
+            <p className="text-[10px] font-sans font-semibold uppercase tracking-[0.18em] text-ink-tertiary">Active Bookings</p>
+            <p className="font-display text-[2.25rem] leading-none tracking-tight mt-2 tabular-nums text-ink">{activeBookings}</p>
+            <p className="mt-2 text-xs text-ink-secondary">{properties.length} units</p>
+          </div>
+          <div className="lg:pl-8">
+            <p className="text-[10px] font-sans font-semibold uppercase tracking-[0.18em] text-ink-tertiary">Occupancy</p>
+            <p className="font-display text-[2.25rem] leading-none tracking-tight mt-2 tabular-nums text-ink">{occupancyPct}</p>
+            <p className="mt-2 text-xs text-ink-secondary">This month</p>
+          </div>
+          <div className="lg:pl-8">
+            <p className="text-[10px] font-sans font-semibold uppercase tracking-[0.18em] text-primary">Next Payout</p>
+            <p className="font-display text-[2.25rem] leading-none tracking-tight mt-2 tabular-nums text-primary">{fmt(payouts[0]?.amount_minor ?? 0)}</p>
+            <p className="mt-2 text-xs text-ink-secondary">Expected Jul 5</p>
+          </div>
+        </div>
+      )}
 
           {/* ---------- HOME / DASHBOARD ---------- */}
           {tab === "home" && (
-            <div className="space-y-6">
-              <div>
-                <h1 className="font-display text-2xl font-medium text-ink mb-1">{greet}, {firstName}</h1>
-                <p className="text-sm text-ink-secondary">Here&rsquo;s your portfolio overview.</p>
-              </div>
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                {/* Recent Bookings */}
-                <div className="bg-white rounded-xl border border-hairline p-5">
-                  <h2 className="font-display text-lg font-medium text-ink mb-4">Upcoming Bookings</h2>
-                  <div className="space-y-2">
-                    {bookings.slice(0, 4).map((b) => (
-                      <div key={b.id} onClick={() => setBookingModal(b)} className="flex items-center justify-between p-3 rounded-xl border border-hairline hover:bg-primary-bg cursor-pointer transition-colors">
-                        <div className="flex-1 min-w-0">
-                          <p className="text-sm font-semibold text-ink truncate">{b.guest} · {b.unit}</p>
-                          <p className="text-xs text-ink-secondary">{b.check_in} → {b.check_out}</p>
-                        </div>
-                        <div className="text-right shrink-0">
-                          <p className="text-sm font-bold tabular-nums text-ink">{fmt(b.amount_minor)}</p>
-                          <span className={`inline-block mt-0.5 text-[11px] font-semibold ${statusColor(b.status)}`}>{b.status}</span>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                  <button onClick={() => setTab("bookings")} className="mt-4 text-xs font-semibold text-primary hover:text-primary-dark cursor-pointer border-none bg-transparent">View all bookings →</button>
-                </div>
+            <div className="space-y-12">
+              {/* Editorial page header */}
+              <header className="pb-10 mb-10 border-b border-hairline">
+                <p className="text-[11px] font-sans font-semibold uppercase tracking-[0.18em] text-primary mb-3">Your portfolio</p>
+                <h1 className="font-display text-[2.5rem] leading-[1.05] tracking-tight text-ink lg:text-[3.25rem]">{greet}, {firstName}.</h1>
+                <p className="mt-4 text-base text-ink-secondary leading-relaxed max-w-[65ch]">Here&rsquo;s how your listings are performing, who&rsquo;s arriving next, and what needs your attention this week.</p>
+              </header>
 
-                {/* Damage Claims */}
-                <div className="bg-white rounded-xl border border-hairline p-5">
-                  <h2 className="font-display text-lg font-medium text-ink mb-4">Recent Damage Claims</h2>
-                  {damageClaims.length === 0 ? (
-                    <p className="text-sm text-ink-secondary py-4">No open claims across your properties.</p>
+              <div className="grid grid-cols-1 gap-12 lg:grid-cols-2 lg:gap-16">
+                {/* Upcoming Bookings */}
+                <section>
+                  <div className="flex items-end justify-between gap-4 pb-5 mb-6 border-b border-hairline">
+                    <div>
+                      <p className="text-[11px] font-sans font-semibold uppercase tracking-[0.18em] text-primary">Arriving</p>
+                      <h2 className="font-display text-2xl tracking-tight text-ink mt-1.5">Upcoming Bookings</h2>
+                    </div>
+                    <button onClick={() => setTab("bookings")} className="text-[10px] font-sans font-semibold uppercase tracking-[0.1em] text-primary hover:text-primary-dark cursor-pointer border-none bg-transparent">
+                      View all →
+                    </button>
+                  </div>
+                  {bookings.length === 0 ? (
+                    <p className="text-sm text-ink-secondary py-8">No bookings yet.</p>
                   ) : (
-                    <div className="space-y-2">
-                      {damageClaims.slice(0, 3).map((c) => (
-                        <div key={c.id} onClick={() => setClaimModal(c)} className="flex items-center justify-between p-3 rounded-xl border border-hairline hover:bg-primary-bg cursor-pointer transition-colors">
+                    <ul className="divide-y divide-hairline border-y border-hairline">
+                      {bookings.slice(0, 4).map((b) => (
+                        <li key={b.id} onClick={() => setBookingModal(b)} className="flex items-center justify-between gap-4 py-4 px-1 transition-colors hover:bg-bone-secondary/40 cursor-pointer">
                           <div className="flex-1 min-w-0">
-                            <p className="text-sm font-semibold text-ink truncate">{c.property_name}</p>
-                            <p className="text-xs text-ink-secondary">{c.guest_name} · {c.booking_ref}</p>
+                            <p className="text-sm font-sans font-semibold text-ink truncate">{b.guest}</p>
+                            <p className="text-xs text-ink-secondary mt-0.5">{b.unit} · {b.check_in} → {b.check_out}</p>
                           </div>
                           <div className="text-right shrink-0">
-                            <p className="text-sm font-bold tabular-nums text-ink">{fmt(c.estimated_cost_minor)}</p>
-                            <span className={`inline-block mt-0.5 text-[11px] font-semibold capitalize ${c.admin_decision === "pending" ? "text-primary" : c.admin_decision === "approved" ? "text-success" : "text-danger"}`}>{c.admin_decision}</span>
+                            <p className="text-sm font-semibold tabular-nums text-ink">{fmt(b.amount_minor)}</p>
+                            <span className={`inline-block mt-0.5 text-[10px] font-sans font-semibold uppercase tracking-[0.06em] ${statusColor(b.status)}`}>{b.status}</span>
                           </div>
-                        </div>
+                        </li>
                       ))}
-                    </div>
+                    </ul>
                   )}
-                  <button onClick={() => setTab("claims")} className="mt-4 text-xs font-semibold text-primary hover:text-primary-dark cursor-pointer border-none bg-transparent">View all claims →</button>
-                </div>
+                </section>
+
+                {/* Damage Claims */}
+                <section>
+                  <div className="flex items-end justify-between gap-4 pb-5 mb-6 border-b border-hairline">
+                    <div>
+                      <p className="text-[11px] font-sans font-semibold uppercase tracking-[0.18em] text-primary">Outstanding</p>
+                      <h2 className="font-display text-2xl tracking-tight text-ink mt-1.5">Damage Claims</h2>
+                    </div>
+                    <button onClick={() => setTab("claims")} className="text-[10px] font-sans font-semibold uppercase tracking-[0.1em] text-primary hover:text-primary-dark cursor-pointer border-none bg-transparent">
+                      View all →
+                    </button>
+                  </div>
+                  {damageClaims.length === 0 ? (
+                    <p className="text-sm text-ink-secondary py-8">No open claims across your properties.</p>
+                  ) : (
+                    <ul className="divide-y divide-hairline border-y border-hairline">
+                      {damageClaims.slice(0, 3).map((c) => (
+                        <li key={c.id} onClick={() => setClaimModal(c)} className="flex items-center justify-between gap-4 py-4 px-1 transition-colors hover:bg-bone-secondary/40 cursor-pointer">
+                          <div className="flex-1 min-w-0">
+                            <p className="text-sm font-sans font-semibold text-ink truncate">{c.property_name}</p>
+                            <p className="text-xs text-ink-secondary mt-0.5">{c.guest_name} · {c.booking_ref}</p>
+                          </div>
+                          <div className="text-right shrink-0">
+                            <p className="text-sm font-semibold tabular-nums text-ink">{fmt(c.estimated_cost_minor)}</p>
+                            <span className={`inline-block mt-0.5 text-[10px] font-sans font-semibold uppercase tracking-[0.06em] capitalize ${c.admin_decision === "pending" ? "text-primary" : c.admin_decision === "approved" ? "text-success" : "text-danger"}`}>{c.admin_decision}</span>
+                          </div>
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </section>
               </div>
 
               {/* Properties Overview */}
-              <div className="bg-white rounded-xl border border-hairline p-5">
-                <h2 className="font-display text-lg font-medium text-ink mb-4">Your Properties</h2>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <section>
+                <div className="pb-5 mb-6 border-b border-hairline">
+                  <p className="text-[11px] font-sans font-semibold uppercase tracking-[0.18em] text-primary">Listings</p>
+                  <h2 className="font-display text-2xl tracking-tight text-ink mt-1.5">Your Properties</h2>
+                </div>
+                <div className="grid grid-cols-1 gap-px bg-hairline sm:grid-cols-2 rounded-xl overflow-hidden border border-hairline">
                   {properties.map((p) => (
-                    <div key={p.unit} className="p-4 rounded-xl border border-hairline hover:bg-primary-bg transition-colors cursor-default">
-                      <div className="flex justify-between items-start mb-3">
+                    <div key={p.unit} className="bg-canvas p-6">
+                      <div className="flex justify-between items-start mb-5">
                         <div>
-                          <p className="text-xs font-medium uppercase tracking-wide text-ink-secondary">{p.name}</p>
-                          <p className="text-base font-bold mt-0.5 text-ink">{p.unit}</p>
+                          <p className="text-[10px] font-sans font-semibold uppercase tracking-[0.14em] text-ink-tertiary">{p.name}</p>
+                          <p className="font-display text-lg tracking-tight text-ink mt-1">{p.unit}</p>
                         </div>
-                        <span className={`text-[11px] font-semibold ${p.active ? "text-success" : "text-danger"}`}>{p.active ? "Active" : "Inactive"}</span>
+                        <span className={`text-[10px] font-sans font-semibold uppercase tracking-[0.06em] ${p.active ? "text-success" : "text-danger"}`}>{p.active ? "Active" : "Inactive"}</span>
                       </div>
-                      <div className="grid grid-cols-3 gap-2 text-center">
-                        <div><p className="text-sm font-semibold text-ink tabular-nums">{fmt(p.monthly_minor)}</p><p className="text-[10px] text-ink-secondary">Revenue</p></div>
-                        <div><p className="text-sm font-semibold text-ink tabular-nums">{p.bookings}</p><p className="text-[10px] text-ink-secondary">Bookings</p></div>
-                        <div><p className="text-sm font-semibold text-ink tabular-nums">{p.occ}</p><p className="text-[10px] text-ink-secondary">Occupancy</p></div>
+                      <div className="grid grid-cols-3 gap-4 pt-4 border-t border-hairline">
+                        <div>
+                          <p className="font-display text-base tabular-nums text-ink">{fmt(p.monthly_minor)}</p>
+                          <p className="text-[10px] font-sans uppercase tracking-[0.1em] text-ink-tertiary mt-1">Revenue</p>
+                        </div>
+                        <div>
+                          <p className="font-display text-base tabular-nums text-ink">{p.bookings}</p>
+                          <p className="text-[10px] font-sans uppercase tracking-[0.1em] text-ink-tertiary mt-1">Bookings</p>
+                        </div>
+                        <div>
+                          <p className="font-display text-base tabular-nums text-ink">{p.occ}</p>
+                          <p className="text-[10px] font-sans uppercase tracking-[0.1em] text-ink-tertiary mt-1">Occupancy</p>
+                        </div>
                       </div>
                     </div>
                   ))}
                 </div>
-              </div>
+              </section>
             </div>
           )}
 

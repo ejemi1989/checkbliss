@@ -1,75 +1,142 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo } from "react";
+import Link from "next/link";
 import { formatMinor } from "@/lib/currency";
 import { getAdminClaims, getAdminOperators, getAdminAudit, getAdminStats } from "@/lib/data";
+import { PageHeader } from "@/components/dashboard/page-header";
+import { Section } from "@/components/dashboard/section";
+import { StatBlock, StatGrid } from "@/components/dashboard/stat-block";
+import { DataList } from "@/components/dashboard/data-list";
+import { EmptyState } from "@/components/dashboard/empty-state";
+import { StatusPill } from "@/components/dashboard/status-pill";
+import { Icon } from "@/components/icons";
 
-function fmt(n: number) { return formatMinor(n); }
+function fmt(n: number) {
+  return formatMinor(n);
+}
+
+function initialsOf(name: string) {
+  return name
+    .split(" ")
+    .map((n) => n[0])
+    .join("")
+    .slice(0, 2)
+    .toUpperCase();
+}
 
 export function AdminOverview() {
-  const [claims] = useState(() => getAdminClaims());
-  const [operators] = useState(() => getAdminOperators());
-  const [audit] = useState(() => getAdminAudit());
-  const [stats] = useState(() => getAdminStats());
+  const stats = useMemo(() => getAdminStats(), []);
+  const claims = useMemo(() => getAdminClaims(), []);
+  const operators = useMemo(() => getAdminOperators(), []);
+  const audit = useMemo(() => getAdminAudit(), []);
+
+  const pendingClaims = claims.filter((c) => c.admin_decision === "pending");
+  const activeOperators = operators.filter((o) => o.status === "active");
 
   return (
-    <div className="space-y-6">
-      {/* stats */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        {stats.map((s) => (
-          <div key={s.label} className={`p-4 rounded-xl border ${s.accent ? "bg-primary text-white border-transparent" : "bg-white border-hairline hover:-translate-y-0.5 hover:shadow-[0_8px_24px_rgba(0,0,0,0.06)]"} transition-all cursor-default`}>
-            <p className={`text-xs font-medium ${s.accent ? "text-blue-100" : "text-ink-secondary"}`}>{s.label}</p>
-            <p className={`text-2xl font-bold mt-1 tabular-nums ${s.accent ? "text-white" : s.label === "Revenue (MTD)" ? "text-primary" : "text-ink"}`}>{s.value}</p>
-            <p className={`text-xs mt-1 font-medium ${s.accent ? "text-blue-200" : (s.subColor ?? "text-ink-secondary")}`}>{s.sub}</p>
-          </div>
-        ))}
-      </div>
+    <div>
+      <PageHeader
+        eyebrow="Operations"
+        title="The week at a glance"
+        description="A quiet read on bookings, claims, payouts and operators across Lagos and Abuja — the things that need you this week."
+        meta={
+          <p className="text-xs text-ink-tertiary font-sans">
+            {new Date().toLocaleDateString("en-GB", {
+              weekday: "long",
+              day: "numeric",
+              month: "long",
+              year: "numeric",
+            })}
+          </p>
+        }
+      />
 
-      {/* recent activity */}
-      <div className="bg-white border border-hairline rounded-xl p-5">
-        <h2 className="text-base font-bold text-ink mb-4">Recent Activity</h2>
-        <div className="space-y-1">
-          {audit.slice(0, 5).map((a, i) => (
-            <div key={i} className="flex items-center justify-between p-3 rounded-xl border border-hairline hover:bg-primary-bg transition-colors">
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-semibold text-ink truncate">{a.action} — {a.target}</p>
-                <p className="text-xs text-ink-secondary truncate">{a.detail}</p>
-              </div>
-              <span className="text-xs text-ink-secondary shrink-0 ml-4">{a.date}</span>
-            </div>
+      <Section eyebrow="Headline numbers" count={`${stats.length} metrics`} className="border-0 p-0">
+        <StatGrid>
+          {stats.map((s) => (
+            <StatBlock
+              key={s.label}
+              label={s.label}
+              value={s.value}
+              hint={s.sub}
+              accent={s.accent}
+            />
           ))}
-        </div>
-      </div>
+        </StatGrid>
+      </Section>
 
-      {/* pending claims + active operators */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="bg-white border border-hairline rounded-xl p-5">
-          <h2 className="text-base font-bold text-ink mb-3">Pending Claims</h2>
-          <div className="space-y-2">
-            {claims.filter((c) => c.admin_decision === "pending").slice(0, 3).map((c) => (
-              <div key={c.id} className="p-3 rounded-xl border border-hairline hover:bg-primary-bg transition-colors">
-                <p className="text-sm font-semibold text-ink">{c.property_name}</p>
-                <p className="text-xs text-ink-secondary">{c.guest_name} · {c.stay_dates} · {fmt(c.estimated_cost_minor)}</p>
-              </div>
-            ))}
-            {claims.filter((c) => c.admin_decision === "pending").length === 0 && <p className="text-xs text-ink-secondary text-center py-4">No pending claims</p>}
-          </div>
-        </div>
+      <Section
+        eyebrow="Pending claims"
+        count={pendingClaims.length}
+        description="Damage claims awaiting your decision. Approve to capture from the deposit hold, or release."
+      >
+        {pendingClaims.length === 0 ? (
+          <EmptyState
+            title="No claims waiting"
+            body="When an operator reports damage on a checkout, the claim lands here for your decision."
+            icon={<Icon.Shield size={20} />}
+          />
+        ) : (
+          <DataList
+            items={pendingClaims.slice(0, 5).map((c) => ({
+              id: c.id,
+              primary: c.property_name,
+              secondary: `${c.guest_name} · ${c.stay_dates}`,
+              meta: fmt(c.estimated_cost_minor),
+              trailing: <StatusPill variant="warning">Pending</StatusPill>,
+              href: "/admin/claims",
+            }))}
+          />
+        )}
+      </Section>
 
-        <div className="bg-white border border-hairline rounded-xl p-5">
-          <h2 className="text-base font-bold text-ink mb-3">Active Operators</h2>
-          <div className="space-y-2">
-            {operators.filter((o) => o.status === "active").map((o) => (
-              <div key={o.id} className="flex items-center gap-x-3 p-3 rounded-xl border border-hairline hover:bg-primary-bg transition-colors">
-                <div className="w-8 h-8 rounded-xl bg-primary flex items-center justify-center text-white font-bold text-xs">{o.name.split(" ").map((n) => n[0]).join("")}</div>
-                <div>
-                  <p className="text-sm font-semibold text-ink">{o.name}</p>
-                  <p className="text-xs text-ink-secondary">{o.city} · {o.properties_count} properties · {o.verified_count} verified</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
+      <div className="grid grid-cols-1 gap-12 lg:grid-cols-2 lg:gap-16">
+        <Section
+          eyebrow="Active operators"
+          count={activeOperators.length}
+          description="City operators on shift. Each one is your eyes on the ground."
+        >
+          {activeOperators.length === 0 ? (
+            <EmptyState
+              title="No active operators"
+              body="Operators assigned to a city will appear here."
+              icon={<Icon.Users size={20} />}
+            />
+          ) : (
+            <DataList
+              items={activeOperators.map((o) => ({
+                id: o.id,
+                primary: o.name,
+                secondary: `${o.city} · ${o.properties_count} properties · ${o.verified_count} verified`,
+                trailing: (
+                  <div className="w-8 h-8 rounded-full bg-primary-bg text-primary text-xs font-sans font-semibold flex items-center justify-center">
+                    {initialsOf(o.name)}
+                  </div>
+                ),
+                href: "/admin/operators",
+              }))}
+            />
+          )}
+        </Section>
+
+        <Section eyebrow="Recent activity" count={`${audit.length} entries`}>
+          <DataList
+            items={audit.slice(0, 6).map((a, i) => ({
+              id: `${a.action}-${i}`,
+              primary: (
+                <span className="flex items-center gap-2">
+                  <span>{a.action}</span>
+                  <span className="text-ink-tertiary font-normal">·</span>
+                  <span className="text-ink-secondary font-normal truncate">{a.target}</span>
+                </span>
+              ),
+              secondary: a.detail,
+              meta: a.date,
+              href: "/admin/audit",
+            }))}
+          />
+        </Section>
       </div>
     </div>
   );
