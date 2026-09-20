@@ -218,8 +218,8 @@ export function OperatorDashboard({ user, initialTab }: { user: AuthUser | null;
         ))}
       </div>
 
-          {/* ---------- TODAY ---------- */}
           {tab === "today" && (
+
             <div className="space-y-12">
               {/* Editorial section: Today's Schedule */}
               <section>
@@ -297,305 +297,358 @@ export function OperatorDashboard({ user, initialTab }: { user: AuthUser | null;
 
           {/* ---------- PROPERTIES ---------- */}
           {tab === "curation" && (
-            <div className="space-y-5">
-              <div>
-                <h2 className="font-display text-xl font-medium text-ink mb-1">Your properties</h2>
-                <p className="text-xs text-ink-secondary">Review, edit, and submit onboarded listings to admin for final approval. Track approved properties below.</p>
-              </div>
+            <div className="space-y-12">
+              {/* Editorial page header */}
+              <header className="pb-10 mb-10 border-b border-hairline flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+                <div className="max-w-[65ch]">
+                  <p className="text-[11px] font-sans font-semibold uppercase tracking-[0.18em] text-primary mb-3">Curation</p>
+                  <h2 className="font-display text-[2rem] leading-[1.1] tracking-tight text-ink lg:text-[2.75rem]">Your properties</h2>
+                  <p className="mt-4 text-base text-ink-secondary leading-relaxed">Review, edit, and submit onboarded listings to admin for final approval. Track approved properties below.</p>
+                </div>
+                <div className="flex items-center gap-3 shrink-0">
+                  <select value={curationFilter} onChange={(e) => setCurationFilter(e.target.value)} className="text-xs border border-hairline rounded-lg px-3 py-2 outline-none text-ink bg-canvas">
+                    <option value="all">All</option>
+                    <option value="new">New submissions</option>
+                    <option value="resubmit">Resubmitted</option>
+                  </select>
+                  <button
+                    onClick={() => { setOnboardForm({ name: "", city: assignedCities[0] ?? "Lagos", address: "", bedrooms: 1, maxGuests: 2, ownerName: "", ownerPhone: "", ownerEmail: "" }); setOnboardModalOpen(true); }}
+                    className="text-sm font-semibold px-4 py-2 rounded-lg bg-primary text-white hover:bg-primary-dark transition-colors cursor-pointer flex items-center gap-2 border-none"
+                  >
+                    {I.plus}<span>Onboard new property</span>
+                  </button>
+                </div>
+              </header>
 
               {/* Awaiting approval */}
-              <div>
-                <div className="flex items-center justify-between flex-wrap gap-3 mb-3">
-                  <div className="flex items-center gap-2">
-                    <p className="font-sans text-base font-semibold text-ink">{curation.length} awaiting approval</p>
-                    <span className="text-[10px] px-2 py-0.5 rounded-full font-semibold bg-warning/10 text-warning">Submitted to admin</span>
-                  </div>
-                  <div className="flex items-center gap-x-2">
-                    <button
-                      onClick={() => { setOnboardForm({ name: "", city: assignedCities[0] ?? "Lagos", address: "", bedrooms: 1, maxGuests: 2, ownerName: "", ownerPhone: "", ownerEmail: "" }); setOnboardModalOpen(true); }}
-                      className="text-sm font-medium px-4 py-2 rounded-xl bg-primary text-white hover:bg-primary-dark transition-colors cursor-pointer flex items-center gap-x-1.5"
-                    >
-                      <span className="w-3.5 h-3.5">{I.plus}</span>
-                      Onboard new property
-                    </button>
-                    <select value={curationFilter} onChange={(e) => setCurationFilter(e.target.value)} className="text-xs border border-hairline rounded-lg px-3 py-1.5 outline-none text-ink">
-                      <option value="all">All</option>
-                      <option value="new">New submissions</option>
-                      <option value="resubmit">Resubmitted</option>
-                    </select>
-                  </div>
-                </div>
-                <div className="space-y-2">
-                  {filteredCuration.map((p) => (
-                    <div key={p.id} className="bg-white border border-hairline rounded-xl p-5">
-                      <div className="flex items-start justify-between">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-x-2">
-                            <h3 className="font-sans text-base font-medium text-ink">{p.name}</h3>
-                            <span className="text-[10px] font-semibold bg-warning/10 text-warning px-2 py-0.5 rounded-full">Awaiting admin</span>
-                          </div>
-                          <p className="text-xs mt-1 text-ink-secondary">{p.city} · Submitted {p.submitted_at}</p>
-                          <div className="flex items-center gap-x-4 mt-2 text-xs text-ink-secondary">
-                            <span>{p.bedrooms} bed</span><span>{p.bathrooms} bath</span><span>Up to {p.max_guests} guests</span>
-                            <span className="font-semibold tabular-nums text-primary">{fmt(p.price_minor)}/night</span>
-                          </div>
-                        </div>
-                      </div>
-                      <div className="flex gap-x-2 mt-3">
-                        <button
-                          onClick={() => {
-                            setEditModal(p);
-                            setEditForm({ name: p.name, description: "", rate: p.price_minor, beds: p.bedrooms, baths: p.bathrooms, guests: p.max_guests, extended: false, extendedPrice: 0 });
-                          }}
-                          className="px-3 py-1.5 rounded-lg text-xs font-medium border border-hairline text-ink-secondary hover:bg-primary-bg transition-colors cursor-pointer"
-                        >Edit Details</button>
-                        <button
-                          disabled={pendingAction === `remove-${p.id}`}
-                          onClick={() => setDialog({ type: "remove", property: p })}
-                          className="px-3 py-1.5 rounded-lg text-xs font-medium border border-hairline text-danger hover:bg-red-50 transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-wait"
-                        >{pendingAction === `remove-${p.id}` ? "Removing..." : "Remove"}</button>
-                      </div>
-                    </div>
-                  ))}
-                  {filteredCuration.length === 0 && <p className="text-center text-sm text-ink-secondary py-8">No properties awaiting approval.</p>}
-                </div>
-              </div>
-
-              {/* Approved & Live */}
-              <div className="pt-4 border-t border-hairline">
-                <div className="flex items-center gap-2 mb-3">
-                  <p className="font-sans text-base font-semibold text-ink">{pipeline.filter((p) => p.status === "approved").length} approved &amp; live</p>
-                  <span className="text-[10px] px-2 py-0.5 rounded-full font-semibold bg-success/10 text-success">Performing</span>
-                </div>
-                <div className="space-y-2">
-                  {pipeline.filter((p) => p.status === "approved").map((p) => (
-                    <div key={p.id} className="bg-white border border-hairline rounded-xl p-5">
-                      <div className="flex items-start justify-between">
-                        <div>
-                          <h3 className="font-sans text-base font-medium text-ink">{p.name}</h3>
-                          <p className="text-xs text-ink-secondary mt-0.5">Updated {p.updated_at}</p>
-                        </div>
-                        <span className="text-[10px] font-semibold bg-success/10 text-success px-2 py-0.5 rounded-full">Live</span>
-                      </div>
-                      <div className="grid grid-cols-4 gap-3 mt-3 text-center">
-                        {[
-                          { label: "Bookings", value: "—" },
-                          { label: "Revenue (MTD)", value: "—" },
-                          { label: "Occupancy", value: "—" },
-                          { label: "Status", value: "Approved" },
-                        ].map((m) => (
-                          <div key={m.label} className="p-2 rounded-lg bg-primary-bg">
-                            <p className="text-sm font-semibold text-ink">{m.value}</p>
-                            <p className="text-[10px] text-ink-secondary mt-0.5">{m.label}</p>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  ))}
-                  {pipeline.filter((p) => p.status === "approved").length === 0 && (
-                    <p className="text-center text-sm text-ink-secondary py-8">No live properties yet. Submit onboarded properties to admin for approval.</p>
-                  )}
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* ---------- INSPECTIONS ---------- */}
-          {tab === "inspections" && (
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <p className="font-sans text-lg font-medium text-ink">All inspections</p>
-                <span className="text-xs px-2.5 py-1 rounded-full font-semibold bg-primary-bg text-primary">{pendingInspections.length} pending</span>
-              </div>
-              <div className="space-y-3">
-                {inspections.map((i) => (
-                  <div key={i.id} className="bg-white border border-hairline rounded-xl p-5">
-                    <div className="flex items-start justify-between">
-                      <div>
-                        <p className="font-sans text-base font-medium text-ink">{i.property_name}</p>
-                        <div className="flex items-center gap-x-4 mt-1.5 text-xs text-ink-secondary">
-                          <span>Checkout: {i.checkout_date} at {i.checkout_time}</span>
-                          <span>{i.guest_name}</span>
-                        </div>
-                      </div>
-                      <span className={`text-[11px] font-semibold ${statusColor(i.status)}`}>{statusLabel(i.status)}</span>
-                    </div>
-                    {(i.status === "pending" || i.status === "in_progress") && (
-                      <div className="flex flex-col gap-2 mt-3">
-                        <div className="flex gap-x-2">
-                        <button
-                          disabled={pendingAction === `start-${i.id}`}
-                          onClick={() => action(`start-${i.id}`, async () => { const r = await startInspection({ inspectionId: i.id }); if (r.ok) setInspections((prev) => prev.map((x) => x.id === i.id ? { ...x, status: "in_progress" } : x)); notify(r.ok ? `Inspection ${i.id} started` : r.message, r.ok ? "success" : "error"); })}
-                          className="px-4 py-2 rounded-xl text-sm font-medium border border-primary text-primary hover:bg-primary-bg transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-wait"
-                        >{pendingAction === `start-${i.id}` ? "Starting..." : "Start Inspection"}</button>
-                        <button
-                          disabled={pendingAction === `complete-${i.id}`}
-                          onClick={() => action(`complete-${i.id}`, async () => { const r = await completeInspection({ inspectionId: i.id }); if (r.ok) setInspections((prev) => prev.map((x) => x.id === i.id ? { ...x, status: "completed" } : x)); notify(r.ok ? `Inspection ${i.id} completed` : r.message, r.ok ? "success" : "error"); })}
-                          className="px-4 py-2 rounded-xl text-sm font-medium border border-hairline text-ink-secondary hover:bg-primary-bg transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-wait"
-                        >{pendingAction === `complete-${i.id}` ? "Completing..." : "Complete"}</button>
-                        </div>
-                        {outcomeInspId === i.id ? (
-                          <div className="flex gap-2">
-                            {[
-                              { key: "clean", label: "CLEAN", color: "bg-success/10 text-success border-success/20" },
-                              { key: "damage", label: "DAMAGE", color: "bg-danger/10 text-danger border-danger/20" },
-                              { key: "noshow", label: "NOSHOW", color: "bg-warning/10 text-warning border-warning/20" },
-                              { key: "guestpresent", label: "GUESTPRESENT", color: "bg-primary/10 text-primary border-primary/20" },
-                            ].map((o) => (
-                              <button
-                                key={o.key}
-                                onClick={() => {
-                                  action(`complete-${i.id}`, async () => {
-                                    const r = await completeInspection({ inspectionId: i.id, notes: o.key });
-                                    if (r.ok) setInspections((prev) => prev.map((x) => x.id === i.id ? { ...x, status: "completed" } : x));
-                                    notify(r.ok ? `Inspection ${i.id} completed — ${o.key}` : r.message, r.ok ? "success" : "error");
-                                  });
-                                  setOutcomeInspId(null);
-                                }}
-                                className={`px-3 py-1.5 rounded-full text-[11px] font-semibold border cursor-pointer hover:opacity-80 transition-opacity ${o.color}`}
-                              >
-                                {o.label}
-                              </button>
-                            ))}
-                          </div>
-                        ) : (
-                          <button onClick={() => setOutcomeInspId(i.id)} className="text-xs font-medium text-primary hover:underline cursor-pointer bg-transparent border-none text-left">
-                            Select outcome
-                          </button>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* ---------- BOOKINGS (structure.md: city-scoped bookings view) ---------- */}
-          {tab === "bookings" && (
-            <div className="space-y-6">
-              <div>
-                <p className="font-sans text-lg font-medium text-ink">Bookings — {assignedCities.length > 0 ? assignedCities.join(" + ") : "all cities"}</p>
-                <p className="text-xs text-ink-secondary mt-0.5">City-scoped guest stays for first-line issue resolution. Tap any stay to view guest contact and stay details.</p>
-              </div>
-
-              {/* In-progress stays */}
               <section>
-                <div className="flex items-center gap-x-2 mb-3">
-                  <span className="w-2 h-2 rounded-full bg-success animate-pulse" />
-                  <h3 className="font-sans text-sm font-semibold uppercase tracking-wider text-ink-secondary">In progress</h3>
+                <div className="flex items-end justify-between gap-4 pb-5 mb-6 border-b border-hairline">
+                  <div>
+                    <p className="text-[11px] font-sans font-semibold uppercase tracking-[0.18em] text-primary">Pending review</p>
+                    <h3 className="font-display text-2xl tracking-tight text-ink mt-1.5">Awaiting approval</h3>
+                  </div>
+                  <span className="text-[10px] font-sans font-semibold uppercase tracking-[0.1em] rounded-full border border-warning/30 text-warning bg-warning/5 px-2.5 py-1">
+                    {curation.length} submitted
+                  </span>
                 </div>
-                {inProgressBookings.length === 0 ? (
-                  <div className="bg-white border border-hairline rounded-xl p-5 text-center text-sm text-ink-secondary">
-                    No active stays in your city right now.
+                {filteredCuration.length === 0 ? (
+                  <div className="text-center py-12 border border-dashed border-hairline rounded-xl">
+                    <p className="font-display text-base text-ink">No properties awaiting approval</p>
+                    <p className="text-sm text-ink-secondary mt-1.5">Submit onboarded properties and they'll appear here for admin review.</p>
                   </div>
                 ) : (
-                  <div className="space-y-3">
-                    {inProgressBookings.map((b) => (
-                      <div key={b.id} className="bg-white border border-hairline rounded-xl p-5">
-                        <div className="flex items-start justify-between">
-                          <div className="flex-1">
-                            <div className="flex items-center gap-x-2">
-                              <p className="font-sans text-base font-medium text-ink">{b.property_name} · {b.unit}</p>
-                              <span className="text-[11px] font-semibold text-success bg-success/10 px-2 py-0.5 rounded-full">Active</span>
+                  <ul className="divide-y divide-hairline border-y border-hairline">
+                    {filteredCuration.map((p) => (
+                      <li key={p.id} className="py-5 px-1 transition-colors hover:bg-bone-secondary/40">
+                        <div className="flex items-start justify-between gap-4 flex-wrap">
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-center gap-2 flex-wrap">
+                              <h4 className="font-display text-lg tracking-tight text-ink">{p.name}</h4>
+                              <span className="text-[10px] font-sans font-semibold uppercase tracking-[0.08em] rounded-full border border-warning/30 text-warning bg-warning/5 px-2 py-0.5">Awaiting admin</span>
                             </div>
-                            <p className="text-xs text-ink-secondary mt-1.5">{b.guest} · {b.guest_email}</p>
+                            <p className="text-xs text-ink-secondary mt-1.5">{p.city} · Submitted {p.submitted_at}</p>
                             <div className="flex items-center gap-x-4 mt-2 text-xs text-ink-secondary">
-                              <span>Check-in {b.check_in}</span>
-                              <span>Check-out {b.check_out}</span>
-                              <span>{b.nights} night{b.nights === 1 ? "" : "s"}</span>
-                              <span>{b.guest_count} guest{b.guest_count === 1 ? "" : "s"}</span>
+                              <span>{p.bedrooms} bed</span><span>{p.bathrooms} bath</span><span>Up to {p.max_guests} guests</span>
+                              <span className="font-semibold tabular-nums text-primary">{fmt(p.price_minor)}<span className="text-ink-tertiary font-normal">/night</span></span>
                             </div>
                           </div>
-                          <span className="font-sans text-base font-semibold tabular-nums text-ink">{fmt(b.amount_minor)}</span>
+                          <div className="flex gap-2 shrink-0">
+                            <button
+                              onClick={() => {
+                                setEditModal(p);
+                                setEditForm({ name: p.name, description: "", rate: p.price_minor, beds: p.bedrooms, baths: p.bathrooms, guests: p.max_guests, extended: false, extendedPrice: 0 });
+                              }}
+                              className="px-3 py-1.5 rounded-lg text-xs font-medium border border-hairline text-ink-secondary hover:bg-canvas transition-colors cursor-pointer bg-transparent"
+                            >Edit Details</button>
+                            <button
+                              disabled={pendingAction === `remove-${p.id}`}
+                              onClick={() => setDialog({ type: "remove", property: p })}
+                              className="px-3 py-1.5 rounded-lg text-xs font-medium border border-hairline text-danger hover:bg-error/5 transition-colors cursor-pointer bg-transparent disabled:opacity-50 disabled:cursor-wait"
+                            >{pendingAction === `remove-${p.id}` ? "Removing..." : "Remove"}</button>
+                          </div>
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </section>
+
+              {/* Approved & Live */}
+              <section>
+                <div className="flex items-end justify-between gap-4 pb-5 mb-6 border-b border-hairline">
+                  <div>
+                    <p className="text-[11px] font-sans font-semibold uppercase tracking-[0.18em] text-primary">Performing</p>
+                    <h3 className="font-display text-2xl tracking-tight text-ink mt-1.5">Approved &amp; live</h3>
+                  </div>
+                  <span className="text-[10px] font-sans font-semibold uppercase tracking-[0.1em] rounded-full border border-primary/30 text-primary-dark bg-primary-bg px-2.5 py-1">
+                    {pipeline.filter((p) => p.status === "approved").length} live
+                  </span>
+                </div>
+                {pipeline.filter((p) => p.status === "approved").length === 0 ? (
+                  <div className="text-center py-12 border border-dashed border-hairline rounded-xl">
+                    <p className="font-display text-base text-ink">No live properties yet</p>
+                    <p className="text-sm text-ink-secondary mt-1.5">Submit onboarded properties to admin for approval.</p>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 gap-px bg-hairline sm:grid-cols-2 rounded-xl overflow-hidden border border-hairline">
+                    {pipeline.filter((p) => p.status === "approved").map((p) => (
+                      <div key={p.id} className="bg-canvas p-6">
+                        <div className="flex justify-between items-start mb-5">
+                          <div>
+                            <p className="font-display text-lg tracking-tight text-ink">{p.name}</p>
+                            <p className="text-xs text-ink-tertiary mt-1">Updated {p.updated_at}</p>
+                          </div>
+                          <span className="text-[10px] font-sans font-semibold uppercase tracking-[0.08em] rounded-full border border-primary/30 text-primary-dark bg-primary-bg px-2 py-0.5">Live</span>
+                        </div>
+                        <div className="grid grid-cols-4 gap-4 pt-4 border-t border-hairline">
+                          {[
+                            { label: "Bookings", value: "—" },
+                            { label: "Revenue (MTD)", value: "—" },
+                            { label: "Occupancy", value: "—" },
+                            { label: "Status", value: "Approved" },
+                          ].map((m) => (
+                            <div key={m.label}>
+                              <p className="font-display text-base tabular-nums text-ink">{m.value}</p>
+                              <p className="text-[10px] font-sans uppercase tracking-[0.1em] text-ink-tertiary mt-1">{m.label}</p>
+                            </div>
+                          ))}
                         </div>
                       </div>
                     ))}
                   </div>
                 )}
               </section>
+            </div>
+          )}
+
+          {/* ---------- INSPECTIONS ---------- */}
+          {tab === "inspections" && (
+            <div className="space-y-12">
+              <header className="pb-10 mb-10 border-b border-hairline flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+                <div className="max-w-[65ch]">
+                  <p className="text-[11px] font-sans font-semibold uppercase tracking-[0.18em] text-primary mb-3">Field</p>
+                  <h2 className="font-display text-[2rem] leading-[1.1] tracking-tight text-ink lg:text-[2.75rem]">Inspections</h2>
+                  <p className="mt-4 text-base text-ink-secondary leading-relaxed">Checkout inspections for your city. Start one when you arrive, complete with the outcome (clean, damage, noshow, guestpresent) and the platform routes the next step.</p>
+                </div>
+                <span className="text-[10px] font-sans font-semibold uppercase tracking-[0.1em] rounded-full border border-primary/30 text-primary-dark bg-primary-bg px-2.5 py-1 self-start lg:self-end">
+                  {pendingInspections.length} pending
+                </span>
+              </header>
+              {inspections.length === 0 ? (
+                <div className="text-center py-16 border border-dashed border-hairline rounded-xl">
+                  <p className="font-display text-base text-ink">No inspections scheduled</p>
+                  <p className="text-sm text-ink-secondary mt-1.5">Inspections appear here as guests check out.</p>
+                </div>
+              ) : (
+                <ul className="divide-y divide-hairline border-y border-hairline">
+                  {inspections.map((i) => (
+                    <li key={i.id} className="py-5 px-1 transition-colors hover:bg-bone-secondary/40">
+                      <div className="flex items-start justify-between gap-4 flex-wrap">
+                        <div className="flex-1 min-w-0">
+                          <p className="font-display text-lg tracking-tight text-ink">{i.property_name}</p>
+                          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-1.5 text-xs text-ink-secondary">
+                            <span>Checkout {i.checkout_date} · {i.checkout_time}</span>
+                            <span>{i.guest_name}</span>
+                          </div>
+                        </div>
+                        <span className={`text-[10px] font-sans font-semibold uppercase tracking-[0.08em] rounded-full border border-hairline px-2.5 py-1 ${statusColor(i.status)}`}>{statusLabel(i.status)}</span>
+                      </div>
+                      {(i.status === "pending" || i.status === "in_progress") && (
+                        <div className="flex flex-col gap-3 mt-4">
+                          <div className="flex gap-2">
+                            <button
+                              disabled={pendingAction === `start-${i.id}`}
+                              onClick={() => action(`start-${i.id}`, async () => { const r = await startInspection({ inspectionId: i.id }); if (r.ok) setInspections((prev) => prev.map((x) => x.id === i.id ? { ...x, status: "in_progress" } : x)); notify(r.ok ? `Inspection ${i.id} started` : r.message, r.ok ? "success" : "error"); })}
+                              className="px-4 py-2 rounded-lg text-sm font-medium border border-primary text-primary hover:bg-primary-bg transition-colors cursor-pointer bg-transparent disabled:opacity-50 disabled:cursor-wait"
+                            >{pendingAction === `start-${i.id}` ? "Starting..." : "Start Inspection"}</button>
+                            <button
+                              disabled={pendingAction === `complete-${i.id}`}
+                              onClick={() => action(`complete-${i.id}`, async () => { const r = await completeInspection({ inspectionId: i.id }); if (r.ok) setInspections((prev) => prev.map((x) => x.id === i.id ? { ...x, status: "completed" } : x)); notify(r.ok ? `Inspection ${i.id} completed` : r.message, r.ok ? "success" : "error"); })}
+                              className="px-4 py-2 rounded-lg text-sm font-medium border border-hairline text-ink-secondary hover:bg-primary-bg transition-colors cursor-pointer bg-transparent disabled:opacity-50 disabled:cursor-wait"
+                            >{pendingAction === `complete-${i.id}` ? "Completing..." : "Complete"}</button>
+                          </div>
+                          {outcomeInspId === i.id ? (
+                            <div className="flex gap-2 flex-wrap">
+                              {[
+                                { key: "clean", label: "CLEAN", color: "bg-success/10 text-success border-success/20" },
+                                { key: "damage", label: "DAMAGE", color: "bg-danger/10 text-danger border-danger/20" },
+                                { key: "noshow", label: "NOSHOW", color: "bg-warning/10 text-warning border-warning/20" },
+                                { key: "guestpresent", label: "GUESTPRESENT", color: "bg-primary/10 text-primary border-primary/20" },
+                              ].map((o) => (
+                                <button
+                                  key={o.key}
+                                  onClick={() => {
+                                    action(`complete-${i.id}`, async () => {
+                                      const r = await completeInspection({ inspectionId: i.id, notes: o.key });
+                                      if (r.ok) setInspections((prev) => prev.map((x) => x.id === i.id ? { ...x, status: "completed" } : x));
+                                      notify(r.ok ? `Inspection ${i.id} completed — ${o.key}` : r.message, r.ok ? "success" : "error");
+                                    });
+                                    setOutcomeInspId(null);
+                                  }}
+                                  className={`px-3 py-1.5 rounded-full text-[11px] font-semibold border cursor-pointer hover:opacity-80 transition-opacity ${o.color}`}
+                                >
+                                  {o.label}
+                                </button>
+                              ))}
+                            </div>
+                          ) : (
+                            <button onClick={() => setOutcomeInspId(i.id)} className="text-xs font-medium text-primary hover:underline cursor-pointer bg-transparent border-none text-left">
+                              Select outcome
+                            </button>
+                          )}
+                        </div>
+                      )}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          )}
+
+          {/* ---------- BOOKINGS (structure.md: city-scoped bookings view) ---------- */}
+          {tab === "bookings" && (
+            <div className="space-y-12">
+              <header className="pb-10 mb-10 border-b border-hairline">
+                <p className="text-[11px] font-sans font-semibold uppercase tracking-[0.18em] text-primary mb-3">Guests</p>
+                <h2 className="font-display text-[2rem] leading-[1.1] tracking-tight text-ink lg:text-[2.75rem]">Bookings — {assignedCities.length > 0 ? assignedCities.join(" + ") : "all cities"}</h2>
+                <p className="mt-4 text-base text-ink-secondary leading-relaxed max-w-[65ch]">City-scoped guest stays for first-line issue resolution. Tap any stay to view guest contact and stay details.</p>
+              </header>
+
+              {/* In-progress stays */}
+              <section>
+                <div className="flex items-center gap-3 pb-5 mb-6 border-b border-hairline">
+                  <span className="w-2 h-2 rounded-full bg-success animate-pulse" />
+                  <div>
+                    <p className="text-[11px] font-sans font-semibold uppercase tracking-[0.18em] text-primary">Active</p>
+                    <h3 className="font-display text-xl tracking-tight text-ink mt-1">In progress</h3>
+                  </div>
+                  <span className="ml-auto text-[10px] font-sans font-semibold uppercase tracking-[0.1em] rounded-full border border-success/30 text-success bg-success/5 px-2.5 py-1">
+                    {inProgressBookings.length} on-site
+                  </span>
+                </div>
+                {inProgressBookings.length === 0 ? (
+                  <div className="text-center py-10 border border-dashed border-hairline rounded-xl">
+                    <p className="font-display text-base text-ink">No active stays right now</p>
+                    <p className="text-sm text-ink-secondary mt-1.5">Guests currently on-site will appear here.</p>
+                  </div>
+                ) : (
+                  <ul className="divide-y divide-hairline border-y border-hairline">
+                    {inProgressBookings.map((b) => (
+                      <li key={b.id} className="flex items-start justify-between gap-4 py-5 px-1 transition-colors hover:bg-bone-secondary/40">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <p className="font-display text-lg tracking-tight text-ink">{b.property_name} · {b.unit}</p>
+                            <span className="text-[10px] font-sans font-semibold uppercase tracking-[0.08em] rounded-full border border-success/30 text-success bg-success/5 px-2 py-0.5">Active</span>
+                          </div>
+                          <p className="text-xs text-ink-secondary mt-1.5">{b.guest} · {b.guest_email}</p>
+                          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-2 text-xs text-ink-secondary">
+                            <span>Check-in {b.check_in}</span>
+                            <span>Check-out {b.check_out}</span>
+                            <span>{b.nights} night{b.nights === 1 ? "" : "s"}</span>
+                            <span>{b.guest_count} guest{b.guest_count === 1 ? "" : "s"}</span>
+                          </div>
+                        </div>
+                        <span className="font-display text-lg tabular-nums text-ink">{fmt(b.amount_minor)}</span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </section>
 
               {/* Upcoming stays */}
               <section>
-                <div className="flex items-center gap-x-2 mb-3">
+                <div className="flex items-center gap-3 pb-5 mb-6 border-b border-hairline">
                   <span className="w-2 h-2 rounded-full bg-primary" />
-                  <h3 className="font-sans text-sm font-semibold uppercase tracking-wider text-ink-secondary">Upcoming</h3>
+                  <div>
+                    <p className="text-[11px] font-sans font-semibold uppercase tracking-[0.18em] text-primary">Coming up</p>
+                    <h3 className="font-display text-xl tracking-tight text-ink mt-1">Upcoming</h3>
+                  </div>
+                  <span className="ml-auto text-[10px] font-sans font-semibold uppercase tracking-[0.1em] rounded-full border border-primary/30 text-primary-dark bg-primary-bg px-2.5 py-1">
+                    {upcomingBookings.length} arrivals
+                  </span>
                 </div>
                 {upcomingBookings.length === 0 ? (
-                  <div className="bg-white border border-hairline rounded-xl p-5 text-center text-sm text-ink-secondary">
-                    No upcoming bookings in your city.
+                  <div className="text-center py-10 border border-dashed border-hairline rounded-xl">
+                    <p className="font-display text-base text-ink">No upcoming bookings</p>
+                    <p className="text-sm text-ink-secondary mt-1.5">Future arrivals in your city will appear here.</p>
                   </div>
                 ) : (
-                  <div className="space-y-3">
+                  <ul className="divide-y divide-hairline border-y border-hairline">
                     {upcomingBookings.map((b) => (
-                      <div key={b.id} className="bg-white border border-hairline rounded-xl p-5">
-                        <div className="flex items-start justify-between">
-                          <div className="flex-1">
-                            <p className="font-sans text-base font-medium text-ink">{b.property_name} · {b.unit}</p>
-                            <p className="text-xs text-ink-secondary mt-1.5">{b.guest} · {b.guest_email}</p>
-                            <div className="flex items-center gap-x-4 mt-2 text-xs text-ink-secondary">
-                              <span>{b.check_in} → {b.check_out}</span>
-                              <span>{b.nights} night{b.nights === 1 ? "" : "s"}</span>
-                              <span>{b.guest_count} guest{b.guest_count === 1 ? "" : "s"}</span>
-                            </div>
+                      <li key={b.id} className="flex items-start justify-between gap-4 py-5 px-1 transition-colors hover:bg-bone-secondary/40">
+                        <div className="flex-1 min-w-0">
+                          <p className="font-display text-lg tracking-tight text-ink">{b.property_name} · {b.unit}</p>
+                          <p className="text-xs text-ink-secondary mt-1.5">{b.guest} · {b.guest_email}</p>
+                          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-2 text-xs text-ink-secondary">
+                            <span>{b.check_in} → {b.check_out}</span>
+                            <span>{b.nights} night{b.nights === 1 ? "" : "s"}</span>
+                            <span>{b.guest_count} guest{b.guest_count === 1 ? "" : "s"}</span>
                           </div>
-                          <span className="font-sans text-sm font-semibold tabular-nums text-ink-secondary">{fmt(b.amount_minor)}</span>
                         </div>
-                      </div>
+                        <span className="font-display text-base tabular-nums text-ink-secondary">{fmt(b.amount_minor)}</span>
+                      </li>
                     ))}
-                  </div>
+                  </ul>
                 )}
               </section>
 
               {/* Pending confirmation */}
               {pendingBookings.length > 0 && (
                 <section>
-                  <div className="flex items-center gap-x-2 mb-3">
+                  <div className="flex items-center gap-3 pb-5 mb-6 border-b border-hairline">
                     <span className="w-2 h-2 rounded-full bg-warning" />
-                    <h3 className="font-sans text-sm font-semibold uppercase tracking-wider text-ink-secondary">Pending confirmation</h3>
+                    <div>
+                      <p className="text-[11px] font-sans font-semibold uppercase tracking-[0.18em] text-primary">Awaiting</p>
+                      <h3 className="font-display text-xl tracking-tight text-ink mt-1">Pending confirmation</h3>
+                    </div>
+                    <span className="ml-auto text-[10px] font-sans font-semibold uppercase tracking-[0.1em] rounded-full border border-warning/30 text-warning bg-warning/5 px-2.5 py-1">
+                      {pendingBookings.length} pending
+                    </span>
                   </div>
-                  <div className="space-y-3">
+                  <ul className="divide-y divide-hairline border-y border-hairline">
                     {pendingBookings.map((b) => (
-                      <div key={b.id} className="bg-white border border-hairline rounded-xl p-5">
-                        <div className="flex items-start justify-between">
-                          <div className="flex-1">
-                            <p className="font-sans text-base font-medium text-ink">{b.property_name} · {b.unit}</p>
-                            <p className="text-xs text-ink-secondary mt-1.5">{b.guest} · {b.guest_email}</p>
-                            <div className="flex items-center gap-x-4 mt-2 text-xs text-ink-secondary">
-                              <span>{b.check_in} → {b.check_out}</span>
-                              <span>{b.nights} night{b.nights === 1 ? "" : "s"}</span>
-                            </div>
+                      <li key={b.id} className="flex items-start justify-between gap-4 py-5 px-1 transition-colors hover:bg-bone-secondary/40">
+                        <div className="flex-1 min-w-0">
+                          <p className="font-display text-lg tracking-tight text-ink">{b.property_name} · {b.unit}</p>
+                          <p className="text-xs text-ink-secondary mt-1.5">{b.guest} · {b.guest_email}</p>
+                          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-2 text-xs text-ink-secondary">
+                            <span>{b.check_in} → {b.check_out}</span>
+                            <span>{b.nights} night{b.nights === 1 ? "" : "s"}</span>
                           </div>
-                          <span className="text-[11px] font-semibold text-warning">Pending</span>
                         </div>
-                      </div>
+                        <span className="text-[10px] font-sans font-semibold uppercase tracking-[0.08em] rounded-full border border-warning/30 text-warning bg-warning/5 px-2 py-1 self-start">Pending</span>
+                      </li>
                     ))}
-                  </div>
+                  </ul>
                 </section>
               )}
 
-              {/* Recent stays (for context during resolution) */}
+              {/* Recent stays */}
               <section>
-                <div className="flex items-center gap-x-2 mb-3">
-                  <span className="w-2 h-2 rounded-full bg-ink-secondary" />
-                  <h3 className="font-sans text-sm font-semibold uppercase tracking-wider text-ink-secondary">Recent (last 30 days)</h3>
+                <div className="flex items-center gap-3 pb-5 mb-6 border-b border-hairline">
+                  <span className="w-2 h-2 rounded-full bg-ink-tertiary" />
+                  <div>
+                    <p className="text-[11px] font-sans font-semibold uppercase tracking-[0.18em] text-primary">Context</p>
+                    <h3 className="font-display text-xl tracking-tight text-ink mt-1">Recent (last 30 days)</h3>
+                  </div>
                 </div>
                 {recentBookings.length === 0 ? (
-                  <div className="bg-white border border-hairline rounded-xl p-5 text-center text-sm text-ink-secondary">
-                    No recent stays in your city.
+                  <div className="text-center py-10 border border-dashed border-hairline rounded-xl">
+                    <p className="font-display text-base text-ink">No recent stays</p>
+                    <p className="text-sm text-ink-secondary mt-1.5">Completed stays from the last 30 days for context during resolution.</p>
                   </div>
                 ) : (
-                  <div className="space-y-2">
+                  <ul className="divide-y divide-hairline border-y border-hairline">
                     {recentBookings.map((b) => (
-                      <div key={b.id} className="bg-white border border-hairline rounded-xl p-4 flex items-center justify-between">
-                        <div>
-                          <p className="font-sans text-sm font-medium text-ink">{b.property_name} · {b.unit}</p>
+                      <li key={b.id} className="flex items-center justify-between gap-4 py-4 px-1 transition-colors hover:bg-bone-secondary/40">
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-sans font-semibold text-ink">{b.property_name} · {b.unit}</p>
                           <p className="text-xs text-ink-secondary mt-0.5">{b.guest} · {b.check_in} → {b.check_out}</p>
                         </div>
-                        <span className="text-xs text-ink-secondary">{fmt(b.amount_minor)}</span>
-                      </div>
+                        <span className="text-xs font-sans tabular-nums text-ink-secondary">{fmt(b.amount_minor)}</span>
+                      </li>
                     ))}
-                  </div>
+                  </ul>
                 )}
               </section>
             </div>
@@ -603,11 +656,12 @@ export function OperatorDashboard({ user, initialTab }: { user: AuthUser | null;
 
           {/* ---------- CLAIMS (structure.md: operator submits, admin reviews) ---------- */}
           {tab === "claims" && (
-            <div className="space-y-4">
-              <div className="flex items-center justify-between flex-wrap gap-3">
-                <div>
-                  <p className="font-sans text-lg font-medium text-ink">Damage claims</p>
-                  <p className="text-xs text-ink-secondary mt-0.5">
+            <div className="space-y-10">
+              <header className="pb-10 mb-10 border-b border-hairline flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+                <div className="max-w-[65ch]">
+                  <p className="text-[11px] font-sans font-semibold uppercase tracking-[0.18em] text-primary mb-3">Damage</p>
+                  <h2 className="font-display text-[2rem] leading-[1.1] tracking-tight text-ink lg:text-[2.75rem]">Claims</h2>
+                  <p className="mt-4 text-base text-ink-secondary leading-relaxed">
                     Submit claims for {assignedCities.length > 0 ? assignedCities.join(" + ") : "your city"} properties. Admin reviews and adjudicates.
                   </p>
                 </div>
@@ -625,14 +679,14 @@ export function OperatorDashboard({ user, initialTab }: { user: AuthUser | null;
                     });
                     setClaimModalOpen(true);
                   }}
-                  className="inline-flex items-center gap-2 text-sm font-semibold px-4 py-2 rounded-xl bg-primary text-white hover:bg-primary-dark transition-colors cursor-pointer border-none"
+                  className="inline-flex items-center gap-2 text-sm font-semibold px-4 py-2 rounded-lg bg-primary text-white hover:bg-primary-dark transition-colors cursor-pointer border-none self-start lg:self-end"
                 >
                   {I.plus}<span>Submit Claim</span>
                 </button>
-              </div>
+              </header>
 
               {/* filter chips */}
-              <div className="flex items-center gap-2 flex-wrap">
+              <div className="flex items-center gap-2 flex-wrap pb-2">
                 {([
                   { id: "all", label: "All", count: claims.length },
                   { id: "pending", label: "Pending", count: claims.filter((c) => c.admin_decision === "pending").length },
@@ -645,7 +699,7 @@ export function OperatorDashboard({ user, initialTab }: { user: AuthUser | null;
                     className={`inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium cursor-pointer border transition-colors ${
                       claimFilter === f.id
                         ? "border-primary bg-primary-bg text-primary"
-                        : "border-hairline bg-card text-ink-secondary hover:border-green-soft"
+                        : "border-hairline bg-canvas text-ink-secondary hover:border-primary/30"
                     }`}
                   >
                     {f.label}
@@ -654,116 +708,128 @@ export function OperatorDashboard({ user, initialTab }: { user: AuthUser | null;
                 ))}
               </div>
 
-              <div className="space-y-3">
-                {claims
-                  .filter((c) => claimFilter === "all" || c.admin_decision === claimFilter)
-                  .map((c) => (
-                    <div key={c.id} className="bg-white border border-hairline rounded-xl p-5">
-                      <div className="flex items-start justify-between gap-4 flex-wrap">
-                        <div className="flex-1 min-w-0">
-                          <p className="font-sans text-base font-medium text-ink">{c.property_name}</p>
-                          <p className="text-xs text-ink-secondary mt-1">
-                            Guest: {c.guest_name} · Stay: {c.stay_dates} · Ref: {c.booking_ref}
-                          </p>
-                          <p className="text-xs text-ink-secondary mt-1">
-                            Submitted {c.submitted_at} · {c.photo_count} photo{c.photo_count === 1 ? "" : "s"}
-                          </p>
-                          <p className="text-sm text-ink mt-2">{c.description}</p>
-                          {c.operator_notes && (
-                            <p className="text-xs text-ink-secondary mt-2 italic">Operator notes: {c.operator_notes}</p>
-                          )}
+              {claims.filter((c) => claimFilter === "all" || c.admin_decision === claimFilter).length === 0 ? (
+                <div className="text-center py-16 border border-dashed border-hairline rounded-xl">
+                  <p className="font-display text-base text-ink">No claims in this category</p>
+                  <p className="text-sm text-ink-secondary mt-1.5">Submit a claim after an inspection to start the workflow.</p>
+                </div>
+              ) : (
+                <ul className="divide-y divide-hairline border-y border-hairline">
+                  {claims
+                    .filter((c) => claimFilter === "all" || c.admin_decision === claimFilter)
+                    .map((c) => (
+                      <li key={c.id} className="py-5 px-1 transition-colors hover:bg-bone-secondary/40">
+                        <div className="flex items-start justify-between gap-4 flex-wrap">
+                          <div className="flex-1 min-w-0">
+                            <p className="font-display text-lg tracking-tight text-ink">{c.property_name}</p>
+                            <p className="text-xs text-ink-secondary mt-1.5">
+                              Guest: {c.guest_name} · Stay: {c.stay_dates} · Ref: {c.booking_ref}
+                            </p>
+                            <p className="text-xs text-ink-secondary mt-1">
+                              Submitted {c.submitted_at} · {c.photo_count} photo{c.photo_count === 1 ? "" : "s"}
+                            </p>
+                            <p className="text-sm text-ink mt-3">{c.description}</p>
+                            {c.operator_notes && (
+                              <p className="text-xs text-ink-secondary mt-2 italic">Operator notes: {c.operator_notes}</p>
+                            )}
+                          </div>
+                          <div className="text-right shrink-0">
+                            <p className="font-display text-xl tabular-nums text-primary">{fmt(c.estimated_cost_minor)}</p>
+                            <span className={`inline-block mt-1.5 text-[10px] font-sans font-semibold uppercase tracking-[0.08em] rounded-full border px-2 py-0.5 ${
+                              c.admin_decision === "approved"
+                                ? "border-primary/30 text-primary-dark bg-primary-bg"
+                                : c.admin_decision === "rejected"
+                                  ? "border-error/30 text-error bg-error/5"
+                                  : c.admin_decision === "adjusted"
+                                    ? "border-warning/30 text-warning bg-warning/5"
+                                    : "border-hairline text-ink-secondary bg-canvas"
+                            }`}>
+                              {c.admin_decision}
+                            </span>
+                            {c.adjusted_amount_minor != null && (
+                              <p className="text-[10px] text-ink-tertiary mt-1.5">Adjusted: {fmt(c.adjusted_amount_minor)}</p>
+                            )}
+                          </div>
                         </div>
-                        <div className="text-right shrink-0">
-                          <p className="font-sans text-lg font-semibold text-primary tabular-nums">{fmt(c.estimated_cost_minor)}</p>
-                          <span className={`inline-block mt-1 text-[11px] font-semibold px-2 py-0.5 rounded-full ${
-                            c.admin_decision === "approved"
-                              ? "bg-success/10 text-success"
-                              : c.admin_decision === "rejected"
-                                ? "bg-danger/10 text-danger"
-                                : c.admin_decision === "adjusted"
-                                  ? "bg-warning/10 text-warning"
-                                  : "bg-primary-bg text-primary"
-                          }`}>
-                            {c.admin_decision}
-                          </span>
-                          {c.adjusted_amount_minor != null && (
-                            <p className="text-[10px] text-ink-secondary mt-1">Adjusted: {fmt(c.adjusted_amount_minor)}</p>
-                          )}
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                {claims.filter((c) => claimFilter === "all" || c.admin_decision === claimFilter).length === 0 && (
-                  <p className="text-center text-sm text-ink-secondary py-8">No claims in this category.</p>
-                )}
-              </div>
+                      </li>
+                    ))}
+                </ul>
+              )}
             </div>
           )}
 
           {/* ---------- OWNERS (structure.md: operator directory for their city) ---------- */}
           {tab === "owners" && (
-            <div className="space-y-4">
-              <div>
-                <p className="font-sans text-lg font-medium text-ink">Property owners</p>
-                <p className="text-xs text-ink-secondary mt-0.5">
+            <div className="space-y-10">
+              <header className="pb-10 mb-10 border-b border-hairline">
+                <p className="text-[11px] font-sans font-semibold uppercase tracking-[0.18em] text-primary mb-3">Directory</p>
+                <h2 className="font-display text-[2rem] leading-[1.1] tracking-tight text-ink lg:text-[2.75rem]">Property owners</h2>
+                <p className="mt-4 text-base text-ink-secondary leading-relaxed max-w-[65ch]">
                   Owners with properties in {assignedCities.length > 0 ? assignedCities.join(" + ") : "your assigned city"}. Primary contact via WhatsApp.
                 </p>
-              </div>
+              </header>
               {owners.length === 0 ? (
-                <p className="text-center text-sm text-ink-secondary py-8">No owners in your assigned cities yet.</p>
+                <div className="text-center py-16 border border-dashed border-hairline rounded-xl">
+                  <p className="font-display text-base text-ink">No owners in your assigned cities yet</p>
+                  <p className="text-sm text-ink-secondary mt-1.5">Onboard property owners to grow the network.</p>
+                </div>
               ) : (
-                <div className="space-y-2">
+                <ul className="divide-y divide-hairline border-y border-hairline">
                   {owners.map((o) => (
-                    <div key={o.id} className="flex items-center justify-between gap-4 p-4 rounded-xl border border-hairline bg-white hover:bg-primary-bg transition-colors flex-wrap">
+                    <li key={o.id} className="flex items-center justify-between gap-4 py-5 px-1 transition-colors hover:bg-bone-secondary/40 flex-wrap">
                       <div className="flex items-center gap-3 flex-1 min-w-0">
-                        <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center text-white text-xs font-bold shrink-0">
+                        <div className="w-10 h-10 rounded-full bg-primary flex items-center justify-center text-white text-xs font-sans font-semibold shrink-0">
                           {o.name.split(" ").map((n) => n[0]).join("").slice(0, 2)}
                         </div>
                         <div className="min-w-0">
-                          <p className="font-sans text-base font-medium text-ink truncate">{o.name}</p>
+                          <p className="font-display text-lg tracking-tight text-ink truncate">{o.name}</p>
                           <p className="text-xs text-ink-secondary truncate">{o.email} · {o.whatsapp}</p>
                         </div>
                       </div>
-                      <div className="flex items-center gap-3 shrink-0">
+                      <div className="flex items-center gap-4 shrink-0">
                         <div className="text-right">
                           <p className="text-xs text-ink-secondary">City: <strong className="text-ink">{o.city}</strong></p>
                           <p className="text-xs text-ink-secondary">
                             {o.properties_count} propert{o.properties_count === 1 ? "y" : "ies"} · {o.total_bookings} bookings
                           </p>
                         </div>
-                        <span className={`text-[11px] font-semibold px-2 py-0.5 rounded-full ${
+                        <span className={`text-[10px] font-sans font-semibold uppercase tracking-[0.08em] rounded-full border px-2.5 py-1 ${
                           o.status === "active"
-                            ? "bg-success/10 text-success"
+                            ? "border-primary/30 text-primary-dark bg-primary-bg"
                             : o.status === "suspended"
-                              ? "bg-danger/10 text-danger"
-                              : "bg-warning/10 text-warning"
+                              ? "border-error/30 text-error bg-error/5"
+                              : "border-warning/30 text-warning bg-warning/5"
                         }`}>
                           {o.status}
                         </span>
                       </div>
-                    </div>
+                    </li>
                   ))}
-                </div>
+                </ul>
               )}
             </div>
           )}
 
           {/* ---------- PHOTOS ---------- */}
           {tab === "photos" && (
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <p className="font-sans text-lg font-medium text-ink">Property photo management</p>
+            <div className="space-y-10">
+              <header className="pb-10 mb-10 border-b border-hairline flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+                <div className="max-w-[65ch]">
+                  <p className="text-[11px] font-sans font-semibold uppercase tracking-[0.18em] text-primary mb-3">Media</p>
+                  <h2 className="font-display text-[2rem] leading-[1.1] tracking-tight text-ink lg:text-[2.75rem]">Property photos</h2>
+                  <p className="mt-4 text-base text-ink-secondary leading-relaxed">Upload, approve, reject, and reorder listing photos.</p>
+                </div>
                 <select
                   value={selectedProperty}
                   onChange={(e) => handleSelectProperty(e.target.value)}
-                  className="text-xs border border-hairline rounded-lg px-3 py-1.5 outline-none text-ink"
+                  className="text-xs border border-hairline rounded-lg px-3 py-2 outline-none text-ink bg-canvas self-start lg:self-end"
                 >
                   <option value="">Select a property...</option>
                   {seedProperties.map((p) => (
                     <option key={p.id} value={p.id}>{p.name} — {p.neighbourhood}</option>
                   ))}
                 </select>
-              </div>
+              </header>
 
               {selectedProperty && (
                 <div>
@@ -962,94 +1028,115 @@ export function OperatorDashboard({ user, initialTab }: { user: AuthUser | null;
 
           {/* ---------- VERIFICATION ---------- */}
           {tab === "verification" && (
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <p className="font-sans text-lg font-medium text-ink">Monthly verification log — June 2026</p>
+            <div className="space-y-10">
+              <header className="pb-10 mb-10 border-b border-hairline flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+                <div className="max-w-[65ch]">
+                  <p className="text-[11px] font-sans font-semibold uppercase tracking-[0.18em] text-primary mb-3">Verification</p>
+                  <h2 className="font-display text-[2rem] leading-[1.1] tracking-tight text-ink lg:text-[2.75rem]">Monthly log — June 2026</h2>
+                  <p className="mt-4 text-base text-ink-secondary leading-relaxed">Verification visits across your city — properties, photos, notes.</p>
+                </div>
                 <button
                   onClick={() => { setVerifForm({ propertyId: "", notes: "", photos: 0 }); setVerifModalOpen(true); }}
-                  className="text-sm font-medium px-4 py-2 rounded-xl border border-primary text-primary hover:bg-primary-bg transition-colors cursor-pointer"
+                  className="text-sm font-semibold px-4 py-2 rounded-lg border border-primary text-primary hover:bg-primary-bg transition-colors cursor-pointer bg-transparent self-start lg:self-end"
                 >+ New Entry</button>
-              </div>
-              <div className="space-y-2">
-                {verifications.map((v) => (
-                  <div key={v.id} className="flex items-center justify-between p-4 rounded-xl border border-hairline hover:bg-primary-bg transition-colors">
-                    <div>
-                      <p className="font-sans text-base font-medium text-ink">{v.property_name}</p>
-                      <p className="text-xs text-ink-secondary mt-0.5">{v.date} · {v.photos} photos — {v.notes}</p>
-                    </div>
-                    <span className="text-[11px] font-semibold text-success">{v.status}</span>
-                  </div>
-                ))}
-              </div>
+              </header>
+              {verifications.length === 0 ? (
+                <div className="text-center py-16 border border-dashed border-hairline rounded-xl">
+                  <p className="font-display text-base text-ink">No verifications logged yet</p>
+                  <p className="text-sm text-ink-secondary mt-1.5">Add a verification entry after visiting a property.</p>
+                </div>
+              ) : (
+                <ul className="divide-y divide-hairline border-y border-hairline">
+                  {verifications.map((v) => (
+                    <li key={v.id} className="flex items-center justify-between gap-4 py-5 px-1 transition-colors hover:bg-bone-secondary/40 flex-wrap">
+                      <div className="flex-1 min-w-0">
+                        <p className="font-display text-lg tracking-tight text-ink">{v.property_name}</p>
+                        <p className="text-xs text-ink-secondary mt-1.5">{v.date} · {v.photos} photos — {v.notes}</p>
+                      </div>
+                      <span className="text-[10px] font-sans font-semibold uppercase tracking-[0.08em] rounded-full border border-primary/30 text-primary-dark bg-primary-bg px-2.5 py-1">{v.status}</span>
+                    </li>
+                  ))}
+                </ul>
+              )}
             </div>
           )}
 
           {/* ---------- PERFORMANCE ---------- */}
           {tab === "performance" && (
-            <div className="space-y-5">
-              <h2 className="font-sans text-xl font-medium text-ink">Your performance</h2>
+            <div className="space-y-12">
+              <header className="pb-10 mb-10 border-b border-hairline">
+                <p className="text-[11px] font-sans font-semibold uppercase tracking-[0.18em] text-primary mb-3">Performance</p>
+                <h2 className="font-display text-[2rem] leading-[1.1] tracking-tight text-ink lg:text-[2.75rem]">Your numbers</h2>
+                <p className="mt-4 text-base text-ink-secondary leading-relaxed max-w-[65ch]">Inspection throughput, claims, and revenue share — the things that earn the rating.</p>
+              </header>
 
-              <div className="grid grid-cols-4 gap-4 max-lg:grid-cols-2">
+              <div className="grid grid-cols-1 gap-x-8 gap-y-8 sm:grid-cols-2 lg:grid-cols-4 lg:divide-x lg:divide-hairline">
                 {[
                   { label: "Inspections", value: stats.find((s) => s.label.includes("Inspections"))?.value ?? "12", sub: "this month" },
                   { label: "Properties", value: "8", sub: "active" },
                   { label: "Claims submitted", value: claims.filter((c) => c.admin_decision !== "rejected").length.toString(), sub: "this month" },
                   { label: "Quality score", value: stats.find((s) => s.label.includes("Quality"))?.value ?? "92%", sub: "30-day avg" },
-                ].map((m) => (
-                  <div key={m.label} className="p-4 rounded-xl border border-hairline bg-white">
-                    <p className="text-xs font-medium text-ink-secondary mb-1">{m.label}</p>
-                    <p className="font-sans text-2xl font-semibold text-ink">{m.value}</p>
-                    <p className="text-xs text-ink-secondary mt-0.5">{m.sub}</p>
+                ].map((m, i) => (
+                  <div key={m.label} className={i > 0 ? "lg:pl-8" : ""}>
+                    <p className="text-[10px] font-sans font-semibold uppercase tracking-[0.18em] text-ink-tertiary">{m.label}</p>
+                    <p className="font-display text-[2.25rem] leading-none tracking-tight mt-2 tabular-nums text-ink">{m.value}</p>
+                    <p className="mt-2 text-xs text-ink-secondary">{m.sub}</p>
                   </div>
                 ))}
               </div>
 
               {/* Revenue share */}
-              <div className="p-5 rounded-xl border border-hairline bg-white">
-                <h3 className="font-sans text-base font-medium text-ink mb-4">Revenue share</h3>
-                <div className="grid grid-cols-3 gap-4 mb-4">
+              <section>
+                <div className="pb-5 mb-6 border-b border-hairline">
+                  <p className="text-[11px] font-sans font-semibold uppercase tracking-[0.18em] text-primary">Earnings</p>
+                  <h3 className="font-display text-2xl tracking-tight text-ink mt-1.5">Revenue share</h3>
+                </div>
+                <div className="grid grid-cols-1 gap-8 md:grid-cols-3 mb-8">
                   <div>
-                    <p className="text-xs text-ink-secondary mb-0.5">City revenue (MTD)</p>
-                    <p className="font-sans text-2xl font-semibold text-ink">£{(640000 / 100)}</p>
+                    <p className="text-[10px] font-sans font-semibold uppercase tracking-[0.18em] text-ink-tertiary">City revenue (MTD)</p>
+                    <p className="font-display text-[2rem] leading-none tracking-tight mt-2 tabular-nums text-ink">£{(640000 / 100)}</p>
                   </div>
                   <div>
-                    <p className="text-xs text-ink-secondary mb-0.5">Commission rate</p>
-                    <p className="font-sans text-2xl font-semibold text-primary">6%</p>
+                    <p className="text-[10px] font-sans font-semibold uppercase tracking-[0.18em] text-ink-tertiary">Commission rate</p>
+                    <p className="font-display text-[2rem] leading-none tracking-tight mt-2 tabular-nums text-primary">6%</p>
                   </div>
                   <div>
-                    <p className="text-xs text-ink-secondary mb-0.5">Your earnings</p>
-                    <p className="font-sans text-2xl font-semibold text-success">£{Math.round(640000 * 0.06 / 100)}</p>
+                    <p className="text-[10px] font-sans font-semibold uppercase tracking-[0.18em] text-ink-tertiary">Your earnings</p>
+                    <p className="font-display text-[2rem] leading-none tracking-tight mt-2 tabular-nums text-primary">£{Math.round(640000 * 0.06 / 100)}</p>
                   </div>
                 </div>
-                <div className="bg-primary-bg rounded-lg p-4">
-                  <p className="text-xs text-ink-secondary mb-2">Earnings breakdown</p>
-                  <div className="flex items-center gap-2 mb-2">
+                <div className="bg-primary-bg rounded-xl p-5">
+                  <p className="text-xs text-ink-secondary mb-3 font-sans">Earnings breakdown</p>
+                  <div className="flex items-center gap-3 mb-3">
                     <div className="flex-1 h-2 rounded-full bg-hairline overflow-hidden">
-                      <div className="h-full bg-success rounded-full" style={{ width: "60%" }} />
+                      <div className="h-full bg-primary rounded-full" style={{ width: "60%" }} />
                     </div>
-                    <span className="text-xs font-medium text-success">60% paid</span>
+                    <span className="text-xs font-sans font-semibold text-primary">60% paid</span>
                   </div>
-                  <p className="text-[11px] text-ink-secondary">Next payout: ~£{Math.round(640000 * 0.06 * 0.4 / 100)} pending (end of month)</p>
+                  <p className="text-[11px] text-ink-secondary font-sans">Next payout: ~£{Math.round(640000 * 0.06 * 0.4 / 100)} pending (end of month)</p>
                 </div>
-              </div>
+              </section>
 
               {/* Response metrics */}
-              <div className="p-5 rounded-xl border border-hairline bg-white">
-                <h3 className="font-sans text-base font-medium text-ink mb-4">Response metrics</h3>
-                <div className="grid grid-cols-3 gap-4">
+              <section>
+                <div className="pb-5 mb-6 border-b border-hairline">
+                  <p className="text-[11px] font-sans font-semibold uppercase tracking-[0.18em] text-primary">Response</p>
+                  <h3 className="font-display text-2xl tracking-tight text-ink mt-1.5">Response metrics</h3>
+                </div>
+                <div className="grid grid-cols-1 gap-px bg-hairline sm:grid-cols-3 rounded-xl overflow-hidden border border-hairline">
                   {[
                     { label: "Avg response time", value: "2.4 min", target: "Under 5 min" },
                     { label: "Inspection completion", value: "100%", target: "Target: 95%" },
                     { label: "Verification rate", value: "92%", target: "Target: 90%" },
                   ].map((m) => (
-                    <div key={m.label} className="text-center p-3 rounded-lg bg-primary-bg">
-                      <p className="font-sans text-2xl font-semibold text-ink">{m.value}</p>
-                      <p className="text-xs text-ink-secondary mt-0.5">{m.label}</p>
-                      <p className="text-[10px] text-mute mt-1">{m.target}</p>
+                    <div key={m.label} className="bg-canvas p-5 text-center">
+                      <p className="font-display text-[2rem] leading-none tracking-tight tabular-nums text-ink">{m.value}</p>
+                      <p className="text-xs text-ink-secondary mt-2 font-sans">{m.label}</p>
+                      <p className="text-[10px] font-sans uppercase tracking-[0.1em] text-ink-tertiary mt-1">{m.target}</p>
                     </div>
                   ))}
                 </div>
-              </div>
+              </section>
             </div>
           )}
 

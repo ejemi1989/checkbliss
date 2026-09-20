@@ -327,100 +327,113 @@ export function OwnerDashboard({
 
           {/* ---------- PROPERTIES ---------- */}
           {tab === "properties" && (
-            <div className="space-y-5">
-              <h2 className="font-display text-xl font-medium text-ink">Your properties</h2>
+            <div className="space-y-10">
+              <header className="pb-10 mb-10 border-b border-hairline">
+                <p className="text-[11px] font-sans font-semibold uppercase tracking-[0.18em] text-primary mb-3">Listings</p>
+                <h2 className="font-display text-[2rem] leading-[1.1] tracking-tight text-ink lg:text-[2.75rem]">Your properties</h2>
+                <p className="mt-4 text-base text-ink-secondary leading-relaxed max-w-[65ch]">Performance, occupancy and revenue for each listing.</p>
+              </header>
 
-              {properties.map((prop) => (
-                <div key={prop.name} className="p-5 rounded-xl border border-hairline bg-card space-y-4">
-                  <div className="flex items-start justify-between">
+              {properties.length === 0 ? (
+                <div className="text-center py-16 border border-dashed border-hairline rounded-xl">
+                  <p className="font-display text-base text-ink">No properties yet</p>
+                  <p className="text-sm text-ink-secondary mt-1.5">Your operator will onboard a property for you.</p>
+                </div>
+              ) : properties.map((prop) => (
+                <section key={prop.name} className="pb-10 mb-10 border-b border-hairline last:border-b-0 last:pb-0 last:mb-0">
+                  <div className="flex items-start justify-between gap-4 flex-wrap mb-6">
                     <div>
-                      <h3 className="font-display text-lg font-medium text-ink">{prop.name}</h3>
-                      <p className="text-sm text-ink-secondary mt-0.5">{prop.meta}</p>
-                      <p className="text-xs text-mute mt-1">{prop.beds} bed{prop.beds > 1 ? "s" : ""} · {prop.baths} bath{prop.baths > 1 ? "s" : ""} · sleeps {prop.sleeps}</p>
+                      <h3 className="font-display text-2xl tracking-tight text-ink">{prop.name}</h3>
+                      <p className="text-sm text-ink-secondary mt-1.5">{prop.meta}</p>
+                      <p className="text-xs text-ink-tertiary mt-1 font-sans">{prop.beds} bed{prop.beds > 1 ? "s" : ""} · {prop.baths} bath{prop.baths > 1 ? "s" : ""} · sleeps {prop.sleeps}</p>
                     </div>
-                    <span className={`text-[11px] font-semibold px-2.5 py-1 rounded-full ${prop.active ? "bg-success/10 text-success" : "bg-danger/10 text-danger"}`}>
+                    <span className={`text-[10px] font-sans font-semibold uppercase tracking-[0.08em] rounded-full border px-2.5 py-1 self-start ${prop.active ? "border-primary/30 text-primary-dark bg-primary-bg" : "border-error/30 text-error bg-error/5"}`}>
                       {prop.active ? "Active" : "Inactive"}
                     </span>
                   </div>
 
                   {/* Revenue breakdown per property */}
-                  <div className="grid grid-cols-4 gap-3">
+                  <div className="grid grid-cols-2 gap-x-8 gap-y-6 sm:grid-cols-4 lg:divide-x lg:divide-hairline mb-8">
                     {[
                       { label: "Monthly revenue", value: `£${Math.round(prop.monthly_minor / 100).toLocaleString("en-GB")}` },
                       { label: "Bookings", value: `${prop.bookings} this month` },
                       { label: "Occupancy", value: prop.occ },
                       { label: "Avg nightly", value: `£${Math.round(prop.monthly_minor / (parseInt(prop.bookings) || 1) / 100)}` },
-                    ].map((m) => (
-                      <div key={m.label} className="text-center p-3 rounded-lg bg-primary-bg">
-                        <p className="text-base font-semibold tabular-nums text-ink">{m.value}</p>
-                        <p className="text-[10px] text-ink-secondary mt-0.5">{m.label}</p>
+                    ].map((m, i) => (
+                      <div key={m.label} className={i > 0 ? "lg:pl-8" : ""}>
+                        <p className="text-[10px] font-sans font-semibold uppercase tracking-[0.18em] text-ink-tertiary">{m.label}</p>
+                        <p className="font-display text-[1.75rem] leading-none tracking-tight tabular-nums text-ink mt-2">{m.value}</p>
                       </div>
                     ))}
                   </div>
 
                   {/* Earnings bar */}
-                  <div className="bg-primary-bg rounded-lg p-4">
-                    <div className="flex items-center justify-between mb-2">
-                      <p className="text-xs font-medium text-ink-secondary">Revenue trend</p>
-                      <p className="text-xs text-ink-secondary">Last 3 months</p>
+                  <div className="bg-primary-bg rounded-xl p-5">
+                    <div className="flex items-center justify-between mb-4">
+                      <p className="text-[10px] font-sans font-semibold uppercase tracking-[0.16em] text-primary">Revenue trend</p>
+                      <p className="text-xs text-ink-secondary font-sans">Last 3 months</p>
                     </div>
-                    <div className="flex items-end gap-1 h-16">
+                    <div className="flex items-end gap-3 h-20">
                       {[60, 75, parseInt(prop.occ)].map((h, i) => (
-                        <div key={i} className="flex-1 flex flex-col justify-end items-center gap-1">
-                          <span className="text-[10px] text-ink-secondary">{h}%</span>
-                          <div className="w-full rounded-t-sm bg-success/60" style={{ height: `${h}%` }} />
+                        <div key={i} className="flex-1 flex flex-col justify-end items-center gap-1.5">
+                          <span className="text-[10px] font-sans font-semibold text-ink-secondary">{h}%</span>
+                          <div className="w-full rounded-t bg-primary" style={{ height: `${h}%` }} />
+                          <span className="text-[10px] font-sans uppercase tracking-[0.08em] text-ink-tertiary">{["Apr", "May", "Jun"][i]}</span>
                         </div>
                       ))}
                     </div>
-                    <div className="flex justify-between mt-2">
-                      {["Apr", "May", "Jun"].map((m) => (
-                        <span key={m} className="text-[10px] text-mute">{m}</span>
-                      ))}
-                    </div>
                   </div>
-                </div>
+                </section>
               ))}
             </div>
           )}
 
           {/* ---------- BOOKINGS ---------- */}
           {tab === "bookings" && (
-            <div className="space-y-6">
+            <div className="space-y-12">
+              <header className="pb-10 mb-10 border-b border-hairline">
+                <p className="text-[11px] font-sans font-semibold uppercase tracking-[0.18em] text-primary mb-3">Calendar</p>
+                <h2 className="font-display text-[2rem] leading-[1.1] tracking-tight text-ink lg:text-[2.75rem]">Bookings & availability</h2>
+                <p className="mt-4 text-base text-ink-secondary leading-relaxed max-w-[65ch]">Bookings across all your units. Block dates you can't host.</p>
+              </header>
+
               {/* Calendar */}
-              <div className="bg-white rounded-xl border border-hairline p-5">
-                <div className="flex items-center justify-between mb-5">
-                  <div><h2 className="font-display text-lg font-medium text-ink">Availability Calendar</h2><p className="text-xs mt-0.5 text-ink-secondary">Bookings across all your units</p></div>
-                  <div className="flex items-center gap-x-2">
-                    <button onClick={() => shiftMonth(-1)} className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-primary-bg border border-hairline text-ink-secondary cursor-pointer">{I.chevronLeft}</button>
-                    <span className="text-sm font-semibold text-ink w-28 text-center">{monthLabel()}</span>
-                    <button onClick={() => shiftMonth(1)} className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-primary-bg border border-hairline text-ink-secondary cursor-pointer">{I.chevronRight}</button>
+              <section>
+                <div className="flex items-end justify-between gap-4 pb-5 mb-6 border-b border-hairline flex-wrap">
+                  <div>
+                    <p className="text-[11px] font-sans font-semibold uppercase tracking-[0.18em] text-primary">Availability</p>
+                    <h3 className="font-display text-2xl tracking-tight text-ink mt-1.5">{monthLabel()}</h3>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button onClick={() => shiftMonth(-1)} className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-bone-secondary border border-hairline text-ink-secondary cursor-pointer bg-transparent">{I.chevronLeft}</button>
+                    <button onClick={() => shiftMonth(1)} className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-bone-secondary border border-hairline text-ink-secondary cursor-pointer bg-transparent">{I.chevronRight}</button>
                   </div>
                 </div>
-                <div className="grid grid-cols-7 gap-1">
-                  {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((d) => <div key={d} className="text-center text-xs font-semibold py-2 text-ink-secondary">{d}</div>)}
+                <div className="grid grid-cols-7 gap-1.5 mb-4">
+                  {["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"].map((d) => <div key={d} className="text-center text-[10px] font-sans font-semibold uppercase tracking-[0.12em] py-2 text-ink-tertiary">{d}</div>)}
                   {calendar.map((cell, i) =>
                     cell.day === 0 ? <div key={`e-${i}`} /> : (
                       <button key={cell.day}
                         onClick={() => { if (cell.hasBooking) { const b = bookings.find((ob) => ob.guest === cell.bookingInfo?.guest); if (b) setBookingModal(b); } }}
                         title={cell.hasBooking ? `Booked — ${cell.bookingInfo?.unit}: ${cell.bookingInfo?.guest}` : ""}
-                        className={`py-2 text-center text-sm rounded-lg transition-colors cursor-pointer ${cell.hasBooking ? "bg-primary text-white font-semibold hover:bg-primary-dark" : "hover:bg-primary-bg"} ${cell.isToday ? "ring-2 ring-primary ring-offset-[-2px]" : ""} ${!cell.hasBooking && !cell.isToday ? "text-ink" : ""}`}
+                        className={`py-3 text-center text-sm font-sans font-medium transition-colors cursor-pointer border border-transparent ${cell.hasBooking ? "bg-primary text-white hover:bg-primary-dark" : "hover:bg-primary-bg"} ${cell.isToday ? "ring-2 ring-primary ring-offset-2 ring-offset-canvas" : ""} ${!cell.hasBooking && !cell.isToday ? "text-ink" : ""}`}
                       >{cell.day}</button>
                     )
                   )}
                 </div>
-                <div className="flex items-center gap-x-4 mt-4 text-xs text-ink-secondary">
-                  <span className="flex items-center gap-x-1.5"><span className="w-3 h-3 rounded bg-primary" />Booked</span>
-                  <span className="flex items-center gap-x-1.5"><span className="w-3 h-3 rounded border-2 border-primary" />Today</span>
+                <div className="flex items-center gap-4 text-xs text-ink-secondary font-sans">
+                  <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded bg-primary" />Booked</span>
+                  <span className="flex items-center gap-1.5"><span className="w-3 h-3 rounded border-2 border-primary" />Today</span>
                 </div>
 
                 {/* Block/unblock dates */}
-                <div className="mt-5 pt-5 border-t border-hairline">
-                  <p className="text-xs font-semibold text-ink mb-3">Block or unblock dates</p>
-                  <div className="flex flex-wrap items-center gap-x-2 gap-y-2">
-                    <input type="date" value={blockStart} onChange={(e) => setBlockStart(e.target.value)} className="border border-hairline rounded-lg px-3 py-1.5 text-xs outline-none focus:border-primary text-ink" />
-                    <span className="text-xs text-ink-secondary">to</span>
-                    <input type="date" value={blockEnd} onChange={(e) => setBlockEnd(e.target.value)} className="border border-hairline rounded-lg px-3 py-1.5 text-xs outline-none focus:border-primary text-ink" />
-                    <select id="owner-block-property" className="border border-hairline rounded-lg px-2 py-1.5 text-xs outline-none text-ink">
+                <div className="mt-8 pt-6 border-t border-hairline">
+                  <p className="text-[10px] font-sans font-semibold uppercase tracking-[0.18em] text-primary mb-4">Block or unblock dates</p>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <input type="date" value={blockStart} onChange={(e) => setBlockStart(e.target.value)} className="border border-hairline rounded-lg px-3 py-2 text-xs outline-none focus:border-primary text-ink bg-canvas font-sans" />
+                    <span className="text-xs text-ink-secondary font-sans">to</span>
+                    <input type="date" value={blockEnd} onChange={(e) => setBlockEnd(e.target.value)} className="border border-hairline rounded-lg px-3 py-2 text-xs outline-none focus:border-primary text-ink bg-canvas font-sans" />
+                    <select id="owner-block-property" className="border border-hairline rounded-lg px-3 py-2 text-xs outline-none text-ink bg-canvas font-sans">
                       {properties.map((p) => (
                         <option key={p.id ?? p.name} value={p.id ?? p.name}>{p.name}</option>
                       ))}
@@ -436,7 +449,7 @@ export function OwnerDashboard({
                         notify(r.ok ? "Dates blocked." : r.message ?? "Error", r.ok ? "success" : "error");
                         setPendingBlock(null);
                       }}
-                      className="px-3 py-1.5 rounded-lg text-xs font-semibold border border-hairline text-ink-secondary hover:bg-primary-bg cursor-pointer disabled:opacity-50 disabled:cursor-wait"
+                      className="px-4 py-2 rounded-lg text-xs font-semibold border border-hairline text-ink-secondary hover:bg-primary-bg cursor-pointer bg-canvas disabled:opacity-50 disabled:cursor-wait"
                     >{pendingBlock === "block" ? "Blocking..." : "Block"}</button>
                     <button
                       disabled={!blockStart || !blockEnd || pendingBlock === "unblock"}
@@ -449,107 +462,140 @@ export function OwnerDashboard({
                         notify(r.ok ? "Dates unblocked." : r.message ?? "Error", r.ok ? "success" : "error");
                         setPendingBlock(null);
                       }}
-                      className="px-3 py-1.5 rounded-lg text-xs font-semibold border border-hairline text-ink-secondary hover:bg-primary-bg cursor-pointer disabled:opacity-50 disabled:cursor-wait"
+                      className="px-4 py-2 rounded-lg text-xs font-semibold border border-hairline text-ink-secondary hover:bg-primary-bg cursor-pointer bg-canvas disabled:opacity-50 disabled:cursor-wait"
                     >{pendingBlock === "unblock" ? "Unblocking..." : "Unblock"}</button>
                   </div>
                 </div>
-              </div>
+              </section>
 
               {/* Upcoming bookings */}
-              <div className="bg-white rounded-xl border border-hairline p-5">
-                <div className="flex items-center justify-between mb-4">
-                  <h2 className="font-display text-lg font-medium text-ink">Upcoming Bookings</h2>
-                  <span className="text-xs px-2 py-0.5 rounded-full font-semibold bg-primary-bg text-primary">{bookings.length} upcoming</span>
+              <section>
+                <div className="flex items-end justify-between gap-4 pb-5 mb-6 border-b border-hairline">
+                  <div>
+                    <p className="text-[11px] font-sans font-semibold uppercase tracking-[0.18em] text-primary">Arriving</p>
+                    <h3 className="font-display text-2xl tracking-tight text-ink mt-1.5">Upcoming Bookings</h3>
+                  </div>
+                  <span className="text-[10px] font-sans font-semibold uppercase tracking-[0.1em] rounded-full border border-primary/30 text-primary-dark bg-primary-bg px-2.5 py-1">
+                    {bookings.length} upcoming
+                  </span>
                 </div>
-                <div className="space-y-3">
-                  {bookings.map((b) => (
-                    <div key={b.id} onClick={() => setBookingModal(b)} className="p-3 rounded-xl border border-hairline hover:bg-primary-bg cursor-pointer transition-colors">
-                      <div className="flex items-start justify-between">
+                {bookings.length === 0 ? (
+                  <div className="text-center py-12 border border-dashed border-hairline rounded-xl">
+                    <p className="font-display text-base text-ink">No upcoming bookings</p>
+                    <p className="text-sm text-ink-secondary mt-1.5">Confirmed stays will appear here.</p>
+                  </div>
+                ) : (
+                  <ul className="divide-y divide-hairline border-y border-hairline">
+                    {bookings.map((b) => (
+                      <li key={b.id} onClick={() => setBookingModal(b)} className="flex items-start justify-between gap-4 py-4 px-1 hover:bg-bone-secondary/40 cursor-pointer transition-colors">
                         <div className="flex-1 min-w-0">
-                          <p className="text-sm font-semibold text-ink truncate">{b.guest}</p>
-                          <p className="text-xs mt-0.5 text-ink-secondary">{b.unit}</p>
-                          <div className="flex items-center gap-x-3 mt-1.5 text-xs text-ink-secondary">
+                          <p className="font-display text-lg tracking-tight text-ink truncate">{b.guest}</p>
+                          <p className="text-xs text-ink-secondary mt-1">{b.unit}</p>
+                          <div className="flex items-center gap-3 mt-1.5 text-xs text-ink-secondary font-sans">
                             <span>{b.check_in} → {b.check_out}</span>
                             <span>{b.guest_count} guest{b.guest_count > 1 ? "s" : ""}</span>
                           </div>
                         </div>
                         <div className="text-right shrink-0">
-                          <p className="text-sm font-bold tabular-nums text-ink">{fmt(b.amount_minor)}</p>
-                          <span className={`inline-block mt-1 text-[11px] font-semibold ${statusColor(b.status)}`}>{b.status}</span>
+                          <p className="font-display text-base tabular-nums text-ink">{fmt(b.amount_minor)}</p>
+                          <span className={`inline-block mt-1.5 text-[10px] font-sans font-semibold uppercase tracking-[0.08em] ${statusColor(b.status)}`}>{b.status}</span>
                         </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </section>
             </div>
           )}
 
           {/* ---------- DAMAGE CLAIMS ---------- */}
           {tab === "claims" && (
-            <div className="space-y-6">
-              <div className="bg-white rounded-xl border border-hairline p-5">
-                <div className="flex items-center justify-between mb-5">
-                  <div>
-                    <h2 className="font-display text-lg font-medium text-ink">Damage Claims</h2>
-                    <p className="text-xs text-ink-secondary mt-0.5">Claims filed against your properties</p>
-                  </div>
+            <div className="space-y-12">
+              <header className="pb-10 mb-10 border-b border-hairline">
+                <p className="text-[11px] font-sans font-semibold uppercase tracking-[0.18em] text-primary mb-3">Damage</p>
+                <h2 className="font-display text-[2rem] leading-[1.1] tracking-tight text-ink lg:text-[2.75rem]">Claims</h2>
+                <p className="mt-4 text-base text-ink-secondary leading-relaxed max-w-[65ch]">Claims filed against your properties — operator submits, admin adjudicates.</p>
+              </header>
+              <section>
+                <div className="pb-5 mb-6 border-b border-hairline">
+                  <p className="text-[11px] font-sans font-semibold uppercase tracking-[0.18em] text-primary">Filed</p>
+                  <h3 className="font-display text-2xl tracking-tight text-ink mt-1.5">All claims</h3>
                 </div>
                 {damageClaims.length === 0 ? (
-                  <div className="py-8 text-center">
-                    <p className="text-sm text-ink-secondary">No damage claims. Your properties are in good standing.</p>
+                  <div className="text-center py-16 border border-dashed border-hairline rounded-xl">
+                    <p className="font-display text-base text-ink">No damage claims</p>
+                    <p className="text-sm text-ink-secondary mt-1.5">Your properties are in good standing.</p>
                   </div>
                 ) : (
-                  <div className="space-y-3">
+                  <ul className="divide-y divide-hairline border-y border-hairline">
                     {damageClaims.map((c) => (
-                      <div key={c.id} onClick={() => setClaimModal(c)} className="p-4 rounded-xl border border-hairline hover:bg-primary-bg cursor-pointer transition-colors">
-                        <div className="flex items-start justify-between">
-                          <div className="flex-1 min-w-0">
-                            <p className="text-sm font-semibold text-ink">{c.property_name}</p>
-                            <p className="text-xs text-ink-secondary mt-0.5">Guest: {c.guest_name} · Booking: {c.booking_ref}</p>
-                            <p className="text-xs text-ink-secondary mt-1 line-clamp-2">{c.description}</p>
-                          </div>
-                          <div className="text-right shrink-0 ml-4">
-                            <p className="text-sm font-bold tabular-nums text-ink">{fmt(c.estimated_cost_minor)}</p>
-                            <span className={`inline-block mt-1 text-[11px] font-semibold capitalize ${c.admin_decision === "pending" ? "bg-primary-bg text-primary px-2 py-0.5 rounded-full" : c.admin_decision === "approved" ? "text-success" : c.admin_decision === "adjusted" ? "text-primary" : "text-danger"}`}>{c.admin_decision}</span>
-                          </div>
+                      <li key={c.id} onClick={() => setClaimModal(c)} className="flex items-start justify-between gap-4 py-5 px-1 hover:bg-bone-secondary/40 cursor-pointer transition-colors">
+                        <div className="flex-1 min-w-0">
+                          <p className="font-display text-lg tracking-tight text-ink">{c.property_name}</p>
+                          <p className="text-xs text-ink-secondary mt-1">Guest: {c.guest_name} · Booking: {c.booking_ref}</p>
+                          <p className="text-xs text-ink-secondary mt-1.5 line-clamp-2 max-w-[60ch]">{c.description}</p>
                         </div>
-                      </div>
+                        <div className="text-right shrink-0">
+                          <p className="font-display text-lg tabular-nums text-ink">{fmt(c.estimated_cost_minor)}</p>
+                          <span className={`inline-block mt-1.5 text-[10px] font-sans font-semibold uppercase tracking-[0.08em] rounded-full border px-2 py-0.5 ${
+                            c.admin_decision === "approved"
+                              ? "border-primary/30 text-primary-dark bg-primary-bg"
+                              : c.admin_decision === "rejected"
+                                ? "border-error/30 text-error bg-error/5"
+                                : c.admin_decision === "adjusted"
+                                  ? "border-warning/30 text-warning bg-warning/5"
+                                  : "border-hairline text-ink-secondary bg-canvas"
+                          }`}>{c.admin_decision}</span>
+                        </div>
+                      </li>
                     ))}
-                  </div>
+                  </ul>
                 )}
-              </div>
+              </section>
             </div>
           )}
 
           {/* ---------- PAYOUTS ---------- */}
           {tab === "payouts" && (
-            <div className="space-y-6">
-              <div className="bg-white rounded-xl border border-hairline p-5">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-5">
-                  <div>
-                    <h2 className="font-display text-lg font-medium text-ink">Earnings Statement</h2>
-                    <p className="text-xs mt-0.5 text-ink-secondary">Consolidated payouts — all units combined</p>
+            <div className="space-y-12">
+              <header className="pb-10 mb-10 border-b border-hairline flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+                <div className="max-w-[65ch]">
+                  <p className="text-[11px] font-sans font-semibold uppercase tracking-[0.18em] text-primary mb-3">Earnings</p>
+                  <h2 className="font-display text-[2rem] leading-[1.1] tracking-tight text-ink lg:text-[2.75rem]">Statement</h2>
+                  <p className="mt-4 text-base text-ink-secondary leading-relaxed">Consolidated payouts — all units combined.</p>
+                </div>
+                <div>
+                  <p className="text-[10px] font-sans font-semibold uppercase tracking-[0.16em] text-ink-tertiary">Latest</p>
+                  <p className="font-display text-[2rem] leading-none tracking-tight mt-2 tabular-nums text-primary">{fmt(payouts[0]?.amount_minor ?? 0)}</p>
+                </div>
+              </header>
+              <section>
+                <div className="pb-5 mb-6 border-b border-hairline">
+                  <p className="text-[11px] font-sans font-semibold uppercase tracking-[0.18em] text-primary">History</p>
+                  <h3 className="font-display text-2xl tracking-tight text-ink mt-1.5">All payouts</h3>
+                </div>
+                {payouts.length === 0 ? (
+                  <div className="text-center py-16 border border-dashed border-hairline rounded-xl">
+                    <p className="font-display text-base text-ink">No payouts yet</p>
+                    <p className="text-sm text-ink-secondary mt-1.5">Earnings appear here after each booking completes its inspection + settlement window.</p>
                   </div>
-                  <span className="text-2xl font-bold tabular-nums text-primary">{fmt(payouts[0]?.amount_minor ?? 0)}</span>
-                </div>
-                <div className="space-y-2">
-                  {payouts.length === 0 ? (
-                    <p className="text-sm text-ink-secondary py-6 text-center">No payouts yet — earnings appear here after each booking completes its inspection + settlement window.</p>
-                  ) : payouts.map((p) => (
-                    <div key={p.id} className="flex items-center justify-between p-3 rounded-xl border border-hairline hover:bg-primary-bg transition-colors">
-                      <div>
-                        <p className="text-sm font-semibold text-ink">{p.period} — {p.units}</p>
-                        <p className="text-xs text-ink-secondary">{p.paid_at}</p>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-sm font-bold tabular-nums text-ink">{fmt(p.amount_minor)}</p>
-                        <span className={`inline-block mt-0.5 text-[11px] font-semibold uppercase tracking-wide ${statusColor(p.status)}`}>{payoutStatusLabel(p.status)}</span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
+                ) : (
+                  <ul className="divide-y divide-hairline border-y border-hairline">
+                    {payouts.map((p) => (
+                      <li key={p.id} className="flex items-center justify-between gap-4 py-5 px-1 transition-colors hover:bg-bone-secondary/40">
+                        <div className="flex-1 min-w-0">
+                          <p className="font-display text-lg tracking-tight text-ink">{p.period}</p>
+                          <p className="text-xs text-ink-secondary mt-1 font-sans">{p.units} · {p.paid_at}</p>
+                        </div>
+                        <div className="text-right shrink-0">
+                          <p className="font-display text-lg tabular-nums text-ink">{fmt(p.amount_minor)}</p>
+                          <span className={`inline-block mt-1.5 text-[10px] font-sans font-semibold uppercase tracking-[0.08em] ${statusColor(p.status)}`}>{payoutStatusLabel(p.status)}</span>
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </section>
             </div>
           )}
 
@@ -558,55 +604,66 @@ export function OwnerDashboard({
 
           {/* ---------- CALENDAR SYNC ---------- */}
           {tab === "calendar" && (
-            <div className="space-y-6">
-              <div className="bg-white rounded-xl border border-hairline p-5">
-                <h2 className="font-display text-lg font-medium text-ink mb-2">Sync with your calendar</h2>
-                <p className="text-sm text-ink-secondary mb-5">
+            <div className="space-y-12">
+              <header className="pb-10 mb-10 border-b border-hairline">
+                <p className="text-[11px] font-sans font-semibold uppercase tracking-[0.18em] text-primary mb-3">External</p>
+                <h2 className="font-display text-[2rem] leading-[1.1] tracking-tight text-ink lg:text-[2.75rem]">Calendar sync</h2>
+                <p className="mt-4 text-base text-ink-secondary leading-relaxed max-w-[65ch]">
                   Subscribe to your CheckinBliss booking calendar. Updates automatically — one-way sync from our system to yours.
                 </p>
-                <div className="space-y-3 mb-5">
-                  <div className="p-4 rounded-xl bg-primary-bg">
-                    <p className="text-sm font-semibold text-ink mb-1">Subscribe URL</p>
-                    <div className="flex items-center gap-x-2">
-                      <code className="text-xs bg-white border border-hairline rounded-lg px-3 py-2 text-ink-secondary flex-1 break-all font-mono">
-                        https://checkinbliss.com/api/calendar/ow1
-                      </code>
-                      <button
-                        onClick={() => { navigator.clipboard.writeText("https://checkinbliss.com/api/calendar/ow1"); notify("Copied to clipboard", "success"); }}
-                        className="text-xs px-3 py-2 rounded-lg border border-hairline text-ink-secondary hover:bg-white transition-colors cursor-pointer"
-                      >Copy</button>
-                    </div>
+              </header>
+              <section>
+                <div className="pb-5 mb-6 border-b border-hairline">
+                  <p className="text-[11px] font-sans font-semibold uppercase tracking-[0.18em] text-primary">URL</p>
+                  <h3 className="font-display text-2xl tracking-tight text-ink mt-1.5">Subscribe URL</h3>
+                </div>
+                <div className="bg-primary-bg rounded-xl p-5 mb-6">
+                  <div className="flex items-center gap-3 flex-wrap">
+                    <code className="text-xs bg-canvas border border-hairline rounded-lg px-3 py-2 text-ink-secondary flex-1 break-all font-mono min-w-0">
+                      https://checkinbliss.com/api/calendar/ow1
+                    </code>
+                    <button
+                      onClick={() => { navigator.clipboard.writeText("https://checkinbliss.com/api/calendar/ow1"); notify("Copied to clipboard", "success"); }}
+                      className="text-xs px-4 py-2 rounded-lg border border-hairline text-ink-secondary hover:bg-canvas transition-colors cursor-pointer bg-transparent font-sans font-semibold"
+                    >Copy</button>
                   </div>
                 </div>
-                <p className="text-xs text-ink-secondary mb-4">Add to your calendar app:</p>
-                <div className="flex flex-wrap gap-x-3 gap-y-2">
-                  <a href="https://calendar.google.com/calendar/r?cid=https://checkinbliss.com/api/calendar/ow1" target="_blank" rel="noopener" className="inline-flex items-center gap-x-2 px-4 py-2.5 rounded-xl border border-hairline text-sm font-medium text-ink-secondary hover:bg-primary-bg transition-colors no-underline">
+                <p className="text-xs text-ink-secondary mb-4 font-sans">Add to your calendar app:</p>
+                <div className="flex flex-wrap gap-3">
+                  <a href="https://calendar.google.com/calendar/r?cid=https://checkinbliss.com/api/calendar/ow1" target="_blank" rel="noopener" className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg border border-hairline text-sm font-sans font-medium text-ink-secondary hover:bg-bone-secondary transition-colors no-underline bg-canvas">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M22.56 3.39H1.44A1.44 1.44 0 0 0 0 4.83v15.34A1.44 1.44 0 0 0 1.44 21.6h21.12A1.44 1.44 0 0 0 24 20.17V4.83a1.44 1.44 0 0 0-1.44-1.44zM16.8 16.8H7.2v-2.4h9.6v2.4zm0-4.8H7.2V9.6h9.6v2.4z"/></svg>
                     Google Calendar
                   </a>
-                  <a href={`data:text/calendar;charset=utf-8,${encodeURIComponent("BEGIN:VCALENDAR\nVERSION:2.0\nPRODID:-//CheckinBliss//Calendar//EN\nMETHOD:PUBLISH\nX-WR-CALNAME:CheckinBliss\nEND:VCALENDAR")}`} download="checkinbliss-bookings.ics" className="inline-flex items-center gap-x-2 px-4 py-2.5 rounded-xl border border-hairline text-sm font-medium text-ink-secondary hover:bg-primary-bg transition-colors no-underline">
+                  <a href={`data:text/calendar;charset=utf-8,${encodeURIComponent("BEGIN:VCALENDAR\nVERSION:2.0\nPRODID:-//CheckinBliss//Calendar//EN\nMETHOD:PUBLISH\nX-WR-CALNAME:CheckinBliss\nEND:VCALENDAR")}`} download="checkinbliss-bookings.ics" className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg border border-hairline text-sm font-sans font-medium text-ink-secondary hover:bg-bone-secondary transition-colors no-underline bg-canvas">
                     <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M17.5 0h-11A2.5 2.5 0 0 0 4 2.5v19A2.5 2.5 0 0 0 6.5 24h11a2.5 2.5 0 0 0 2.5-2.5v-19A2.5 2.5 0 0 0 17.5 0zm-5.5 22a1.5 1.5 0 1 1 0-3 1.5 1.5 0 0 1 0 3z"/></svg>
                     Outlook / Apple Calendar
                   </a>
                 </div>
-                <p className="text-xs text-ink-tertiary mt-4">Updates every 15 minutes. Your calendar app checks for changes automatically.</p>
-              </div>
-              <div className="bg-white rounded-xl border border-hairline p-5">
-                <h3 className="font-display text-base font-medium text-ink mb-3">Your upcoming bookings</h3>
-                <div className="space-y-2">
-                  {bookings.map((b) => (
-                    <div key={b.id} className="flex items-center justify-between p-3 rounded-lg border border-hairline">
-                      <div>
-                        <p className="text-sm font-semibold text-ink">{b.guest} · {b.unit}</p>
-                        <p className="text-xs text-ink-secondary">{b.check_in} → {b.check_out}</p>
-                      </div>
-                      <a href={`data:text/calendar;charset=utf-8,${encodeURIComponent(`BEGIN:VCALENDAR\nVERSION:2.0\nBEGIN:VEVENT\nDTSTART:${b.check_in.replace(/-/g, "")}\nDTEND:${b.check_out.replace(/-/g, "")}\nSUMMARY:CheckinBliss — ${b.unit}\nDESCRIPTION:Guest: ${b.guest}\\nBooking: ${b.id}\nSTATUS:CONFIRMED\nEND:VEVENT\nEND:VCALENDAR`)}`} download={`booking-${b.id}.ics`} className="text-xs font-medium text-brass hover:text-brass-dark no-underline">
-                        Add to calendar ↓
-                      </a>
-                    </div>
-                  ))}
+                <p className="text-xs text-ink-tertiary mt-5 font-sans">Updates every 15 minutes. Your calendar app checks for changes automatically.</p>
+              </section>
+              <section>
+                <div className="pb-5 mb-6 border-b border-hairline">
+                  <p className="text-[11px] font-sans font-semibold uppercase tracking-[0.18em] text-primary">Bookings</p>
+                  <h3 className="font-display text-2xl tracking-tight text-ink mt-1.5">Your upcoming bookings</h3>
                 </div>
-              </div>
+                {bookings.length === 0 ? (
+                  <p className="text-sm text-ink-secondary font-sans">No upcoming bookings to sync.</p>
+                ) : (
+                  <ul className="divide-y divide-hairline border-y border-hairline">
+                    {bookings.map((b) => (
+                      <li key={b.id} className="flex items-center justify-between gap-4 py-4 px-1 transition-colors hover:bg-bone-secondary/40">
+                        <div className="flex-1 min-w-0">
+                          <p className="text-sm font-sans font-semibold text-ink">{b.guest} · {b.unit}</p>
+                          <p className="text-xs text-ink-secondary mt-0.5 font-sans">{b.check_in} → {b.check_out}</p>
+                        </div>
+                        <a href={`data:text/calendar;charset=utf-8,${encodeURIComponent(`BEGIN:VCALENDAR\nVERSION:2.0\nBEGIN:VEVENT\nDTSTART:${b.check_in.replace(/-/g, "")}\nDTEND:${b.check_out.replace(/-/g, "")}\nSUMMARY:CheckinBliss — ${b.unit}\nDESCRIPTION:Guest: ${b.guest}\nBooking: ${b.id}\nSTATUS:CONFIRMED\nEND:VEVENT\nEND:VCALENDAR`)}`} download={`booking-${b.id}.ics`} className="text-[10px] font-sans font-semibold uppercase tracking-[0.08em] text-primary hover:text-primary-dark no-underline">
+                          Add to calendar →
+                        </a>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </section>
             </div>
           )}
 
