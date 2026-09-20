@@ -3,8 +3,22 @@
 import { useState, useCallback, useEffect } from "react";
 import { getAdminOperators } from "@/lib/data";
 import { createOperator, updateOperator, suspendOperator } from "@/actions/operators";
+import { PageHeader } from "@/components/dashboard/page-header";
+import { Section } from "@/components/dashboard/section";
+import { DataList } from "@/components/dashboard/data-list";
+import { EmptyState } from "@/components/dashboard/empty-state";
+import { StatusPill } from "@/components/dashboard/status-pill";
+import { Icon } from "@/components/icons";
 
 function statusLabel(s: string) { return s.replace(/_/g, " "); }
+function statusVariant(s: string): "success" | "warning" | "danger" | "accent" {
+  if (s === "active") return "success";
+  if (s === "onboarding") return "warning";
+  return "danger";
+}
+function initials(name: string) {
+  return name.split(" ").map((n) => n[0]).join("").slice(0, 2);
+}
 
 export function AdminOperatorsView() {
   const [operators, setOperators] = useState(() => getAdminOperators());
@@ -31,47 +45,74 @@ export function AdminOperatorsView() {
     finally { setPendingAction(null); }
   }
 
+  const activeCount = operators.filter((o) => o.status === "active").length;
+
   return (
-    <div className="space-y-4">
+    <div>
       {notification && (
         <div className={`fixed top-4 right-4 z-[60] px-4 py-2.5 rounded-xl text-sm font-medium animate-slideIn shadow-lg ${notification.type === "success" ? "bg-success text-white" : "bg-danger text-white"}`}>
           {notification.message}
         </div>
       )}
 
-      <div className="flex items-center justify-between mb-4">
-        <h1 className="text-lg font-bold text-ink">Operators</h1>
-        <div className="flex items-center gap-x-3">
-          <p className="text-sm font-semibold text-ink">{operators.length} operators · {operators.filter((o) => o.status === "active").length} active</p>
-          <button onClick={() => setOperatorModalOpen(true)} className="text-sm font-medium px-4 py-2 rounded-xl border border-primary text-primary hover:bg-primary-bg transition-colors cursor-pointer">+ Create Operator</button>
-        </div>
-      </div>
+      <PageHeader
+        eyebrow="City teams"
+        title="Operators"
+        description="City operators on shift across Lagos, Abuja, Port Harcourt. Create new accounts, edit assignments, suspend access."
+        meta={
+          <div className="flex items-center gap-2">
+            <span className="text-[10px] font-sans font-semibold uppercase tracking-[0.12em] rounded-full border border-primary/30 text-primary-dark bg-primary-bg px-2.5 py-1">
+              {activeCount} active
+            </span>
+            <button onClick={() => setOperatorModalOpen(true)} className="text-sm font-sans font-semibold px-4 py-2 rounded-lg bg-primary text-white hover:bg-primary-dark transition-colors cursor-pointer border-none">
+              + Create operator
+            </button>
+          </div>
+        }
+      />
 
-      {operators.map((op) => (
-        <div key={op.id} className="flex items-center justify-between p-4 rounded-xl border border-hairline hover:bg-primary-bg transition-colors">
-          <div className="flex items-center gap-x-3">
-            <div className={`w-9 h-9 rounded-xl flex items-center justify-center text-white font-bold text-sm ${op.status === "active" ? "bg-primary" : "bg-hairline"}`}>{op.name.split(" ").map((n) => n[0]).join("")}</div>
-            <div>
-              <p className="text-sm font-semibold text-ink">{op.name}</p>
-              <p className="text-xs text-ink-secondary">{op.email} · {op.assigned_cities.join(", ")}</p>
-              <div className="flex items-center gap-x-3 mt-1 text-xs text-ink-secondary">
-                <span>{op.properties_count} properties</span><span>{op.verified_count} verified</span><span>Quality: {op.quality_score}%</span>
-              </div>
-            </div>
-          </div>
-          <div className="text-right">
-            <span className={`text-[11px] font-semibold ${op.status === "active" ? "text-success" : op.status === "onboarding" ? "text-warning" : "text-danger"}`}>{statusLabel(op.status)}</span>
-            <div className="flex gap-x-1 mt-2 justify-end">
-              <button onClick={() => { setEditOperator(op); setOpForm({ name: op.name, email: op.email, city: op.assigned_cities[0] }); }} className="text-xs px-2 py-1 rounded-lg hover:bg-primary-bg text-ink-secondary cursor-pointer">Edit</button>
-              <button
-                disabled={pendingAction === `suspend-op-${op.id}`}
-                onClick={() => { if (confirm(`Suspend ${op.name}?`)) action(`suspend-op-${op.id}`, async () => { const r = await suspendOperator({ operatorId: op.id }); if (r.ok) setOperators((prev) => prev.map((o) => o.id === op.id ? { ...o, status: "suspended" } : o)); notify(r.ok ? "Operator suspended." : r.message, r.ok ? "success" : "error"); }); }}
-                className="text-xs px-2 py-1 rounded-lg hover:bg-red-50 text-danger cursor-pointer disabled:opacity-50 disabled:cursor-wait"
-              >{pendingAction === `suspend-op-${op.id}` ? "..." : "Suspend"}</button>
-            </div>
-          </div>
-        </div>
-      ))}
+      <Section eyebrow="Roster" count={operators.length}>
+        {operators.length === 0 ? (
+          <EmptyState
+            title="No operators yet"
+            body="Create an operator to assign them a city and start inspections."
+            icon={<Icon.UserCog size={20} />}
+            action={
+              <button onClick={() => setOperatorModalOpen(true)} className="text-sm font-sans font-semibold px-4 py-2 rounded-lg bg-primary text-white hover:bg-primary-dark transition-colors cursor-pointer border-none">
+                + Create operator
+              </button>
+            }
+          />
+        ) : (
+          <DataList
+            items={operators.map((op) => ({
+              id: op.id,
+              primary: (
+                <span className="flex items-center gap-3">
+                  <span className={`w-9 h-9 rounded-full flex items-center justify-center text-white font-sans font-semibold text-xs ${op.status === "active" ? "bg-primary" : "bg-ink-tertiary"}`}>
+                    {initials(op.name)}
+                  </span>
+                  <span>{op.name}</span>
+                  <StatusPill variant={statusVariant(op.status)}>{statusLabel(op.status)}</StatusPill>
+                </span>
+              ),
+              secondary: `${op.email} · ${op.assigned_cities.join(", ")} · ${op.properties_count} properties · ${op.verified_count} verified · Quality ${op.quality_score}%`,
+              trailing: (
+                <div className="flex gap-1">
+                  <button onClick={() => { setEditOperator(op); setOpForm({ name: op.name, email: op.email, city: op.assigned_cities[0] }); }} className="text-xs font-sans font-semibold px-3 py-1.5 rounded-lg hover:bg-bone-secondary text-ink-secondary cursor-pointer border border-hairline bg-canvas">
+                    Edit
+                  </button>
+                  <button
+                    disabled={pendingAction === `suspend-op-${op.id}`}
+                    onClick={() => { if (confirm(`Suspend ${op.name}?`)) action(`suspend-op-${op.id}`, async () => { const r = await suspendOperator({ operatorId: op.id }); if (r.ok) setOperators((prev) => prev.map((o) => o.id === op.id ? { ...o, status: "suspended" } : o)); notify(r.ok ? "Operator suspended." : r.message, r.ok ? "success" : "error"); }); }}
+                    className="text-xs font-sans font-semibold px-3 py-1.5 rounded-lg hover:bg-error/5 text-error cursor-pointer border border-error/30 bg-canvas disabled:opacity-50 disabled:cursor-wait"
+                  >{pendingAction === `suspend-op-${op.id}` ? "..." : "Suspend"}</button>
+                </div>
+              ),
+            }))}
+          />
+        )}
+      </Section>
 
       {/* create operator modal */}
       {operatorModalOpen && (

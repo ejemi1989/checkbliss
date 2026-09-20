@@ -4,7 +4,13 @@ import { useState } from "react";
 import { formatMinor } from "@/lib/currency";
 import { getAdminFinance, getPendingPayouts, getReconciliation } from "@/lib/data";
 import { approvePayout, rejectPayout, flagDiscrepancy } from "@/actions/finance";
-import type { PendingPayout } from "@/lib/data";
+import { PageHeader } from "@/components/dashboard/page-header";
+import { Section } from "@/components/dashboard/section";
+import { StatBlock, StatGrid } from "@/components/dashboard/stat-block";
+import { DataList } from "@/components/dashboard/data-list";
+import { EmptyState } from "@/components/dashboard/empty-state";
+import { StatusPill } from "@/components/dashboard/status-pill";
+import { Icon } from "@/components/icons";
 
 function fmt(n: number) { return formatMinor(n); }
 
@@ -45,21 +51,26 @@ export function AdminFinanceView() {
   ];
 
   return (
-    <div className="space-y-5">
-      <h1 className="text-lg font-bold text-ink">Finance</h1>
-
+    <div>
       {actionFeedback && (
-        <div className="p-3 rounded-xl bg-success/10 border border-success/20 text-sm font-medium text-success">
+        <div className="p-3 rounded-xl bg-primary-bg border border-primary/20 text-sm font-medium text-primary-dark">
           {actionFeedback}
         </div>
       )}
 
-      <div className="flex gap-1 p-1 bg-primary-bg rounded-xl w-fit">
+      <PageHeader
+        eyebrow="Treasury"
+        title="Finance"
+        description="Payments, payouts, deposit holds, and reconciliation. Source of truth for money movement on the platform."
+      />
+
+      {/* Sub-tab nav */}
+      <div className="flex gap-1 p-1 bg-bone-secondary rounded-xl w-fit mb-10">
         {tabs.map((t) => (
           <button
             key={t.key}
             onClick={() => setTab(t.key)}
-            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors cursor-pointer ${tab === t.key ? "bg-card text-ink shadow-sm" : "text-ink-secondary hover:text-ink"}`}
+            className={`px-4 py-2 rounded-lg text-sm font-sans font-medium transition-colors cursor-pointer border-none ${tab === t.key ? "bg-canvas text-ink shadow-sm" : "text-ink-secondary hover:text-ink"}`}
           >
             {t.label}
           </button>
@@ -67,155 +78,159 @@ export function AdminFinanceView() {
       </div>
 
       {tab === "overview" && (
-        <>
-          <div className="grid grid-cols-3 gap-4">
-            {[
-              { label: "Payments Received", value: fmt(totalPayments), sub: `From ${finance.filter(f => f.type === "payment").length} transactions` },
-              { label: "Payouts Issued", value: fmt(totalPayouts), sub: `To ${new Set(finance.filter(f => f.type === "payout").map(f => f.guest_or_owner)).size} owners` },
-              { label: "Deposits Held", value: fmt(totalHeld), sub: `${finance.filter(f => f.type === "deposit_hold").length} active holds` },
-            ].map((s) => (
-              <div key={s.label} className="p-4 rounded-xl border border-hairline bg-primary-bg">
-                <p className="text-xs font-medium mb-1 text-ink-secondary">{s.label}</p>
-                <p className="text-xl font-bold tabular-nums text-ink">{s.value}</p>
-                <p className="text-xs text-ink-secondary">{s.sub}</p>
-              </div>
-            ))}
-          </div>
+        <div className="space-y-10">
+          <Section eyebrow="Headline numbers">
+            <StatGrid>
+              <StatBlock label="Payments Received" value={fmt(totalPayments)} hint={`From ${finance.filter(f => f.type === "payment").length} transactions`} accent />
+              <StatBlock label="Payouts Issued" value={fmt(totalPayouts)} hint={`To ${new Set(finance.filter(f => f.type === "payout").map(f => f.guest_or_owner)).size} owners`} />
+              <StatBlock label="Deposits Held" value={fmt(totalHeld)} hint={`${finance.filter(f => f.type === "deposit_hold").length} active holds`} />
+            </StatGrid>
+          </Section>
 
-          <div className="space-y-2">
-            {finance.map((f) => (
-              <div key={f.id} className="flex items-center justify-between p-3 rounded-xl border border-hairline hover:bg-primary-bg transition-colors">
-                <div>
-                  <p className="text-sm font-semibold text-ink">{f.guest_or_owner} · {f.property}</p>
-                  <p className="text-xs text-ink-secondary">{f.date} · {f.ref}</p>
-                </div>
-                <div className="text-right">
-                  <p className="text-sm font-bold tabular-nums text-ink">{fmt(f.amount_minor)}</p>
-                  <span className={`text-[11px] font-semibold ${f.status === "settled" || f.status === "paid" ? "text-success" : f.status === "held" ? "text-warning" : "text-primary"}`}>{f.type} · {f.status}</span>
-                </div>
-              </div>
-            ))}
-          </div>
-        </>
+          <Section eyebrow="Ledger" count={finance.length}>
+            <DataList
+              items={finance.map((f) => ({
+                id: f.id,
+                primary: (
+                  <span className="flex items-center gap-2 flex-wrap">
+                    <span className="font-display text-base text-ink">{f.guest_or_owner}</span>
+                    <span className="text-ink-tertiary">·</span>
+                    <span className="text-ink-secondary font-normal">{f.property}</span>
+                  </span>
+                ),
+                secondary: `${f.date} · ${f.ref}`,
+                meta: fmt(f.amount_minor),
+                trailing: <span className={`text-[10px] font-sans font-semibold uppercase tracking-[0.08em] ${f.status === "settled" || f.status === "paid" ? "text-success" : f.status === "held" ? "text-warning" : "text-primary"}`}>{f.type} · {f.status}</span>,
+              }))}
+            />
+          </Section>
+        </div>
       )}
 
       {tab === "payouts" && (
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <p className="text-sm text-ink-secondary">Pending payouts requiring approval before funds are released to owners.</p>
-            <span className="text-xs font-medium px-3 py-1 rounded-full bg-warning/10 text-warning">{payouts.filter(p => p.status === "pending").length} pending</span>
-          </div>
+        <div className="space-y-8">
+          <Section eyebrow="Pending payouts" description="Pending payouts requiring approval before funds are released to owners.">
+            {payouts.length === 0 ? (
+              <EmptyState
+                title="No payouts queued"
+                body="Payouts accumulate after each booking completes its inspection + settlement window."
+                icon={<Icon.Coins size={20} />}
+              />
+            ) : (
+              <div className="space-y-6">
+                {payouts.map((p) => (
+                  <article key={p.id} className="pb-6 mb-6 border-b border-hairline last:border-b-0 last:mb-0 last:pb-0">
+                    <div className="flex items-start justify-between gap-4 flex-wrap mb-5">
+                      <div>
+                        <h3 className="font-display text-xl tracking-tight text-ink">{p.owner}</h3>
+                        <p className="text-xs text-ink-secondary mt-1 font-sans">{p.owner_email}</p>
+                      </div>
+                      <StatusPill variant={p.status === "pending" ? "warning" : p.status === "approved" ? "success" : "danger"}>
+                        {p.status}
+                      </StatusPill>
+                    </div>
 
-          {payouts.map((p) => (
-            <div key={p.id} className="p-5 rounded-xl border border-hairline bg-card space-y-3">
-              <div className="flex items-start justify-between">
-                <div>
-                  <p className="font-semibold text-ink">{p.owner}</p>
-                  <p className="text-xs text-ink-secondary">{p.owner_email}</p>
-                </div>
-                <span className={`text-[11px] font-semibold px-2 py-1 rounded-full ${p.status === "pending" ? "bg-warning/10 text-warning" : p.status === "approved" ? "bg-success/10 text-success" : "bg-danger/10 text-danger"}`}>{p.status}</span>
-              </div>
+                    <div className="grid grid-cols-2 gap-x-8 gap-y-6 sm:grid-cols-4 lg:divide-x lg:divide-hairline mb-5">
+                      {[
+                        { label: "Period", value: p.period },
+                        { label: "Units", value: `${p.units}` },
+                        { label: "Nights", value: `${p.nights}` },
+                        { label: "Payout", value: fmt(p.payout_minor) },
+                      ].map((m, i) => (
+                        <div key={m.label} className={i > 0 ? "lg:pl-8" : ""}>
+                          <p className="text-[10px] font-sans font-semibold uppercase tracking-[0.18em] text-ink-tertiary">{m.label}</p>
+                          <p className="font-display text-[1.5rem] leading-none tracking-tight tabular-nums text-ink mt-2">{m.value}</p>
+                        </div>
+                      ))}
+                    </div>
 
-              <div className="grid grid-cols-4 gap-3 text-center">
-                {[
-                  { label: "Period", value: p.period },
-                  { label: "Units", value: `${p.units}` },
-                  { label: "Nights", value: `${p.nights}` },
-                  { label: "Payout", value: fmt(p.payout_minor) },
-                ].map((m) => (
-                  <div key={m.label}>
-                    <p className="text-[10px] font-semibold uppercase tracking-wider text-mute mb-0.5">{m.label}</p>
-                    <p className="text-sm font-bold tabular-nums text-ink">{m.value}</p>
-                  </div>
+                    <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-ink-secondary bg-bone-secondary rounded-lg p-3 font-sans">
+                      <span>Revenue: <span className="font-semibold text-ink">{fmt(p.revenue_minor)}</span></span>
+                      <span className="text-ink-tertiary">·</span>
+                      <span>Fee (15%): <span className="font-semibold text-ink">{fmt(p.fee_minor)}</span></span>
+                      <span className="text-ink-tertiary">·</span>
+                      <span className="font-semibold text-primary">Net: {fmt(p.payout_minor)}</span>
+                    </div>
+
+                    {p.status === "pending" && (
+                      <div className="flex gap-3 mt-4 flex-wrap">
+                        <button onClick={() => handleApprove(p.id)} className="flex-1 min-w-[140px] py-2.5 rounded-lg bg-primary text-white text-sm font-sans font-semibold hover:bg-primary-dark transition-colors cursor-pointer border-none">Approve</button>
+                        {rejectingId === p.id ? (
+                          <div className="flex-1 min-w-[260px] flex gap-2">
+                            <input
+                              type="text"
+                              placeholder="Reason for rejection..."
+                              value={rejectReason}
+                              onChange={(e) => setRejectReason(e.target.value)}
+                              className="flex-1 px-3 py-2 rounded-lg border border-hairline text-sm outline-none focus:border-error bg-canvas font-sans"
+                            />
+                            <button onClick={() => handleReject(p.id)} className="px-4 py-2 rounded-lg bg-error text-white text-sm font-sans font-semibold hover:opacity-90 cursor-pointer border-none">Confirm</button>
+                            <button onClick={() => { setRejectingId(null); setRejectReason(""); }} className="px-3 py-2 rounded-lg border border-hairline text-sm text-ink-secondary cursor-pointer bg-canvas font-sans">Cancel</button>
+                          </div>
+                        ) : (
+                          <button onClick={() => setRejectingId(p.id)} className="flex-1 min-w-[140px] py-2.5 rounded-lg border border-error/30 text-error text-sm font-sans font-semibold hover:bg-error/5 transition-colors cursor-pointer bg-transparent">Reject</button>
+                        )}
+                      </div>
+                    )}
+                  </article>
                 ))}
               </div>
-
-              <div className="flex items-center gap-2 text-xs text-ink-secondary bg-primary-bg rounded-lg p-3">
-                <span>Revenue: {fmt(p.revenue_minor)}</span>
-                <span className="text-mute">|</span>
-                <span>Fee (15%): {fmt(p.fee_minor)}</span>
-                <span className="text-mute">|</span>
-                <span className="font-semibold text-ink">Net: {fmt(p.payout_minor)}</span>
-              </div>
-
-              {p.status === "pending" && (
-                <div className="flex gap-3">
-                  <button onClick={() => handleApprove(p.id)} className="flex-1 py-2.5 rounded-lg bg-success text-white text-sm font-semibold hover:opacity-90 transition-opacity cursor-pointer">Approve</button>
-                  {rejectingId === p.id ? (
-                    <div className="flex-1 flex gap-2">
-                      <input
-                        type="text"
-                        placeholder="Reason for rejection..."
-                        value={rejectReason}
-                        onChange={(e) => setRejectReason(e.target.value)}
-                        className="flex-1 px-3 py-2 rounded-lg border border-line text-sm outline-none focus:border-danger"
-                      />
-                      <button onClick={() => handleReject(p.id)} className="px-4 py-2 rounded-lg bg-danger text-white text-sm font-semibold hover:opacity-90 cursor-pointer">Confirm</button>
-                      <button onClick={() => { setRejectingId(null); setRejectReason(""); }} className="px-3 py-2 rounded-lg border border-line text-sm text-ink-secondary cursor-pointer">Cancel</button>
-                    </div>
-                  ) : (
-                    <button onClick={() => setRejectingId(p.id)} className="flex-1 py-2.5 rounded-lg border border-danger/30 text-danger text-sm font-semibold hover:bg-danger/5 transition-colors cursor-pointer">Reject</button>
-                  )}
-                </div>
-              )}
-            </div>
-          ))}
+            )}
+          </Section>
         </div>
       )}
 
       {tab === "reconciliation" && (
-        <div className="space-y-4">
-          <div className="grid grid-cols-3 gap-4">
-            <div className="p-4 rounded-xl border border-hairline bg-primary-bg">
-              <p className="text-xs font-medium mb-1 text-ink-secondary">Matched</p>
-              <p className="text-xl font-bold tabular-nums text-success">{fmt(reconciliation.matchedTotal)}</p>
-              <p className="text-xs text-ink-secondary">{reconciliation.records.filter(r => r.matched).length} records</p>
-            </div>
-            <div className="p-4 rounded-xl border border-hairline bg-primary-bg">
-              <p className="text-xs font-medium mb-1 text-ink-secondary">Unmatched</p>
-              <p className="text-xl font-bold tabular-nums text-warning">{fmt(reconciliation.unmatchedTotal)}</p>
-              <p className="text-xs text-ink-secondary">{reconciliation.records.filter(r => !r.matched).length} records</p>
-            </div>
-            <div className="p-4 rounded-xl border border-hairline bg-primary-bg">
-              <p className="text-xs font-medium mb-1 text-ink-secondary">Reconciliation Rate</p>
-              <p className="text-xl font-bold tabular-nums text-ink">
-                {Math.round((reconciliation.matchedTotal / (reconciliation.matchedTotal + reconciliation.unmatchedTotal)) * 100)}%
-              </p>
-              <p className="text-xs text-ink-secondary">June 2026</p>
-            </div>
-          </div>
+        <div className="space-y-10">
+          <Section eyebrow="Headline numbers" description="Stripe ↔ platform ledger — match rate for June 2026.">
+            <StatGrid>
+              <StatBlock label="Matched" value={fmt(reconciliation.matchedTotal)} hint={`${reconciliation.records.filter(r => r.matched).length} records`} />
+              <StatBlock label="Unmatched" value={fmt(reconciliation.unmatchedTotal)} hint={`${reconciliation.records.filter(r => !r.matched).length} records`} accent />
+              <StatBlock
+                label="Reconciliation rate"
+                value={`${Math.round((reconciliation.matchedTotal / (reconciliation.matchedTotal + reconciliation.unmatchedTotal)) * 100)}%`}
+                hint="June 2026"
+              />
+            </StatGrid>
+          </Section>
 
-          <div className="space-y-2">
-            {reconciliation.records.map((r) => (
-              <div key={r.id} className={`flex items-center justify-between p-3 rounded-xl border transition-colors ${r.matched ? "border-hairline hover:bg-primary-bg" : "border-warning/20 bg-warning/5"}`}>
-                <div className="flex items-center gap-3">
-                  <span className={`w-2 h-2 rounded-full shrink-0 ${r.matched ? "bg-success" : "bg-warning"}`} />
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <span className={`text-[10px] font-semibold uppercase px-1.5 py-0.5 rounded ${r.type === "booking_charge" ? "bg-primary/10 text-primary" : r.type === "payout" ? "bg-success/10 text-success" : r.type === "deposit_hold" ? "bg-warning/10 text-warning" : r.type === "refund" ? "bg-danger/10 text-danger" : "bg-ink/10 text-ink-secondary"}`}>{r.type.replace("_", " ")}</span>
-                      <span className="text-sm font-medium text-ink">{fmt(r.amount_minor)}</span>
-                    </div>
-                    <p className="text-xs text-ink-secondary">{r.date} · Stripe: {r.stripe_id}{r.booking_ref ? ` · ${r.booking_ref}` : ""}{r.property ? ` · ${r.property}` : ""}</p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-3">
-                  {r.matched ? (
-                    <span className="text-[11px] font-medium text-success flex items-center gap-1">
+          <Section eyebrow="Reconciliation log" count={reconciliation.records.length}>
+            {reconciliation.records.length === 0 ? (
+              <EmptyState
+                title="No reconciliation records"
+                body="Stripe events will be matched against platform bookings here."
+                icon={<Icon.List size={20} />}
+              />
+            ) : (
+              <DataList
+                items={reconciliation.records.map((r) => ({
+                  id: r.id,
+                  primary: (
+                    <span className="flex items-center gap-2 flex-wrap">
+                      <span className="font-display text-base tabular-nums text-ink">{fmt(r.amount_minor)}</span>
+                      <StatusPill variant={r.type === "booking_charge" ? "accent" : r.type === "payout" ? "success" : r.type === "deposit_hold" ? "warning" : r.type === "refund" ? "danger" : "neutral"}>
+                        {r.type.replace("_", " ")}
+                      </StatusPill>
+                    </span>
+                  ),
+                  secondary: `${r.date} · Stripe: ${r.stripe_id}${r.booking_ref ? ` · ${r.booking_ref}` : ""}${r.property ? ` · ${r.property}` : ""}`,
+                  trailing: r.matched ? (
+                    <span className="text-[11px] font-sans font-medium text-success flex items-center gap-1">
                       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><path d="M20 6L9 17l-5-5"/></svg>
                       Matched: {r.matched_with}
                     </span>
                   ) : (
                     <button
                       onClick={() => flagDiscrepancy(r.id)}
-                      className="text-[11px] font-medium px-3 py-1.5 rounded-lg border border-warning/30 text-warning hover:bg-warning/10 transition-colors cursor-pointer"
+                      className="text-[11px] font-sans font-medium px-3 py-1.5 rounded-lg border border-warning/30 text-warning hover:bg-warning/10 transition-colors cursor-pointer bg-transparent"
                     >
                       Flag discrepancy
                     </button>
-                  )}
-                </div>
-              </div>
-            ))}
-          </div>
+                  ),
+                }))}
+              />
+            )}
+          </Section>
         </div>
       )}
     </div>

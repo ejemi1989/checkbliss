@@ -5,9 +5,21 @@ import { formatMinor } from "@/lib/currency";
 import { getAdminProperties } from "@/lib/data";
 import { decideCuration } from "@/actions/curation";
 import { suspendProperty } from "@/actions/operators";
+import { PageHeader } from "@/components/dashboard/page-header";
+import { Section } from "@/components/dashboard/section";
+import { DataList } from "@/components/dashboard/data-list";
+import { EmptyState } from "@/components/dashboard/empty-state";
+import { StatusPill } from "@/components/dashboard/status-pill";
+import { Icon } from "@/components/icons";
 
 function fmt(n: number) { return formatMinor(n); }
 function statusLabel(s: string) { return s.replace(/_/g, " "); }
+function statusVariant(s: string): "success" | "warning" | "danger" | "neutral" {
+  if (s === "approved") return "success";
+  if (s === "pending_review") return "warning";
+  if (s === "draft") return "neutral";
+  return "danger";
+}
 
 export function AdminPropertiesView() {
   const [properties, setProperties] = useState(() => getAdminProperties());
@@ -31,53 +43,93 @@ export function AdminPropertiesView() {
     ? properties.filter((p) => p.name.toLowerCase().includes(propertySearch.toLowerCase()) || p.city.toLowerCase().includes(propertySearch.toLowerCase()))
     : properties;
 
+  const pendingReview = properties.filter((p) => p.status === "pending_review").length;
+  const approved = properties.filter((p) => p.status === "approved").length;
+  const suspended = properties.filter((p) => p.status === "suspended").length;
+
   return (
-    <div className="space-y-4">
+    <div>
       {notification && (
         <div className={`fixed top-4 right-4 z-[60] px-4 py-2.5 rounded-xl text-sm font-medium animate-slideIn shadow-lg ${notification.type === "success" ? "bg-success text-white" : "bg-danger text-white"}`}>
           {notification.message}
         </div>
       )}
 
-      <div className="flex items-center justify-between mb-4">
-        <h1 className="text-lg font-bold text-ink">Properties — platform-wide ({filteredProperties.length})</h1>
-        <input type="text" placeholder="Search property..." value={propertySearch} onChange={(e) => setPropertySearch(e.target.value)} className="border border-hairline rounded-lg px-3 py-1.5 text-sm outline-none w-48 text-ink focus:border-primary" />
-      </div>
+      <PageHeader
+        eyebrow="Inventory"
+        title="Properties"
+        description="Platform-wide property directory. Approve onboarding submissions, suspend problematic listings."
+        meta={
+          <div className="flex items-center gap-2 flex-wrap">
+            <span className="text-[10px] font-sans font-semibold uppercase tracking-[0.12em] rounded-full border border-primary/30 text-primary-dark bg-primary-bg px-2.5 py-1">
+              {pendingReview} pending
+            </span>
+            <span className="text-[10px] font-sans font-semibold uppercase tracking-[0.12em] rounded-full border border-primary/30 text-primary-dark bg-primary-bg px-2.5 py-1">
+              {approved} approved
+            </span>
+            {suspended > 0 && (
+              <span className="text-[10px] font-sans font-semibold uppercase tracking-[0.12em] rounded-full border border-error/30 text-error bg-error/5 px-2.5 py-1">
+                {suspended} suspended
+              </span>
+            )}
+            <input type="text" placeholder="Search by name or city..." value={propertySearch} onChange={(e) => setPropertySearch(e.target.value)} className="border border-hairline rounded-lg px-3 py-1.5 text-xs outline-none w-56 text-ink bg-canvas focus:border-primary font-sans" />
+          </div>
+        }
+      />
 
-      {filteredProperties.map((p) => (
-        <div key={p.id} className="flex items-center justify-between p-3 rounded-xl border border-hairline hover:bg-primary-bg transition-colors">
-          <div className="flex-1 cursor-pointer" onClick={() => setPropertyModal(p)}>
-            <p className="text-sm font-semibold text-ink">{p.name}</p>
-            <p className="text-xs text-ink-secondary">{p.city} · {p.neighbourhood} · Owner: {p.owner_name} · {p.bedrooms} bed · {p.bathrooms} bath · Up to {p.max_guests} guests</p>
-          </div>
-          <div className="flex items-center gap-x-3 shrink-0">
-            <span className="text-xs text-ink-secondary">{p.bookings_count} bookings · {fmt(p.revenue_minor)}</span>
-            <span className={`text-[11px] font-semibold ${p.status === "approved" ? "text-success" : p.status === "pending_review" ? "text-primary" : p.status === "draft" ? "text-ink-secondary" : "text-danger"}`}>{statusLabel(p.status)}</span>
-            {p.status === "pending_review" && (
-              <button
-                disabled={pendingAction === `approve-${p.id}`}
-                onClick={(e) => { e.stopPropagation(); action(`approve-${p.id}`, async () => { const r = await decideCuration({ propertyId: p.id, action: "approve" }); if (r.ok) setProperties((prev) => prev.map((pr) => pr.id === p.id ? { ...pr, status: "approved" } : pr)); notify(r.ok ? "Property approved." : r.message, r.ok ? "success" : "error"); }); }}
-                className="text-xs px-2 py-1 rounded-lg hover:bg-green-50 text-success cursor-pointer disabled:opacity-50 bg-transparent border border-hairline"
-              >{pendingAction === `approve-${p.id}` ? "..." : "Approve"}</button>
-            )}
-            <button onClick={(e) => { e.stopPropagation(); setPropertyModal(p); }} className="text-xs px-2 py-1 rounded-lg hover:bg-primary-bg text-primary cursor-pointer bg-transparent border border-hairline">View</button>
-            {p.status === "approved" && (
-              <button
-                disabled={pendingAction === `suspend-prop-${p.id}`}
-                onClick={(e) => { e.stopPropagation(); const reason = prompt("Reason for suspension:"); if (reason) action(`suspend-prop-${p.id}`, async () => { const r = await suspendProperty({ propertyId: p.id, reason }); if (r.ok) setProperties((prev) => prev.map((pr) => pr.id === p.id ? { ...pr, status: "suspended" } : pr)); notify(r.ok ? "Property suspended." : r.message, r.ok ? "success" : "error"); }); }}
-                className="text-xs px-2 py-1 rounded-lg hover:bg-red-50 text-danger cursor-pointer disabled:opacity-50 bg-transparent border border-hairline"
-              >{pendingAction === `suspend-prop-${p.id}` ? "..." : "Suspend"}</button>
-            )}
-            {p.status === "suspended" && (
-              <button
-                disabled={pendingAction === `reactivate-prop-${p.id}`}
-                onClick={(e) => { e.stopPropagation(); action(`reactivate-prop-${p.id}`, async () => { setProperties((prev) => prev.map((pr) => pr.id === p.id ? { ...pr, status: "approved" } : pr)); notify("Property reactivated.", "success"); }); }}
-                className="text-xs px-2 py-1 rounded-lg hover:bg-green-50 text-success cursor-pointer disabled:opacity-50 bg-transparent border border-hairline"
-              >{pendingAction === `reactivate-prop-${p.id}` ? "..." : "Reactivate"}</button>
-            )}
-          </div>
-        </div>
-      ))}
+      <Section eyebrow="Directory" count={filteredProperties.length}>
+        {filteredProperties.length === 0 ? (
+          <EmptyState
+            title="No properties match"
+            body={propertySearch ? `Clear the search to see all properties.` : "Properties onboarded by operators will appear here for admin review."}
+            icon={<Icon.Building2 size={20} />}
+          />
+        ) : (
+          <DataList
+            items={filteredProperties.map((p) => ({
+              id: p.id,
+              primary: (
+                <span className="flex items-center gap-2.5 flex-wrap">
+                  <button onClick={() => setPropertyModal(p)} className="font-display text-lg tracking-tight text-ink hover:text-primary transition-colors bg-transparent border-none p-0 cursor-pointer text-left">
+                    {p.name}
+                  </button>
+                  <StatusPill variant={statusVariant(p.status)} dot>{statusLabel(p.status)}</StatusPill>
+                </span>
+              ),
+              secondary: `${p.city} · ${p.neighbourhood} · Owner: ${p.owner_name} · ${p.bedrooms} bed · ${p.bathrooms} bath · Up to ${p.max_guests} guests`,
+              meta: `${p.bookings_count} bookings · ${fmt(p.revenue_minor)}`,
+              trailing: (
+                <div className="flex gap-1.5">
+                  {p.status === "pending_review" && (
+                    <button
+                      disabled={pendingAction === `approve-${p.id}`}
+                      onClick={(e) => { e.stopPropagation(); action(`approve-${p.id}`, async () => { const r = await decideCuration({ propertyId: p.id, action: "approve" }); if (r.ok) setProperties((prev) => prev.map((pr) => pr.id === p.id ? { ...pr, status: "approved" } : pr)); notify(r.ok ? "Property approved." : r.message, r.ok ? "success" : "error"); }); }}
+                      className="text-xs font-sans font-semibold px-3 py-1.5 rounded-lg border border-primary/30 text-primary hover:bg-primary-bg transition-colors cursor-pointer bg-canvas disabled:opacity-50"
+                    >{pendingAction === `approve-${p.id}` ? "..." : "Approve"}</button>
+                  )}
+                  <button onClick={(e) => { e.stopPropagation(); setPropertyModal(p); }} className="text-xs font-sans font-semibold px-3 py-1.5 rounded-lg hover:bg-bone-secondary text-ink-secondary cursor-pointer border border-hairline bg-canvas">
+                    View
+                  </button>
+                  {p.status === "approved" && (
+                    <button
+                      disabled={pendingAction === `suspend-prop-${p.id}`}
+                      onClick={(e) => { e.stopPropagation(); const reason = prompt("Reason for suspension:"); if (reason) action(`suspend-prop-${p.id}`, async () => { const r = await suspendProperty({ propertyId: p.id, reason }); if (r.ok) setProperties((prev) => prev.map((pr) => pr.id === p.id ? { ...pr, status: "suspended" } : pr)); notify(r.ok ? "Property suspended." : r.message, r.ok ? "success" : "error"); }); }}
+                      className="text-xs font-sans font-semibold px-3 py-1.5 rounded-lg hover:bg-error/5 text-error cursor-pointer border border-error/30 bg-canvas disabled:opacity-50"
+                    >{pendingAction === `suspend-prop-${p.id}` ? "..." : "Suspend"}</button>
+                  )}
+                  {p.status === "suspended" && (
+                    <button
+                      disabled={pendingAction === `reactivate-prop-${p.id}`}
+                      onClick={(e) => { e.stopPropagation(); action(`reactivate-prop-${p.id}`, async () => { setProperties((prev) => prev.map((pr) => pr.id === p.id ? { ...pr, status: "approved" } : pr)); notify("Property reactivated.", "success"); }); }}
+                      className="text-xs font-sans font-semibold px-3 py-1.5 rounded-lg hover:bg-primary-bg text-primary cursor-pointer border border-primary/30 bg-canvas disabled:opacity-50"
+                    >{pendingAction === `reactivate-prop-${p.id}` ? "..." : "Reactivate"}</button>
+                  )}
+                </div>
+              ),
+            }))}
+          />
+        )}
+      </Section>
 
       {/* property detail modal */}
       {propertyModal && (

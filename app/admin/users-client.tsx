@@ -3,6 +3,12 @@
 import { useState, useCallback } from "react";
 import type { UserRecord } from "@/lib/types";
 import { setUserSuspended } from "@/actions/users";
+import { PageHeader } from "@/components/dashboard/page-header";
+import { Section } from "@/components/dashboard/section";
+import { DataList } from "@/components/dashboard/data-list";
+import { EmptyState } from "@/components/dashboard/empty-state";
+import { StatusPill } from "@/components/dashboard/status-pill";
+import { Icon } from "@/components/icons";
 
 function initials(name: string): string {
   return name
@@ -40,46 +46,79 @@ export function AdminUsersView({ initialUsers }: { initialUsers: UserRecord[] })
     }
   }
 
+  const activeCount = users.filter((u) => u.status !== "suspended").length;
+  const suspendedCount = users.length - activeCount;
+
   return (
-    <div className="space-y-4">
+    <div>
       {notification && (
         <div className={`fixed top-4 right-4 z-[60] px-4 py-2.5 rounded-xl text-sm font-medium animate-slideIn shadow-lg ${notification.type === "success" ? "bg-success text-white" : "bg-danger text-white"}`}>
           {notification.message}
         </div>
       )}
 
-      <h1 className="text-lg font-bold text-ink">User Management</h1>
-      <p className="text-sm font-medium text-ink-secondary">Unified directory — support actions</p>
-
-      {users.map((u) => {
-        const suspended = u.status === "suspended";
-        return (
-          <div key={u.id} className="flex items-center justify-between p-3 rounded-xl border border-hairline hover:bg-primary-bg transition-colors">
-            <div className="flex items-center gap-x-3">
-              <div className={`w-9 h-9 rounded-xl flex items-center justify-center text-white font-bold text-sm ${u.type === "Guest" ? "bg-primary" : "bg-ink-tertiary"}`}>{initials(u.name)}</div>
-              <div>
-                <p className="text-sm font-semibold text-ink">{u.name}</p>
-                <p className="text-xs text-ink-secondary">{u.email} · {u.bookings_or_properties} {u.type === "Owner" ? "properties" : "bookings"}</p>
-              </div>
-            </div>
-            <div className="flex items-center gap-x-2">
-              <span className={`text-[11px] font-semibold ${u.type === "Guest" ? "text-primary" : "text-ink-tertiary"}`}>{u.type}</span>
-              {suspended ? (
-                <span className="text-[11px] font-semibold text-danger">Suspended</span>
-              ) : null}
-              <button
-                onClick={() => toggleSuspend(u)}
-                disabled={busy === u.id}
-                className={`text-xs px-2 py-1 rounded-lg cursor-pointer disabled:opacity-50 ${
-                  suspended ? "hover:bg-success/10 text-success" : "hover:bg-red-50 text-danger"
-                }`}
-              >
-                {busy === u.id ? "…" : suspended ? "Restore" : "Suspend"}
-              </button>
-            </div>
+      <PageHeader
+        eyebrow="People"
+        title="User management"
+        description="Unified directory — owners, operators, guests. Suspend or restore access as needed."
+        meta={
+          <div className="flex items-center gap-2">
+            <span className="text-[10px] font-sans font-semibold uppercase tracking-[0.12em] rounded-full border border-primary/30 text-primary-dark bg-primary-bg px-2.5 py-1">
+              {activeCount} active
+            </span>
+            {suspendedCount > 0 && (
+              <span className="text-[10px] font-sans font-semibold uppercase tracking-[0.12em] rounded-full border border-error/30 text-error bg-error/5 px-2.5 py-1">
+                {suspendedCount} suspended
+              </span>
+            )}
           </div>
-        );
-      })}
+        }
+      />
+
+      <Section eyebrow="Directory" count={users.length}>
+        {users.length === 0 ? (
+          <EmptyState
+            title="No users yet"
+            body="Owners, operators, and guests will appear here as they sign up."
+            icon={<Icon.Users size={20} />}
+          />
+        ) : (
+          <DataList
+            items={users.map((u) => {
+              const suspended = u.status === "suspended";
+              return {
+                id: u.id,
+                primary: (
+                  <span className="flex items-center gap-2.5">
+                    <span className={`w-7 h-7 rounded-full flex items-center justify-center text-white text-[10px] font-sans font-semibold ${u.type === "Guest" ? "bg-primary" : "bg-ink-tertiary"}`}>
+                      {initials(u.name)}
+                    </span>
+                    <span>{u.name}</span>
+                  </span>
+                ),
+                secondary: `${u.email} · ${u.bookings_or_properties} ${u.type === "Owner" ? "properties" : "bookings"}`,
+                trailing: (
+                  <div className="flex items-center gap-2">
+                    <StatusPill variant="accent">{u.type}</StatusPill>
+                    {suspended && <StatusPill variant="danger" dot>Suspended</StatusPill>}
+                    <button
+                      onClick={() => toggleSuspend(u)}
+                      disabled={busy === u.id}
+                      className={`text-xs font-sans font-semibold px-3 py-1.5 rounded-lg cursor-pointer disabled:opacity-50 transition-colors border ${
+                        suspended
+                          ? "border-primary/30 text-primary hover:bg-primary-bg"
+                          : "border-error/30 text-error hover:bg-error/5"
+                      }`}
+                    >
+                      {busy === u.id ? "…" : suspended ? "Restore" : "Suspend"}
+                    </button>
+                  </div>
+                ),
+              };
+            })}
+          />
+        )}
+      </Section>
     </div>
   );
 }
