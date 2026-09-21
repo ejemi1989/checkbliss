@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { Icon } from "@/components/icons";
 
 interface ConfirmDialogProps {
   open: boolean;
@@ -55,39 +56,49 @@ export function ConfirmDialog({
 
   return (
     <div className="fixed inset-0 z-[200] flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-ink/60 backdrop-blur-sm" onClick={onCancel} />
-      <div className="relative bg-bone rounded-2xl w-full max-w-md p-6 shadow-[0_24px_60px_rgba(0,0,0,0.25)] animate-modalIn">
-        <h3 className="font-display text-lg font-medium text-ink mb-2">{title}</h3>
-        <p className="font-sans text-sm text-ink-secondary mb-5 leading-relaxed">{message}</p>
-
-        {needsInput && (
-          <textarea
-            ref={inputRef}
-            value={value}
-            onChange={(e) => setValue(e.target.value)}
-            placeholder={placeholder}
-            rows={3}
-            className="w-full border border-hairline rounded-xl px-4 py-3 text-sm outline-none focus:border-primary text-ink resize-none mb-5 font-sans"
-          />
-        )}
-
-        <div className="flex gap-x-3 justify-end">
+      <div className="absolute inset-0 bg-ink/50 backdrop-blur-sm animate-modalIn" onClick={onCancel} />
+      <div className="relative bg-canvas rounded-2xl w-full max-w-md shadow-[0_24px_60px_rgba(23,25,21,0.25)] animate-modalIn overflow-hidden">
+        <header className="flex items-start justify-between gap-4 px-6 pt-6 pb-4">
+          <h3 className="font-display text-xl tracking-tight text-ink leading-tight flex-1">{title}</h3>
           <button
             onClick={onCancel}
-            className="px-5 py-2.5 rounded-xl text-sm font-medium border border-hairline text-ink-secondary hover:bg-primary-bg transition-colors cursor-pointer"
+            className="shrink-0 w-8 h-8 flex items-center justify-center rounded-lg text-ink-secondary hover:bg-bone-secondary hover:text-ink transition-colors cursor-pointer border-none bg-transparent"
+            aria-label="Close"
+          >
+            <Icon.X />
+          </button>
+        </header>
+        <div className="px-6 pb-6">
+          <p className="font-sans text-sm text-ink-secondary leading-relaxed">{message}</p>
+
+          {needsInput && (
+            <textarea
+              ref={inputRef}
+              value={value}
+              onChange={(e) => setValue(e.target.value)}
+              placeholder={placeholder}
+              rows={3}
+              className="mt-4 w-full border border-hairline rounded-lg px-4 py-3 text-sm outline-none focus:border-primary text-ink resize-none font-sans bg-canvas"
+            />
+          )}
+        </div>
+        <footer className="flex items-center justify-end gap-3 px-6 py-4 border-t border-hairline bg-bone-secondary/40">
+          <button
+            onClick={onCancel}
+            className="px-4 py-2 rounded-lg text-sm font-sans font-semibold border border-hairline text-ink-secondary hover:bg-canvas transition-colors cursor-pointer bg-canvas"
           >
             Cancel
           </button>
           <button
             onClick={() => onConfirm(needsInput ? value : undefined)}
             disabled={needsInput && !value.trim()}
-            className={`px-5 py-2.5 rounded-xl text-sm font-semibold text-white transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed border-none ${
-              variant === "danger" ? "bg-danger hover:bg-red-700" : "bg-primary hover:bg-primary-dark"
+            className={`px-4 py-2 rounded-lg text-sm font-sans font-semibold text-white transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed border-none ${
+              variant === "danger" ? "bg-error hover:opacity-90" : "bg-primary hover:bg-primary-dark"
             }`}
           >
             {confirmLabel}
           </button>
-        </div>
+        </footer>
       </div>
     </div>
   );

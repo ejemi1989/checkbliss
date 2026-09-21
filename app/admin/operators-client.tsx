@@ -8,6 +8,7 @@ import { Section } from "@/components/dashboard/section";
 import { DataList } from "@/components/dashboard/data-list";
 import { EmptyState } from "@/components/dashboard/empty-state";
 import { StatusPill } from "@/components/dashboard/status-pill";
+import { Modal, ModalButton } from "@/components/dashboard/modal";
 import { Icon } from "@/components/icons";
 
 function statusLabel(s: string) { return s.replace(/_/g, " "); }
@@ -115,96 +116,87 @@ export function AdminOperatorsView() {
       </Section>
 
       {/* create operator modal */}
-      {operatorModalOpen && (
-        <div className="fixed inset-0 z-50 bg-black/30 backdrop-blur-sm flex items-center justify-center p-4" onClick={() => setOperatorModalOpen(false)}>
-          <div className="bg-white rounded-2xl w-full max-w-md p-6 shadow-xl animate-modalIn" onClick={(e) => e.stopPropagation()}>
-            <div className="flex items-center justify-between mb-5">
-              <h3 className="text-lg font-bold text-ink">Create Operator</h3>
-              <button onClick={() => setOperatorModalOpen(false)} className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-primary-bg text-ink-secondary cursor-pointer">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
-              </button>
-            </div>
-            <div className="space-y-4">
-              <div>
-                <label className="text-xs font-medium text-ink-secondary">Full Name</label>
-                <input id="op-name" type="text" placeholder="e.g. Funke Adeyemi" className="w-full border border-hairline rounded-xl px-4 py-2.5 text-sm mt-1 outline-none focus:border-primary text-ink" />
-              </div>
-              <div>
-                <label className="text-xs font-medium text-ink-secondary">Email</label>
-                <input id="op-email" type="email" placeholder="operator@checkinbliss.com" className="w-full border border-hairline rounded-xl px-4 py-2.5 text-sm mt-1 outline-none focus:border-primary text-ink" />
-              </div>
-              <div>
-                <label className="text-xs font-medium text-ink-secondary">Assigned Cities</label>
-                <select id="op-cities" defaultValue="Lagos" className="w-full border border-hairline rounded-xl px-4 py-2.5 text-sm mt-1 outline-none text-ink">
-                  <option value="Lagos">Lagos</option>
-                  <option value="Abuja">Abuja</option>
-                  <option value="Port Harcourt">Port Harcourt</option>
-                  <option value="Lagos+Abuja">Lagos + Abuja</option>
-                  <option value="All">All cities</option>
-                </select>
-              </div>
-              <button
-                disabled={pendingAction === "create-operator"}
-                onClick={() => action("create-operator", async () => {
-                  const name = (document.getElementById("op-name") as HTMLInputElement)?.value;
-                  const email = (document.getElementById("op-email") as HTMLInputElement)?.value;
-                  const citiesRaw = (document.getElementById("op-cities") as HTMLSelectElement)?.value;
-                  if (!name || !email) { notify("Name and email required", "error"); return; }
-                  const cities = citiesRaw === "All" ? ["Lagos", "Abuja", "Port Harcourt"] : citiesRaw === "Lagos+Abuja" ? ["Lagos", "Abuja"] : [citiesRaw];
-                  const r = await createOperator({ name, email, assignedCities: cities });
-                  if (r.ok && r.data) setOperators((prev) => [r.data!, ...prev]);
-                  notify(r.ok ? `Operator ${name} created.` : r.message, r.ok ? "success" : "error");
-                  if (r.ok) setOperatorModalOpen(false);
-                })}
-                className="w-full py-2.5 rounded-xl text-sm font-semibold border border-primary text-primary hover:bg-primary-bg transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-wait"
-              >{pendingAction === "create-operator" ? "Creating..." : "Create Operator"}</button>
-            </div>
+      <Modal
+        open={operatorModalOpen}
+        onClose={() => setOperatorModalOpen(false)}
+        title="Create operator"
+        description="Source a new operator for your city."
+        size="md"
+      >
+        <div className="space-y-4">
+          <div>
+            <label className="block text-[10px] font-sans font-semibold uppercase tracking-[0.16em] text-ink-tertiary mb-1.5">Full name</label>
+            <input id="op-name" type="text" placeholder="e.g. Funke Adeyemi" className="w-full border border-hairline rounded-lg px-4 py-2.5 text-sm outline-none focus:border-primary text-ink bg-canvas font-sans" />
           </div>
+          <div>
+            <label className="block text-[10px] font-sans font-semibold uppercase tracking-[0.16em] text-ink-tertiary mb-1.5">Email</label>
+            <input id="op-email" type="email" placeholder="operator@checkbliss.com" className="w-full border border-hairline rounded-lg px-4 py-2.5 text-sm outline-none focus:border-primary text-ink bg-canvas font-sans" />
+          </div>
+          <div>
+            <label className="block text-[10px] font-sans font-semibold uppercase tracking-[0.16em] text-ink-tertiary mb-1.5">Assigned cities</label>
+            <select id="op-cities" defaultValue="Lagos" className="w-full border border-hairline rounded-lg px-4 py-2.5 text-sm outline-none text-ink bg-canvas font-sans">
+              <option value="Lagos">Lagos</option>
+              <option value="Abuja">Abuja</option>
+              <option value="Port Harcourt">Port Harcourt</option>
+              <option value="Lagos+Abuja">Lagos + Abuja</option>
+              <option value="All">All cities</option>
+            </select>
+          </div>
+          <button
+            disabled={pendingAction === "create-operator"}
+            onClick={() => action("create-operator", async () => {
+              const name = (document.getElementById("op-name") as HTMLInputElement)?.value;
+              const email = (document.getElementById("op-email") as HTMLInputElement)?.value;
+              const citiesRaw = (document.getElementById("op-cities") as HTMLSelectElement)?.value;
+              if (!name || !email) { notify("Name and email required", "error"); return; }
+              const cities = citiesRaw === "All" ? ["Lagos", "Abuja", "Port Harcourt"] : citiesRaw === "Lagos+Abuja" ? ["Lagos", "Abuja"] : [citiesRaw];
+              const r = await createOperator({ name, email, assignedCities: cities });
+              if (r.ok && r.data) setOperators((prev) => [r.data!, ...prev]);
+              notify(r.ok ? `Operator ${name} created.` : r.message, r.ok ? "success" : "error");
+              if (r.ok) setOperatorModalOpen(false);
+            })}
+            className="w-full py-2.5 rounded-lg text-sm font-sans font-semibold border border-primary text-primary hover:bg-primary-bg transition-colors cursor-pointer bg-transparent disabled:opacity-50 disabled:cursor-wait"
+          >{pendingAction === "create-operator" ? "Creating..." : "Create Operator"}</button>
         </div>
-      )}
+      </Modal>
 
       {/* edit operator modal */}
-      {editOperator && (
-        <div className="fixed inset-0 z-50 bg-black/30 backdrop-blur-sm flex items-center justify-center p-4" onClick={() => setEditOperator(null)}>
-          <div className="bg-white rounded-2xl w-full max-w-md p-6 shadow-xl animate-modalIn" onClick={(e) => e.stopPropagation()}>
-            <div className="flex items-center justify-between mb-5">
-              <h3 className="text-lg font-bold text-ink">Edit Operator</h3>
-              <button onClick={() => setEditOperator(null)} className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-primary-bg text-ink-secondary cursor-pointer">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
-              </button>
-            </div>
-            <div className="space-y-4">
-              <div>
-                <label className="text-xs font-medium text-ink-secondary">Full Name</label>
-                <input type="text" value={opForm.name} onChange={(e) => setOpForm((f) => ({ ...f, name: e.target.value }))} className="w-full border border-hairline rounded-xl px-4 py-2.5 text-sm mt-1 outline-none focus:border-primary text-ink" />
-              </div>
-              <div>
-                <label className="text-xs font-medium text-ink-secondary">Email</label>
-                <input type="email" value={opForm.email} onChange={(e) => setOpForm((f) => ({ ...f, email: e.target.value }))} className="w-full border border-hairline rounded-xl px-4 py-2.5 text-sm mt-1 outline-none focus:border-primary text-ink" />
-              </div>
-              <div>
-                <label className="text-xs font-medium text-ink-secondary">Assigned City</label>
-                <select value={opForm.city} onChange={(e) => setOpForm((f) => ({ ...f, city: e.target.value }))} className="w-full border border-hairline rounded-xl px-4 py-2.5 text-sm mt-1 outline-none text-ink">
-                  <option value="Lagos">Lagos</option>
-                  <option value="Abuja">Abuja</option>
-                  <option value="Port Harcourt">Port Harcourt</option>
-                </select>
-              </div>
-              <button
-                disabled={pendingAction === `edit-operator-${editOperator.id}`}
-                onClick={() => action(`edit-operator-${editOperator.id}`, async () => {
-                  if (!opForm.name || !opForm.email) { notify("Name and email required", "error"); return; }
-                  const r = await updateOperator({ operatorId: editOperator.id, name: opForm.name, email: opForm.email, assignedCities: [opForm.city] });
-                  if (r.ok) setOperators((prev) => prev.map((o) => o.id === editOperator.id ? { ...o, name: opForm.name, email: opForm.email, assigned_cities: [opForm.city], city: opForm.city } : o));
-                  notify(r.ok ? "Operator updated." : r.message, r.ok ? "success" : "error");
-                  if (r.ok) setEditOperator(null);
-                })}
-                className="w-full py-2.5 rounded-xl text-sm font-semibold bg-primary text-white hover:bg-primary-dark transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-wait border-none"
-              >{pendingAction === `edit-operator-${editOperator.id}` ? "Saving..." : "Save Changes"}</button>
-            </div>
+      <Modal
+        open={!!editOperator}
+        onClose={() => setEditOperator(null)}
+        title="Edit operator"
+        size="md"
+      >
+        <div className="space-y-4">
+          <div>
+            <label className="block text-[10px] font-sans font-semibold uppercase tracking-[0.16em] text-ink-tertiary mb-1.5">Full name</label>
+            <input type="text" value={opForm.name} onChange={(e) => setOpForm((f) => ({ ...f, name: e.target.value }))} className="w-full border border-hairline rounded-lg px-4 py-2.5 text-sm outline-none focus:border-primary text-ink bg-canvas font-sans" />
           </div>
+          <div>
+            <label className="block text-[10px] font-sans font-semibold uppercase tracking-[0.16em] text-ink-tertiary mb-1.5">Email</label>
+            <input type="email" value={opForm.email} onChange={(e) => setOpForm((f) => ({ ...f, email: e.target.value }))} className="w-full border border-hairline rounded-lg px-4 py-2.5 text-sm outline-none focus:border-primary text-ink bg-canvas font-sans" />
+          </div>
+          <div>
+            <label className="block text-[10px] font-sans font-semibold uppercase tracking-[0.16em] text-ink-tertiary mb-1.5">Assigned city</label>
+            <select value={opForm.city} onChange={(e) => setOpForm((f) => ({ ...f, city: e.target.value }))} className="w-full border border-hairline rounded-lg px-4 py-2.5 text-sm outline-none text-ink bg-canvas font-sans">
+              <option value="Lagos">Lagos</option>
+              <option value="Abuja">Abuja</option>
+              <option value="Port Harcourt">Port Harcourt</option>
+            </select>
+          </div>
+          <button
+            disabled={pendingAction === `edit-operator-${editOperator?.id}`}
+            onClick={() => action(`edit-operator-${editOperator!.id}`, async () => {
+              if (!opForm.name || !opForm.email) { notify("Name and email required", "error"); return; }
+              const r = await updateOperator({ operatorId: editOperator!.id, name: opForm.name, email: opForm.email, assignedCities: [opForm.city] });
+              if (r.ok) setOperators((prev) => prev.map((o) => o.id === editOperator!.id ? { ...o, name: opForm.name, email: opForm.email, assigned_cities: [opForm.city], city: opForm.city } : o));
+              notify(r.ok ? "Operator updated." : r.message, r.ok ? "success" : "error");
+              if (r.ok) setEditOperator(null);
+            })}
+            className="w-full py-2.5 rounded-lg text-sm font-sans font-semibold bg-primary text-white hover:bg-primary-dark transition-colors cursor-pointer border-none disabled:opacity-50 disabled:cursor-wait"
+          >{pendingAction === `edit-operator-${editOperator?.id}` ? "Saving..." : "Save Changes"}</button>
         </div>
-      )}
+      </Modal>
     </div>
   );
 }

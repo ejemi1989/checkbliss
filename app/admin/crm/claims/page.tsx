@@ -3,6 +3,12 @@ import type { Metadata } from "next";
 import { formatMinor, type CurrencyCode } from "@/lib/currency";
 import { getCrmClaims } from "@/lib/crm-admin";
 import { decideCrmClaim } from "@/lib/crm-actions";
+import { PageHeader } from "@/components/dashboard/page-header";
+import { Section } from "@/components/dashboard/section";
+import { EmptyState } from "@/components/dashboard/empty-state";
+import { StatusPill } from "@/components/dashboard/status-pill";
+import { crmClaimVariant } from "@/components/dashboard/crm-colors";
+import { Icon } from "@/components/icons";
 
 export const metadata: Metadata = { title: "Damage Claims · WhatsApp CRM" };
 
@@ -14,94 +20,89 @@ export default async function CrmClaimsPage({ searchParams }: { searchParams: Se
   const claims = await getCrmClaims(filter);
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-end justify-between flex-wrap gap-3">
-        <div>
-          <h1 className="font-sans text-[clamp(1.8rem,3vw,2.4rem)] font-medium leading-tight text-ink">Damage Claim Queue</h1>
-          <p className="text-sm text-ink-secondary mt-1">{claims.length} {filter} claims</p>
-        </div>
-        <div className="flex gap-2">
-          <FilterPill href="/admin/crm/claims?filter=pending" active={filter === "pending"} label="Pending" />
-          <FilterPill href="/admin/crm/claims?filter=resolved" active={filter === "resolved"} label="Resolved" />
-        </div>
-      </div>
-
-      <div className="space-y-3">
-        {claims.map((c) => {
-          const ageHours = Math.floor((Date.now() - new Date(c.reported_at).getTime()) / 3600000);
-          return (
-            <div key={c.id} className="bg-white border border-hairline rounded-xl p-5">
-              <div className="flex items-start justify-between gap-3 flex-wrap">
-                <div>
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <p className="font-sans text-base font-medium text-ink">{c.property_name}</p>
-                    <span className="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-bone text-ink-secondary">{c.city}</span>
-                    <span
-                      className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full ${
-                        c.admin_decision === "pending"
-                          ? "bg-amber-100 text-amber-700"
-                          : c.admin_decision === "approved"
-                          ? "bg-green-100 text-green-700"
-                          : c.admin_decision === "rejected"
-                          ? "bg-red-100 text-red-700"
-                          : "bg-blue-100 text-blue-700"
-                      }`}
-                    >
-                      {c.admin_decision}
-                    </span>
-                  </div>
-                  <p className="text-xs text-ink-secondary mt-1.5">
-                    Operator: {c.operator_name ?? "—"} · Reported {ageHours}h ago
-                  </p>
-                  <p className="text-sm text-ink mt-2 leading-relaxed">{c.description}</p>
-                </div>
-                <div className="text-right">
-                  <p className="text-[10px] uppercase tracking-wider text-ink-secondary">Estimate</p>
-                  <p className="font-sans text-2xl font-medium text-ink tabular-nums">
-                    {formatMinor(c.estimated_cost_minor, c.currency as CurrencyCode)}
-                  </p>
-                  <p className="text-[10px] text-ink-tertiary mt-0.5">Hold: {formatMinor(c.deposit_hold_minor, c.currency as CurrencyCode)}</p>
-                  <p className="text-[10px] text-ink-tertiary mt-2">{c.photos_count} of 5 photos</p>
-                </div>
-              </div>
-
-              {c.admin_decision === "pending" && (
-                <div className="mt-4 pt-4 border-t border-hairline flex flex-wrap gap-2 items-center">
-                  <form action={decideCrmClaim} className="inline">
-                    <input type="hidden" name="claimId" value={c.id} />
-                    <input type="hidden" name="decision" value="approve" />
-                    <input type="hidden" name="amountMinor" value={c.estimated_cost_minor} />
-                    <button type="submit" className="px-4 py-2 rounded-xl bg-primary text-white text-xs font-semibold hover:bg-primary-dark transition-colors cursor-pointer border-none">
-                      Approve · {formatMinor(c.estimated_cost_minor, c.currency as CurrencyCode)}
-                    </button>
-                  </form>
-                  <form action={decideCrmClaim} className="inline">
-                    <input type="hidden" name="claimId" value={c.id} />
-                    <input type="hidden" name="decision" value="reject" />
-                    <button type="submit" className="px-4 py-2 rounded-xl border border-hairline text-ink-secondary text-xs font-medium hover:bg-bone transition-colors cursor-pointer">
-                      Reject · release hold
-                    </button>
-                  </form>
-                  {c.operator_name && (
-                    <Link
-                      href={`/admin/crm/inbox`}
-                      className="px-4 py-2 rounded-xl border border-hairline text-ink-secondary text-xs font-medium hover:bg-bone transition-colors no-underline"
-                    >
-                      View thread
-                    </Link>
-                  )}
-                </div>
-              )}
-            </div>
-          );
-        })}
-        {claims.length === 0 && (
-          <div className="bg-white border border-hairline rounded-xl p-12 text-center">
-            <p className="font-sans text-lg text-ink mb-1">No {filter} claims</p>
-            <p className="text-sm text-ink-secondary">All clear for now.</p>
+    <div>
+      <PageHeader
+        eyebrow="WhatsApp CRM"
+        title="Damage claim queue"
+        description={`Operator-submitted claims surfaced in WhatsApp — approve to capture from the deposit hold, or reject to release. ${claims.length} ${filter} claims.`}
+        meta={
+          <div className="flex gap-2">
+            <FilterPill href="/admin/crm/claims?filter=pending" active={filter === "pending"} label="Pending" />
+            <FilterPill href="/admin/crm/claims?filter=resolved" active={filter === "resolved"} label="Resolved" />
           </div>
+        }
+      />
+
+      <Section eyebrow="Queue" count={claims.length}>
+        {claims.length === 0 ? (
+          <EmptyState
+            title={`No ${filter} claims`}
+            body={filter === "pending" ? "All clear for now — operator-submitted claims will land here." : "Resolved claims stay here for reference."}
+            icon={<Icon.Shield size={20} />}
+          />
+        ) : (
+          <ul className="space-y-6">
+            {claims.map((c) => {
+              const ageHours = Math.floor((Date.now() - new Date(c.reported_at).getTime()) / 3600000);
+              return (
+                <li key={c.id} className="pb-6 mb-6 border-b border-hairline last:border-b-0 last:mb-0 last:pb-0">
+                  <div className="flex items-start justify-between gap-4 flex-wrap mb-3">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <h3 className="font-display text-xl tracking-tight text-ink">{c.property_name}</h3>
+                        <StatusPill variant="neutral" dot uppercase>{c.city}</StatusPill>
+                        <StatusPill variant={crmClaimVariant(c.admin_decision)} dot>
+                          {c.admin_decision}
+                        </StatusPill>
+                      </div>
+                      <p className="text-xs text-ink-secondary mt-1.5 font-sans">
+                        Operator: {c.operator_name ?? "—"} · Reported {ageHours}h ago
+                      </p>
+                      <p className="text-sm text-ink mt-3 leading-relaxed max-w-[65ch]">{c.description}</p>
+                    </div>
+                    <div className="text-right shrink-0">
+                      <p className="text-[10px] font-sans font-semibold uppercase tracking-[0.14em] text-ink-tertiary">Estimate</p>
+                      <p className="font-display text-[1.75rem] leading-none tracking-tight tabular-nums text-ink mt-1.5">
+                        {formatMinor(c.estimated_cost_minor, c.currency as CurrencyCode)}
+                      </p>
+                      <p className="text-[10px] text-ink-tertiary mt-2 font-sans">Hold: {formatMinor(c.deposit_hold_minor, c.currency as CurrencyCode)}</p>
+                      <p className="text-[10px] text-ink-tertiary mt-1 font-sans">{c.photos_count} of 5 photos</p>
+                    </div>
+                  </div>
+
+                  {c.admin_decision === "pending" && (
+                    <div className="mt-4 pt-4 border-t border-hairline flex flex-wrap gap-2 items-center">
+                      <form action={decideCrmClaim} className="inline">
+                        <input type="hidden" name="claimId" value={c.id} />
+                        <input type="hidden" name="decision" value="approve" />
+                        <input type="hidden" name="amountMinor" value={c.estimated_cost_minor} />
+                        <button type="submit" className="px-4 py-2 rounded-lg bg-primary text-white text-xs font-sans font-semibold hover:bg-primary-dark transition-colors cursor-pointer border-none">
+                          Approve · {formatMinor(c.estimated_cost_minor, c.currency as CurrencyCode)}
+                        </button>
+                      </form>
+                      <form action={decideCrmClaim} className="inline">
+                        <input type="hidden" name="claimId" value={c.id} />
+                        <input type="hidden" name="decision" value="reject" />
+                        <button type="submit" className="px-4 py-2 rounded-lg border border-hairline text-ink-secondary text-xs font-sans font-semibold hover:bg-bone-secondary transition-colors cursor-pointer bg-transparent">
+                          Reject · release hold
+                        </button>
+                      </form>
+                      {c.operator_name && (
+                        <Link
+                          href="/admin/crm/inbox"
+                          className="px-4 py-2 rounded-lg border border-hairline text-ink-secondary text-xs font-sans font-semibold hover:bg-bone-secondary transition-colors no-underline bg-transparent"
+                        >
+                          View thread
+                        </Link>
+                      )}
+                    </div>
+                  )}
+                </li>
+              );
+            })}
+          </ul>
         )}
-      </div>
+      </Section>
     </div>
   );
 }
@@ -110,8 +111,10 @@ function FilterPill({ href, active, label }: { href: string; active: boolean; la
   return (
     <Link
       href={href}
-      className={`text-xs font-medium px-3 py-1.5 rounded-lg border transition-colors no-underline ${
-        active ? "bg-primary text-white border-primary" : "bg-white text-ink-secondary border-hairline hover:border-primary"
+      className={`inline-flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-sans font-semibold transition-colors no-underline border ${
+        active
+          ? "border-primary bg-primary text-white"
+          : "border-hairline bg-canvas text-ink-secondary hover:bg-bone-secondary"
       }`}
     >
       {label}

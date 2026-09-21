@@ -3,6 +3,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { getAdminBookings, getCalendarBookings } from "@/lib/data";
 import { formatMinor } from "@/lib/currency";
+import { Modal } from "@/components/dashboard/modal";
 
 export function BookingsView() {
   const [bookings] = useState(() => getAdminBookings());
@@ -101,35 +102,27 @@ export function BookingsView() {
       </div>
 
       {bookingModal && (
-        <div className="fixed inset-0 z-50 bg-black/30 backdrop-blur-sm flex items-center justify-center p-4" onClick={() => setBookingModal(null)}>
-          <div className="bg-white rounded-2xl w-full max-w-lg p-6 shadow-xl animate-modalIn" onClick={(e) => e.stopPropagation()}>
-            <div className="flex items-center justify-between mb-5">
-              <h3 className="text-lg font-bold text-ink">Booking — {bookingModal.guest}</h3>
-              <button onClick={() => setBookingModal(null)} className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-primary-bg text-ink-secondary cursor-pointer">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
-              </button>
-            </div>
-            <div className="grid grid-cols-2 gap-3 text-sm mb-4">
-              {[
-                { label: "Guest", value: bookingModal.guest },
-                { label: "Email", value: bookingModal.guest_email },
-                { label: "Property", value: bookingModal.property_name },
-                { label: "Unit", value: bookingModal.unit },
-                { label: "Check-in", value: bookingModal.check_in },
-                { label: "Check-out", value: bookingModal.check_out },
-                { label: "Nights", value: String(bookingModal.nights) },
-                { label: "Guests", value: String(bookingModal.guest_count) },
-                { label: "Status", value: bookingModal.status },
-                { label: "Amount", value: formatMinor(bookingModal.amount_minor) },
-              ].map((f) => (
-                <div key={f.label} className="p-3 rounded-xl bg-primary-bg">
-                  <span className="text-xs font-medium text-ink-secondary">{f.label}</span>
-                  <p className="text-sm font-semibold mt-0.5 text-ink">{f.value}</p>
-                </div>
-              ))}
-            </div>
+        <Modal open={!!bookingModal} onClose={() => setBookingModal(null)} title={`Booking — ${bookingModal.guest}`} size="lg">
+          <div className="grid grid-cols-2 gap-3">
+            {[
+              { label: "Guest", value: bookingModal.guest },
+              { label: "Email", value: bookingModal.guest_email },
+              { label: "Property", value: bookingModal.property_name },
+              { label: "Unit", value: bookingModal.unit },
+              { label: "Check-in", value: bookingModal.check_in },
+              { label: "Check-out", value: bookingModal.check_out },
+              { label: "Nights", value: String(bookingModal.nights) },
+              { label: "Guests", value: String(bookingModal.guest_count) },
+              { label: "Status", value: bookingModal.status },
+              { label: "Amount", value: formatMinor(bookingModal.amount_minor) },
+            ].map((f) => (
+              <div key={f.label} className="p-3 rounded-xl bg-bone-secondary">
+                <span className="text-[10px] font-sans font-semibold uppercase tracking-[0.14em] text-ink-tertiary">{f.label}</span>
+                <p className="text-sm font-sans font-semibold mt-1 text-ink">{f.value}</p>
+              </div>
+            ))}
           </div>
-        </div>
+        </Modal>
       )}
     </div>
   );

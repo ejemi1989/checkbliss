@@ -1,5 +1,8 @@
 import type { Metadata } from "next";
 import { sendCrmBroadcast } from "@/lib/crm-actions";
+import { PageHeader } from "@/components/dashboard/page-header";
+import { Section } from "@/components/dashboard/section";
+import { StatusPill } from "@/components/dashboard/status-pill";
 
 export const metadata: Metadata = { title: "Broadcast · WhatsApp CRM" };
 
@@ -34,70 +37,71 @@ export default async function CrmBroadcastPage({ searchParams }: { searchParams:
   }
 
   return (
-    <div className="space-y-6 max-w-2xl">
-      <div>
-        <h1 className="font-sans text-[clamp(1.8rem,3vw,2.4rem)] font-medium leading-tight text-ink">Broadcast</h1>
-        <p className="text-sm text-ink-secondary mt-1">Send a Meta-approved template to a segment of owners or operators. Sends via the existing <code className="text-[10px] font-mono">sendWhatsAppTemplate</code>.</p>
-      </div>
+    <div>
+      <PageHeader
+        eyebrow="WhatsApp CRM"
+        title="Broadcast"
+        description="Send a Meta-approved template to a segment of owners or operators. Sends via the existing sendWhatsAppTemplate."
+      />
 
       {parsedResult && (
-        <div className={`p-4 rounded-xl border ${parsedResult.ok ? "bg-green-50 border-green-200" : "bg-red-50 border-red-200"}`}>
-          {parsedResult.ok ? (
-            <p className="text-sm text-green-800">
-              <strong>Sent</strong> to {parsedResult.sent} of {parsedResult.recipient_count} recipients.
-            </p>
-          ) : (
-            <p className="text-sm text-red-800">Error: {parsedResult.error}</p>
-          )}
+        <div className="mb-10">
+          <StatusPill variant={parsedResult.ok ? "success" : "danger"} dot>
+            {parsedResult.ok
+              ? `Sent to ${parsedResult.sent} of ${parsedResult.recipient_count} recipients`
+              : `Error: ${parsedResult.error}`}
+          </StatusPill>
         </div>
       )}
 
-      <form action={sendCrmBroadcast} className="bg-white border border-hairline rounded-xl p-6 space-y-5">
-        <div>
-          <label className="block text-xs font-sans font-semibold uppercase tracking-[0.1em] text-ink-secondary mb-2">Segment</label>
-          <select
-            name="segment"
-            required
-            className="w-full border border-hairline rounded-xl px-3 py-2.5 text-sm outline-none focus:border-primary text-ink bg-white"
-          >
-            {SEGMENTS.map((s) => (
-              <option key={s.value} value={s.value}>{s.label}</option>
-            ))}
-          </select>
-        </div>
+      <Section eyebrow="Compose" description="Choose a segment, pick a template, optionally override with custom phone numbers.">
+        <form action={sendCrmBroadcast} className="space-y-6 max-w-2xl">
+          <div>
+            <label className="block text-[10px] font-sans font-semibold uppercase tracking-[0.16em] text-ink-tertiary mb-2">Segment</label>
+            <select
+              name="segment"
+              required
+              className="w-full border border-hairline rounded-lg px-3 py-2.5 text-sm outline-none focus:border-primary text-ink bg-canvas font-sans"
+            >
+              {SEGMENTS.map((s) => (
+                <option key={s.value} value={s.value}>{s.label}</option>
+              ))}
+            </select>
+          </div>
 
-        <div>
-          <label className="block text-xs font-sans font-semibold uppercase tracking-[0.1em] text-ink-secondary mb-2">Template</label>
-          <select
-            name="templateName"
-            required
-            className="w-full border border-hairline rounded-xl px-3 py-2.5 text-sm outline-none focus:border-primary text-ink bg-white"
-          >
-            {TEMPLATES.map((t) => (
-              <option key={t} value={t}>{t}</option>
-            ))}
-          </select>
-          <p className="text-[10px] text-ink-tertiary mt-1.5">Only the 11 Meta-registered templates are available.</p>
-        </div>
+          <div>
+            <label className="block text-[10px] font-sans font-semibold uppercase tracking-[0.16em] text-ink-tertiary mb-2">Template</label>
+            <select
+              name="templateName"
+              required
+              className="w-full border border-hairline rounded-lg px-3 py-2.5 text-sm outline-none focus:border-primary text-ink bg-canvas font-sans"
+            >
+              {TEMPLATES.map((t) => (
+                <option key={t} value={t}>{t}</option>
+              ))}
+            </select>
+            <p className="text-[10px] text-ink-tertiary mt-2 font-sans">Only the 11 Meta-registered templates are available.</p>
+          </div>
 
-        <div>
-          <label className="block text-xs font-sans font-semibold uppercase tracking-[0.1em] text-ink-secondary mb-2">Custom phones (optional)</label>
-          <input
-            type="text"
-            name="customPhones"
-            placeholder="+2348010000001, +2348020000001"
-            className="w-full border border-hairline rounded-xl px-3 py-2.5 text-sm outline-none focus:border-primary text-ink"
-          />
-          <p className="text-[10px] text-ink-tertiary mt-1.5">Comma-separated E.164 numbers. If provided, overrides the segment.</p>
-        </div>
+          <div>
+            <label className="block text-[10px] font-sans font-semibold uppercase tracking-[0.16em] text-ink-tertiary mb-2">Custom phones (optional)</label>
+            <input
+              type="text"
+              name="customPhones"
+              placeholder="+2348010000001, +2348020000001"
+              className="w-full border border-hairline rounded-lg px-3 py-2.5 text-sm outline-none focus:border-primary text-ink bg-canvas font-sans"
+            />
+            <p className="text-[10px] text-ink-tertiary mt-2 font-sans">Comma-separated E.164 numbers. If provided, overrides the segment.</p>
+          </div>
 
-        <div className="pt-2 flex items-center justify-between">
-          <p className="text-xs text-ink-tertiary">Every send is audited to <code className="font-mono">whatsapp_audit_log</code>.</p>
-          <button className="px-5 py-2.5 rounded-xl bg-primary text-white text-sm font-semibold hover:bg-primary-dark transition-colors cursor-pointer border-none">
-            Send broadcast
-          </button>
-        </div>
-      </form>
+          <div className="pt-4 border-t border-hairline flex items-center justify-between">
+            <p className="text-[10px] text-ink-tertiary font-sans">Every send is audited to whatsapp_audit_log.</p>
+            <button className="px-5 py-2.5 rounded-lg bg-primary text-white text-sm font-sans font-semibold hover:bg-primary-dark transition-colors cursor-pointer border-none">
+              Send broadcast
+            </button>
+          </div>
+        </form>
+      </Section>
     </div>
   );
 }

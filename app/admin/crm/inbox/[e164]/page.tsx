@@ -3,6 +3,9 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { getCrmThread } from "@/lib/crm-admin";
 import { addCrmNote, setCrmThreadStatus } from "@/lib/crm-actions";
+import { PageHeader } from "@/components/dashboard/page-header";
+import { StatusPill } from "@/components/dashboard/status-pill";
+import { threadVariant, roleVariant } from "@/components/dashboard/crm-colors";
 
 export const metadata: Metadata = { title: "Thread · WhatsApp CRM" };
 
@@ -15,108 +18,120 @@ export default async function CrmThreadPage({ params }: { params: Params }) {
 
   if (!thread) {
     return (
-      <div className="space-y-4">
-        <Link href="/admin/crm/inbox" className="text-xs font-sans text-ink-secondary hover:text-ink no-underline">← Inbox</Link>
-        <div className="bg-white rounded-xl border border-hairline p-12 text-center">
-          <p className="font-sans text-lg text-ink">No messages found for {e164}</p>
+      <div className="space-y-6">
+        <Link href="/admin/crm/inbox" className="text-xs font-sans font-medium text-ink-secondary hover:text-ink no-underline">← Inbox</Link>
+        <div className="text-center py-16 border border-dashed border-hairline rounded-xl">
+          <p className="font-display text-base text-ink">No messages found for {e164}</p>
+          <p className="text-sm text-ink-secondary mt-1.5">This thread may have been deleted or the contact has not messaged yet.</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between flex-wrap gap-3">
-        <div>
-          <Link href="/admin/crm/inbox" className="text-xs font-sans text-ink-secondary hover:text-ink no-underline">← Inbox</Link>
-          <h1 className="font-sans text-[clamp(1.6rem,2.6vw,2rem)] font-medium leading-tight text-ink mt-1">
-            {thread.contact_name}
-          </h1>
-          <p className="text-xs font-mono text-ink-tertiary mt-1">{thread.contact_e164} · {thread.contact_role ?? "unknown role"}</p>
-        </div>
-        <div className="flex items-center gap-2">
-          <span
-            className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${
-              thread.thread_status === "resolved"
-                ? "bg-green-100 text-green-700"
-                : thread.thread_status === "escalated"
-                ? "bg-amber-100 text-amber-700"
-                : "bg-blue-100 text-blue-700"
-            }`}
-          >
-            {thread.thread_status}
-          </span>
-          <form action={setCrmThreadStatus}>
-            <input type="hidden" name="e164" value={e164} />
-            <input type="hidden" name="status" value={thread.thread_status === "resolved" ? "open" : "resolved"} />
-            <button className="text-xs font-medium px-3 py-1.5 rounded-lg border border-hairline bg-white text-ink-secondary hover:border-primary cursor-pointer">
-              Mark as {thread.thread_status === "resolved" ? "open" : "resolved"}
-            </button>
-          </form>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-4">
-        {/* Conversation */}
-        <div className="bg-white rounded-xl border border-hairline flex flex-col min-h-[500px]">
-          <div className="p-4 border-b border-hairline">
-            <p className="text-xs font-sans font-semibold uppercase tracking-[0.1em] text-ink-secondary">{messages.length} messages · {thread.message_count_24h} in last 24h</p>
+    <div className="space-y-10">
+      <PageHeader
+        eyebrow={
+          <Link href="/admin/crm/inbox" className="text-ink-secondary hover:text-ink no-underline">
+            ← Inbox
+          </Link>
+        }
+        title={thread.contact_name}
+        description={`${thread.contact_e164} · ${thread.contact_role ?? "unknown role"}`}
+        meta={
+          <div className="flex items-center gap-2 flex-wrap">
+            <StatusPill variant={threadVariant(thread.thread_status)} dot>
+              {thread.thread_status}
+            </StatusPill>
+            {thread.contact_role && (
+              <StatusPill variant={roleVariant(thread.contact_role)}>
+                {thread.contact_role}
+              </StatusPill>
+            )}
+            <form action={setCrmThreadStatus}>
+              <input type="hidden" name="e164" value={e164} />
+              <input type="hidden" name="status" value={thread.thread_status === "resolved" ? "open" : "resolved"} />
+              <button className="text-[10px] font-sans font-semibold uppercase tracking-[0.08em] rounded-full border border-hairline bg-canvas text-ink-secondary hover:border-primary hover:text-primary px-3 py-1 cursor-pointer transition-colors">
+                Mark as {thread.thread_status === "resolved" ? "open" : "resolved"}
+              </button>
+            </form>
           </div>
-          <div className="flex-1 p-5 space-y-3 overflow-y-auto max-h-[500px]">
+        }
+      />
+
+      <div className="grid grid-cols-1 gap-10 lg:grid-cols-[1fr_320px] lg:gap-12">
+        {/* Conversation */}
+        <section>
+          <div className="flex items-end justify-between gap-4 pb-5 mb-6 border-b border-hairline">
+            <div>
+              <p className="text-[11px] font-sans font-semibold uppercase tracking-[0.18em] text-primary">Conversation</p>
+              <h2 className="font-display text-xl tracking-tight text-ink mt-1.5">{messages.length} messages</h2>
+            </div>
+            <span className="text-[10px] font-sans font-semibold uppercase tracking-[0.1em] text-ink-tertiary">
+              {thread.message_count_24h} in last 24h
+            </span>
+          </div>
+
+          <div className="space-y-3">
             {messages.map((m) => (
               <div key={m.id} className={`flex ${m.direction === "in" ? "justify-start" : "justify-end"}`}>
                 <div
-                  className={`max-w-[75%] p-3 rounded-2xl text-sm ${
-                    m.direction === "in" ? "bg-bone text-ink" : "bg-primary text-white"
+                  className={`max-w-[75%] px-4 py-3 rounded-2xl text-sm ${
+                    m.direction === "in"
+                      ? "bg-bone-secondary text-ink"
+                      : "bg-primary text-white"
                   }`}
                 >
                   {m.parsed_command && (
                     <span className="text-[10px] font-mono uppercase opacity-70 mr-2">{m.parsed_command}</span>
                   )}
                   <p className="leading-relaxed">{m.body}</p>
-                  <p className="text-[10px] opacity-60 mt-1.5">
+                  <p className={`text-[10px] mt-1.5 ${m.direction === "in" ? "text-ink-tertiary" : "opacity-60"}`}>
                     {new Date(m.created_at).toLocaleString("en-GB", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}
                   </p>
                 </div>
               </div>
             ))}
           </div>
-        </div>
+        </section>
 
         {/* Internal notes */}
-        <div className="bg-white rounded-xl border border-hairline flex flex-col">
-          <div className="p-4 border-b border-hairline">
-            <p className="text-xs font-sans font-semibold uppercase tracking-[0.1em] text-ink-secondary">Internal notes</p>
-            <p className="text-[10px] text-ink-tertiary mt-0.5">Admin-only — never sent to the contact</p>
+        <section>
+          <div className="flex items-end justify-between gap-4 pb-5 mb-6 border-b border-hairline">
+            <div>
+              <p className="text-[11px] font-sans font-semibold uppercase tracking-[0.18em] text-primary">Private</p>
+              <h2 className="font-display text-xl tracking-tight text-ink mt-1.5">Internal notes</h2>
+            </div>
+            <span className="text-[10px] text-ink-tertiary font-sans">Admin-only</span>
           </div>
-          <div className="flex-1 p-4 space-y-3 overflow-y-auto max-h-[400px]">
+          <div className="space-y-3 mb-6">
             {notes.length === 0 ? (
-              <p className="text-xs text-ink-tertiary text-center py-4">No notes yet.</p>
+              <p className="text-xs text-ink-tertiary text-center py-8 font-sans">No notes yet.</p>
             ) : (
               notes.map((n) => (
-                <div key={n.id} className="p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                <div key={n.id} className="p-4 bg-warning/5 border border-warning/20 rounded-xl">
                   <p className="text-sm text-ink leading-relaxed">{n.note}</p>
-                  <p className="text-[10px] text-ink-tertiary mt-1.5">
+                  <p className="text-[10px] text-ink-tertiary mt-2 font-sans">
                     {n.created_by} · {new Date(n.created_at).toLocaleString("en-GB", { day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })}
                   </p>
                 </div>
               ))
             )}
           </div>
-          <form action={addCrmNote} className="p-4 border-t border-hairline space-y-2">
+          <form action={addCrmNote} className="space-y-3 pt-4 border-t border-hairline">
             <input type="hidden" name="e164" value={e164} />
             <textarea
               name="note"
               required
               rows={3}
               placeholder="Add a note (admin-only)..."
-              className="w-full border border-hairline rounded-lg px-3 py-2 text-sm outline-none focus:border-primary text-ink resize-none"
+              className="w-full border border-hairline rounded-lg px-3 py-2 text-sm outline-none focus:border-primary text-ink resize-none font-sans bg-canvas"
             />
-            <button className="w-full py-2 rounded-lg bg-primary text-white text-xs font-semibold hover:bg-primary-dark transition-colors cursor-pointer border-none">
+            <button className="w-full py-2.5 rounded-lg bg-primary text-white text-xs font-sans font-semibold hover:bg-primary-dark transition-colors cursor-pointer border-none">
               Save note
             </button>
           </form>
-        </div>
+        </section>
       </div>
     </div>
   );

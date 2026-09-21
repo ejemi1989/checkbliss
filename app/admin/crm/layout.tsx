@@ -1,34 +1,37 @@
 import Link from "next/link";
+import { Icon } from "@/components/icons";
 
 const NAV = [
-  { href: "/admin/crm/inbox", label: "Inbox" },
-  { href: "/admin/crm/contacts", label: "Contacts" },
-  { href: "/admin/crm/claims", label: "Damage Claims" },
-  { href: "/admin/crm/inspections", label: "Inspections" },
-  { href: "/admin/crm/broadcast", label: "Broadcast" },
-  { href: "/admin/crm/audit", label: "Audit Log" },
-  { href: "/admin/crm/analytics", label: "Analytics" },
+  { href: "/admin/crm/inbox", label: "Inbox", icon: "MessageCircle" as const },
+  { href: "/admin/crm/contacts", label: "Contacts", icon: "Users" as const },
+  { href: "/admin/crm/claims", label: "Damage Claims", icon: "Shield" as const },
+  { href: "/admin/crm/inspections", label: "Inspections", icon: "Clipboard" as const },
+  { href: "/admin/crm/broadcast", label: "Broadcast", icon: "Bell" as const },
+  { href: "/admin/crm/audit", label: "Audit Log", icon: "List" as const },
+  { href: "/admin/crm/analytics", label: "Analytics", icon: "BarChart3" as const },
 ];
 
 export default function CrmLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div>
-      <div className="flex items-center gap-2 mb-6">
-        <span className="font-sans text-sm font-medium text-ink-primary">WhatsApp CRM</span>
-      </div>
-
-      <nav className="flex gap-1 overflow-x-auto pb-2 mb-6">
-        {NAV.map((item) => (
-          <Link
-            key={item.href}
-            href={item.href}
-            className="shrink-0 px-4 py-2 rounded-lg text-sm font-medium text-ink-secondary hover:text-ink hover:bg-primary-bg transition-colors no-underline"
-          >
-            {item.label}
-          </Link>
-        ))}
+    <div className="space-y-10">
+      <nav className="pb-2">
+        <ul className="flex gap-1 overflow-x-auto">
+          {NAV.map((item) => {
+            const IconComp = Icon[item.icon];
+            return (
+              <li key={item.href} className="shrink-0">
+                <Link
+                  href={item.href}
+                  className="inline-flex items-center gap-2 px-3.5 py-2 rounded-lg text-xs font-sans font-semibold text-ink-secondary hover:bg-bone-secondary hover:text-ink transition-colors no-underline"
+                >
+                  <IconComp size={14} />
+                  {item.label}
+                </Link>
+              </li>
+            );
+          })}
+        </ul>
       </nav>
-
       {children}
     </div>
   );

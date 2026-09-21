@@ -17,6 +17,8 @@ type Props = {
   uppercase?: boolean;
 };
 
+export type StatusPillProps = Props;
+
 /* Small status indicator — pill with optional dot, editorial weight. */
 export function StatusPill({ children, variant = "neutral", dot, uppercase = true }: Props) {
   return (

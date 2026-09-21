@@ -8,6 +8,7 @@ import type { DamageClaim } from "@/lib/types";
 import { PageHeader } from "@/components/dashboard/page-header";
 import { EmptyState } from "@/components/dashboard/empty-state";
 import { StatusPill } from "@/components/dashboard/status-pill";
+import { Modal, ModalButton } from "@/components/dashboard/modal";
 import { Icon } from "@/components/icons";
 
 function fmt(n: number) { return formatMinor(n); }
@@ -55,6 +56,60 @@ export function AdminClaimsView() {
     setPendingAction(key);
     try { return await fn(); }
     finally { setPendingAction(null); }
+  }
+
+  function applyClaimDecision(id: string, patch: Partial<DamageClaim>) {
+    setClaims((prev) => prev.map((cl) => (cl.id === id ? { ...cl, ...patch } : cl)));
+  }
+
+  async function approveClaim(c: DamageClaim, closeModal = false) {
+    await doAction(`claim-${c.id}-approve`, async () => {
+      const r = await decideClaim({ claimId: c.id, decision: "approve" });
+      if (r.ok) applyClaimDecision(c.id, { admin_decision: "approved" });
+      notify(r.ok ? "Claim approved." : r.message, r.ok ? "success" : "error");
+      if (closeModal) setClaimModal(null);
+    });
+  }
+
+  async function rejectClaim(c: DamageClaim, closeModal = false) {
+    await doAction(`claim-${c.id}-reject`, async () => {
+      const r = await decideClaim({ claimId: c.id, decision: "reject" });
+      if (r.ok) applyClaimDecision(c.id, { admin_decision: "rejected" });
+      notify(r.ok ? "Claim rejected." : r.message, r.ok ? "success" : "error");
+      if (closeModal) setClaimModal(null);
+    });
+  }
+
+  async function adjustClaim(c: DamageClaim, amountMinor: number, closeModal = false) {
+    await doAction(`claim-${c.id}-adjust`, async () => {
+      const r = await decideClaim({ claimId: c.id, decision: "adjust", amountMinor });
+      if (r.ok) applyClaimDecision(c.id, { admin_decision: "adjusted", adjusted_amount_minor: amountMinor });
+      notify(r.ok ? "Claim adjusted." : r.message, r.ok ? "success" : "error");
+      if (closeModal) setClaimModal(null);
+    });
+  }
+
+  function promptAdjust(c: DamageClaim, closeModal = false) {
+    const n = prompt("Enter adjusted amount (£):", String(c.estimated_cost_minor / 100));
+    if (n && !isNaN(Number(n))) adjustClaim(c, Math.round(Number(n) * 100), closeModal);
+  }
+
+  async function resolveDispute(c: DamageClaim, decision: "approve" | "reject") {
+    await doAction(`dispute-${c.id}-${decision === "approve" ? "uphold" : "reverse"}`, async () => {
+      const r = await decideClaim({ claimId: c.id, decision });
+      if (r.ok) applyClaimDecision(c.id, {
+        dispute_status: "resolved",
+        admin_decision: decision === "approve" ? "approved" : "rejected",
+      });
+      notify(
+        r.ok
+          ? decision === "approve"
+            ? "Claim upheld. Deposit will be captured."
+            : "Claim reversed. Deposit will be released."
+          : r.message,
+        r.ok ? "success" : "error",
+      );
+    });
   }
 
   const pending = claims.filter((c) => c.admin_decision === "pending" && c.dispute_status === "none");
@@ -159,12 +214,12 @@ export function AdminClaimsView() {
                   >{pendingAction === `claim-${c.id}-approve` ? "..." : "Approve"}</button>
                   <button
                     disabled={pendingAction === `claim-${c.id}-adjust`}
-                    onClick={() => { const n = prompt("Enter adjusted amount (£):", String(c.estimated_cost_minor / 100)); if (n && !isNaN(Number(n))) doAction(`claim-${c.id}-adjust`, async () => { const r = await decideClaim({ claimId: c.id, decision: "adjust", amountMinor: Math.round(Number(n) * 100) }); if (r.ok) setClaims((prev) => prev.map((cl) => cl.id === c.id ? { ...cl, admin_decision: "adjusted" as const, adjusted_amount_minor: Math.round(Number(n) * 100) } : cl)); notify(r.ok ? "Claim adjusted." : r.message, r.ok ? "success" : "error"); }); }}
+                    onClick={() => promptAdjust(c)}
                     className="px-4 py-2 rounded-lg text-xs font-sans font-semibold border border-warning text-warning hover:bg-warning/10 transition-colors cursor-pointer bg-transparent disabled:opacity-50"
                   >Adjust</button>
                   <button
                     disabled={pendingAction === `claim-${c.id}-reject`}
-                    onClick={() => doAction(`claim-${c.id}-reject`, async () => { const r = await decideClaim({ claimId: c.id, decision: "reject" }); if (r.ok) setClaims((prev) => prev.map((cl) => cl.id === c.id ? { ...cl, admin_decision: "rejected" as const } : cl)); notify(r.ok ? "Claim rejected." : r.message, r.ok ? "success" : "error"); })}
+                    onClick={() => rejectClaim(c)}
                     className="px-4 py-2 rounded-lg text-xs font-sans font-semibold border border-error/30 text-error hover:bg-error/5 transition-colors cursor-pointer bg-transparent disabled:opacity-50"
                   >Reject</button>
                   <button onClick={() => setClaimModal(c)} className="px-4 py-2 rounded-lg text-xs font-sans font-semibold border border-hairline text-ink-secondary hover:bg-bone-secondary transition-colors cursor-pointer bg-transparent">
@@ -183,20 +238,12 @@ export function AdminClaimsView() {
                   <div className="flex gap-2 shrink-0">
                     <button
                       disabled={pendingAction === `dispute-${c.id}-uphold`}
-                      onClick={() => doAction(`dispute-${c.id}-uphold`, async () => {
-                        const r = await decideClaim({ claimId: c.id, decision: "approve" });
-                        if (r.ok) setClaims((prev) => prev.map((cl) => cl.id === c.id ? { ...cl, dispute_status: "resolved" as const, admin_decision: "approved" as const } : cl));
-                        notify(r.ok ? "Claim upheld. Deposit will be captured." : r.message, r.ok ? "success" : "error");
-                      })}
+                      onClick={() => resolveDispute(c, "approve")}
                       className="px-4 py-2 rounded-lg text-xs font-sans font-semibold cursor-pointer bg-primary text-white hover:bg-lagoon transition-colors disabled:opacity-50 border-none"
                     >Uphold</button>
                     <button
                       disabled={pendingAction === `dispute-${c.id}-reverse`}
-                      onClick={() => doAction(`dispute-${c.id}-reverse`, async () => {
-                        const r = await decideClaim({ claimId: c.id, decision: "reject" });
-                        if (r.ok) setClaims((prev) => prev.map((cl) => cl.id === c.id ? { ...cl, dispute_status: "resolved" as const, admin_decision: "rejected" as const } : cl));
-                        notify(r.ok ? "Claim reversed. Deposit will be released." : r.message, r.ok ? "success" : "error");
-                      })}
+                      onClick={() => resolveDispute(c, "reject")}
                       className="px-4 py-2 rounded-lg text-xs font-sans font-semibold cursor-pointer border border-error text-error hover:bg-error/5 transition-colors disabled:opacity-50 bg-transparent"
                     >Reverse</button>
                   </div>
@@ -208,14 +255,39 @@ export function AdminClaimsView() {
       )}
 
       {/* claim detail modal */}
-      {claimModal && (
-        <div className="fixed inset-0 z-50 bg-black/30 backdrop-blur-sm flex items-center justify-center p-4" onClick={() => setClaimModal(null)}>
-          <div className="bg-white rounded-2xl w-full max-w-2xl p-6 shadow-xl max-h-[90vh] overflow-y-auto animate-modalIn" onClick={(e) => e.stopPropagation()}>
-            <div className="flex items-center justify-between mb-5">
-              <h3 className="text-lg font-bold text-ink">Claim — {claimModal.property_name}</h3>
-              <button onClick={() => setClaimModal(null)} className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-bone text-ink-secondary cursor-pointer">{I.x}</button>
-            </div>
-            <div className="grid grid-cols-2 gap-3 text-sm mb-4">
+      <Modal
+        open={!!claimModal}
+        onClose={() => setClaimModal(null)}
+        title={claimModal ? `Claim — ${claimModal.property_name}` : undefined}
+        size="xl"
+        footer={
+          claimModal && claimModal.admin_decision === "pending" && claimModal.dispute_status === "none" ? (
+            <>
+              <button
+                type="button"
+                disabled={pendingAction === `modal-${claimModal.id}-approve`}
+                onClick={() => approveClaim(claimModal, true)}
+                className="px-4 py-2 rounded-lg text-sm font-sans font-semibold border border-primary text-primary hover:bg-primary-bg transition-colors cursor-pointer bg-transparent disabled:opacity-50"
+              >Approve</button>
+              <button
+                type="button"
+                disabled={pendingAction === `modal-${claimModal.id}-adjust`}
+                onClick={() => promptAdjust(claimModal, true)}
+                className="px-4 py-2 rounded-lg text-sm font-sans font-semibold border border-warning text-warning hover:bg-warning/10 transition-colors cursor-pointer bg-transparent disabled:opacity-50"
+              >Adjust</button>
+              <button
+                type="button"
+                disabled={pendingAction === `modal-${claimModal.id}-reject`}
+                onClick={() => rejectClaim(claimModal, true)}
+                className="px-4 py-2 rounded-lg text-sm font-sans font-medium border border-hairline text-error hover:bg-error/5 transition-colors cursor-pointer bg-transparent disabled:opacity-50"
+              >Reject</button>
+            </>
+          ) : null
+        }
+      >
+        {claimModal && (
+          <div className="space-y-5">
+            <div className="grid grid-cols-2 gap-3">
               {[
                 { label: "Property", value: claimModal.property_name },
                 { label: "Guest", value: claimModal.guest_name },
@@ -224,58 +296,39 @@ export function AdminClaimsView() {
                 { label: "Status", value: `${statusLabel(claimModal.admin_decision)}${claimModal.dispute_status !== "none" ? " · Disputed" : ""}` },
                 { label: "Submitted", value: claimModal.submitted_at.slice(0, 10) },
               ].map((f) => (
-                <div key={f.label} className="p-3 rounded-xl bg-bone/50">
-                  <span className="text-xs font-medium text-ink-secondary">{f.label}</span>
-                  <p className="text-sm font-semibold mt-0.5 text-ink">{f.value}</p>
+                <div key={f.label} className="p-3 rounded-xl bg-bone-secondary">
+                  <span className="text-[10px] font-sans font-semibold uppercase tracking-[0.14em] text-ink-tertiary">{f.label}</span>
+                  <p className="text-sm font-sans font-semibold mt-1 text-ink">{f.value}</p>
                 </div>
               ))}
             </div>
-            <div className="p-3 rounded-xl bg-bone/50 mb-4">
-              <span className="text-xs font-medium text-ink-secondary">Description</span>
-              <p className="text-sm mt-1 text-ink">{claimModal.description}</p>
+            <div className="p-4 rounded-xl bg-bone-secondary">
+              <p className="text-[10px] font-sans font-semibold uppercase tracking-[0.14em] text-ink-tertiary mb-1.5">Description</p>
+              <p className="text-sm text-ink leading-relaxed font-sans">{claimModal.description}</p>
             </div>
             {claimModal.operator_notes && (
-              <div className="p-3 rounded-xl bg-bone/50 mb-4">
-                <span className="text-xs font-medium text-ink-secondary">Operator Notes</span>
-                <p className="text-sm mt-1 text-ink">{claimModal.operator_notes}</p>
+              <div className="p-4 rounded-xl bg-bone-secondary">
+                <p className="text-[10px] font-sans font-semibold uppercase tracking-[0.14em] text-ink-tertiary mb-1.5">Operator Notes</p>
+                <p className="text-sm text-ink leading-relaxed font-sans">{claimModal.operator_notes}</p>
               </div>
             )}
-            <div className="grid grid-cols-2 gap-3 mb-4">
+            <div className="grid grid-cols-2 gap-3">
               {claimModal.estimated_cost_minor > 0 && (
-                <div className="p-3 rounded-xl bg-primary-bg">
-                  <span className="text-xs font-medium text-ink-secondary">Claimed Amount</span>
-                  <p className="text-lg font-bold mt-1 tabular-nums text-primary">{fmt(claimModal.estimated_cost_minor)}</p>
+                <div className="p-4 rounded-xl bg-primary-bg">
+                  <p className="text-[10px] font-sans font-semibold uppercase tracking-[0.14em] text-primary mb-1.5">Claimed amount</p>
+                  <p className="font-display text-2xl font-medium tabular-nums text-primary">{fmt(claimModal.estimated_cost_minor)}</p>
                 </div>
               )}
               {claimModal.adjusted_amount_minor && (
-                <div className="p-3 rounded-xl bg-warning/10">
-                  <span className="text-xs font-medium text-ink-secondary">Adjusted Amount</span>
-                  <p className="text-lg font-bold mt-1 tabular-nums text-warning">{fmt(claimModal.adjusted_amount_minor)}</p>
+                <div className="p-4 rounded-xl bg-warning/5 border border-warning/20">
+                  <p className="text-[10px] font-sans font-semibold uppercase tracking-[0.14em] text-warning mb-1.5">Adjusted amount</p>
+                  <p className="font-display text-2xl font-medium tabular-nums text-warning">{fmt(claimModal.adjusted_amount_minor)}</p>
                 </div>
               )}
             </div>
-            {claimModal.admin_decision === "pending" && claimModal.dispute_status === "none" && (
-              <div className="flex gap-x-2">
-                <button
-                  disabled={pendingAction === `modal-${claimModal.id}-approve`}
-                  onClick={() => doAction(`modal-${claimModal.id}-approve`, async () => { const r = await decideClaim({ claimId: claimModal.id, decision: "approve" }); if (r.ok) setClaims((prev) => prev.map((cl) => cl.id === claimModal.id ? { ...cl, admin_decision: "approved" as const } : cl)); notify(r.ok ? "Claim approved." : r.message); setClaimModal(null); })}
-                  className="flex-1 py-2.5 rounded-xl text-sm font-semibold border border-primary text-primary hover:bg-primary-bg transition-colors cursor-pointer disabled:opacity-50"
-                >Approve</button>
-                <button
-                  disabled={pendingAction === `modal-${claimModal.id}-adjust`}
-                  onClick={() => { const n = prompt("Adjusted amount (£):", String(claimModal.estimated_cost_minor / 100)); if (n && !isNaN(Number(n))) doAction(`modal-${claimModal.id}-adjust`, async () => { const r = await decideClaim({ claimId: claimModal.id, decision: "adjust", amountMinor: Math.round(Number(n) * 100) }); if (r.ok) setClaims((prev) => prev.map((cl) => cl.id === claimModal.id ? { ...cl, admin_decision: "adjusted" as const, adjusted_amount_minor: Math.round(Number(n) * 100) } : cl)); notify(r.ok ? "Claim adjusted." : r.message); setClaimModal(null); }); }}
-                  className="flex-1 py-2.5 rounded-xl text-sm font-semibold border border-warning text-warning hover:bg-warning/10 transition-colors cursor-pointer disabled:opacity-50"
-                >Adjust</button>
-                <button
-                  disabled={pendingAction === `modal-${claimModal.id}-reject`}
-                  onClick={() => doAction(`modal-${claimModal.id}-reject`, async () => { const r = await decideClaim({ claimId: claimModal.id, decision: "reject" }); if (r.ok) setClaims((prev) => prev.map((cl) => cl.id === claimModal.id ? { ...cl, admin_decision: "rejected" as const } : cl)); notify(r.ok ? "Claim rejected." : r.message); setClaimModal(null); })}
-                  className="flex-1 py-2.5 rounded-xl text-sm font-medium border border-hairline text-error hover:bg-error/5 transition-colors cursor-pointer disabled:opacity-50"
-                >Reject</button>
-              </div>
-            )}
           </div>
-        </div>
-      )}
+        )}
+      </Modal>
     </div>
   );
 }

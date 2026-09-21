@@ -10,6 +10,7 @@ import { Section } from "@/components/dashboard/section";
 import { DataList } from "@/components/dashboard/data-list";
 import { EmptyState } from "@/components/dashboard/empty-state";
 import { StatusPill } from "@/components/dashboard/status-pill";
+import { Modal } from "@/components/dashboard/modal";
 import { Icon } from "@/components/icons";
 
 function fmt(n: number) { return formatMinor(n); }
@@ -132,37 +133,34 @@ export function AdminPropertiesView() {
       </Section>
 
       {/* property detail modal */}
-      {propertyModal && (
-        <div className="fixed inset-0 z-50 bg-black/30 backdrop-blur-sm flex items-center justify-center p-4" onClick={() => setPropertyModal(null)}>
-          <div className="bg-white rounded-2xl w-full max-w-lg p-6 shadow-xl animate-modalIn" onClick={(e) => e.stopPropagation()}>
-            <div className="flex items-center justify-between mb-5">
-              <h3 className="text-lg font-bold text-ink">{propertyModal.name}</h3>
-              <button onClick={() => setPropertyModal(null)} className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-primary-bg text-ink-secondary cursor-pointer">
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" /></svg>
-              </button>
-            </div>
-            <div className="grid grid-cols-2 gap-3 text-sm">
-              {[
-                { label: "City", value: propertyModal.city },
-                { label: "Neighbourhood", value: propertyModal.neighbourhood },
-                { label: "Owner", value: propertyModal.owner_name },
-                { label: "Status", value: statusLabel(propertyModal.status) },
-                { label: "Bedrooms", value: String(propertyModal.bedrooms) },
-                { label: "Bathrooms", value: String(propertyModal.bathrooms) },
-                { label: "Max Guests", value: String(propertyModal.max_guests) },
-                { label: "Nightly Rate", value: fmt(propertyModal.nightly_price_minor) },
-                { label: "Bookings", value: String(propertyModal.bookings_count) },
-                { label: "Revenue", value: fmt(propertyModal.revenue_minor) },
-              ].map((f) => (
-                <div key={f.label} className="p-3 rounded-xl bg-primary-bg">
-                  <span className="text-xs font-medium text-ink-secondary">{f.label}</span>
-                  <p className="text-sm font-semibold mt-0.5 text-ink">{f.value}</p>
-                </div>
-              ))}
-            </div>
+      <Modal
+        open={!!propertyModal}
+        onClose={() => setPropertyModal(null)}
+        title={propertyModal?.name}
+        size="lg"
+      >
+        {propertyModal && (
+          <div className="grid grid-cols-2 gap-3">
+            {[
+              { label: "City", value: propertyModal.city },
+              { label: "Neighbourhood", value: propertyModal.neighbourhood },
+              { label: "Owner", value: propertyModal.owner_name },
+              { label: "Status", value: statusLabel(propertyModal.status) },
+              { label: "Bedrooms", value: String(propertyModal.bedrooms) },
+              { label: "Bathrooms", value: String(propertyModal.bathrooms) },
+              { label: "Max Guests", value: String(propertyModal.max_guests) },
+              { label: "Nightly Rate", value: fmt(propertyModal.nightly_price_minor) },
+              { label: "Bookings", value: String(propertyModal.bookings_count) },
+              { label: "Revenue", value: fmt(propertyModal.revenue_minor) },
+            ].map((f) => (
+              <div key={f.label} className="p-3 rounded-xl bg-bone-secondary">
+                <span className="text-[10px] font-sans font-semibold uppercase tracking-[0.14em] text-ink-tertiary">{f.label}</span>
+                <p className="text-sm font-sans font-semibold mt-1 text-ink">{f.value}</p>
+              </div>
+            ))}
           </div>
-        </div>
-      )}
+        )}
+      </Modal>
     </div>
   );
 }

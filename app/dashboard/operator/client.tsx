@@ -17,6 +17,7 @@ import { getSeedProperties } from "@/lib/seed-data";
 import { NotificationBell } from "@/components/notification-bell";
 import { NotificationsView } from "@/components/notifications-view";
 import { ConfirmDialog } from "@/components/dialog";
+import { Modal } from "@/components/dashboard/modal";
 
 /* ---------- icons ---------- */
 const I = {
@@ -1161,403 +1162,393 @@ export function OperatorDashboard({ user, initialTab }: { user: AuthUser | null;
       />
 
       {/* Edit Property Modal */}
-      {editModal && (
-        <div className="fixed inset-0 z-50 bg-black/30 backdrop-blur-sm flex items-center justify-center p-4" onClick={() => setEditModal(null)}>
-          <div className="bg-white rounded-2xl w-full max-w-lg p-6 shadow-xl max-h-[90vh] overflow-y-auto animate-modalIn" onClick={(e) => e.stopPropagation()}>
-            <div className="flex items-center justify-between mb-5">
-              <h3 className="text-lg font-bold text-ink">Edit: {editModal.name}</h3>
-              <button onClick={() => setEditModal(null)} className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-primary-bg text-ink-secondary cursor-pointer">{I.x}</button>
+      <Modal
+        open={!!editModal}
+        onClose={() => setEditModal(null)}
+        title={editModal ? `Edit: ${editModal.name}` : undefined}
+        size="lg"
+      >
+        {editModal && (
+          <div className="space-y-4">
+            <div>
+              <label className="block text-[10px] font-sans font-semibold uppercase tracking-[0.16em] text-ink-tertiary mb-1.5">Property name</label>
+              <input type="text" value={editForm.name} onChange={(e) => setEditForm((f) => ({ ...f, name: e.target.value }))} className="w-full border border-hairline rounded-lg px-4 py-2.5 text-sm outline-none focus:border-primary text-ink bg-canvas font-sans" />
             </div>
-
-            <div className="space-y-4">
+            <div>
+              <label className="block text-[10px] font-sans font-semibold uppercase tracking-[0.16em] text-ink-tertiary mb-1.5">Description (visible to guests browsing &amp; booking)</label>
+              <textarea rows={4} value={editForm.description} onChange={(e) => setEditForm((f) => ({ ...f, description: e.target.value }))} placeholder="Describe the apartment — what guests see on the detail page and during booking..." className="w-full border border-hairline rounded-lg px-4 py-2.5 text-sm outline-none focus:border-primary text-ink resize-none font-sans bg-canvas" />
+            </div>
+            <div className="grid grid-cols-3 gap-3">
               <div>
-                <label className="text-xs font-medium text-ink-secondary">Property Name</label>
-                <input type="text" value={editForm.name} onChange={(e) => setEditForm((f) => ({ ...f, name: e.target.value }))} className="w-full border border-hairline rounded-xl px-4 py-2.5 text-sm mt-1 outline-none focus:border-primary text-ink" />
+                <label className="block text-[10px] font-sans font-semibold uppercase tracking-[0.16em] text-ink-tertiary mb-1.5">Nightly rate (£)</label>
+                <input type="number" min={0} step={0.01} value={editForm.rate / 100} onChange={(e) => setEditForm((f) => ({ ...f, rate: Math.round(parseFloat(e.target.value || "0") * 100) }))} className="w-full border border-hairline rounded-lg px-4 py-2.5 text-sm outline-none focus:border-primary text-ink bg-canvas font-sans" />
               </div>
               <div>
-                <label className="text-xs font-medium text-ink-secondary">Description (visible to guests browsing &amp; booking)</label>
-                <textarea rows={4} value={editForm.description} onChange={(e) => setEditForm((f) => ({ ...f, description: e.target.value }))} placeholder="Describe the apartment — what guests see on the detail page and during booking..." className="w-full border border-hairline rounded-xl px-4 py-2.5 text-sm mt-1 outline-none focus:border-primary text-ink resize-none font-sans" />
+                <label className="block text-[10px] font-sans font-semibold uppercase tracking-[0.16em] text-ink-tertiary mb-1.5">Bedrooms</label>
+                <input type="number" min={1} max={10} value={editForm.beds} onChange={(e) => setEditForm((f) => ({ ...f, beds: parseInt(e.target.value) || 1 }))} className="w-full border border-hairline rounded-lg px-4 py-2.5 text-sm outline-none focus:border-primary text-ink bg-canvas font-sans" />
               </div>
-              <div className="grid grid-cols-3 gap-3">
-                <div>
-                  <label className="text-xs font-medium text-ink-secondary">Nightly rate (£)</label>
-                  <input type="number" min={0} step={0.01} value={editForm.rate / 100} onChange={(e) => setEditForm((f) => ({ ...f, rate: Math.round(parseFloat(e.target.value || "0") * 100) }))} className="w-full border border-hairline rounded-xl px-4 py-2.5 text-sm mt-1 outline-none focus:border-primary text-ink" />
-                </div>
-                <div>
-                  <label className="text-xs font-medium text-ink-secondary">Bedrooms</label>
-                  <input type="number" min={1} max={10} value={editForm.beds} onChange={(e) => setEditForm((f) => ({ ...f, beds: parseInt(e.target.value) || 1 }))} className="w-full border border-hairline rounded-xl px-4 py-2.5 text-sm mt-1 outline-none focus:border-primary text-ink" />
-                </div>
-                <div>
-                  <label className="text-xs font-medium text-ink-secondary">Max guests</label>
-                  <input type="number" min={1} max={20} value={editForm.guests} onChange={(e) => setEditForm((f) => ({ ...f, guests: parseInt(e.target.value) || 1 }))} className="w-full border border-hairline rounded-xl px-4 py-2.5 text-sm mt-1 outline-none focus:border-primary text-ink" />
-                </div>
+              <div>
+                <label className="block text-[10px] font-sans font-semibold uppercase tracking-[0.16em] text-ink-tertiary mb-1.5">Max guests</label>
+                <input type="number" min={1} max={20} value={editForm.guests} onChange={(e) => setEditForm((f) => ({ ...f, guests: parseInt(e.target.value) || 1 }))} className="w-full border border-hairline rounded-lg px-4 py-2.5 text-sm outline-none focus:border-primary text-ink bg-canvas font-sans" />
               </div>
-              <div className="flex items-center justify-between pt-1">
-                <span className="text-xs font-medium text-ink-secondary">Offer extended checkout (18:00)</span>
-                <input type="checkbox" checked={editForm.extended} onChange={(e) => setEditForm((f) => ({ ...f, extended: e.target.checked }))} className="w-4 h-4 accent-primary cursor-pointer" />
+            </div>
+            <div className="flex items-center justify-between pt-1">
+              <span className="text-xs font-sans font-medium text-ink-secondary">Offer extended checkout (18:00)</span>
+              <input type="checkbox" checked={editForm.extended} onChange={(e) => setEditForm((f) => ({ ...f, extended: e.target.checked }))} className="w-4 h-4 accent-primary cursor-pointer" />
+            </div>
+            {editForm.extended && (
+              <div>
+                <label className="block text-[10px] font-sans font-semibold uppercase tracking-[0.16em] text-ink-tertiary mb-1.5">Extended checkout price (£)</label>
+                <input type="number" min={0} step={0.01} value={editForm.extendedPrice / 100} onChange={(e) => setEditForm((f) => ({ ...f, extendedPrice: Math.round(parseFloat(e.target.value || "0") * 100) }))} className="w-full border border-hairline rounded-lg px-4 py-2.5 text-sm outline-none focus:border-primary text-ink bg-canvas font-sans" />
               </div>
-              {editForm.extended && (
-                <div>
-                  <label className="text-xs font-medium text-ink-secondary">Extended checkout price (£)</label>
-                  <input type="number" min={0} step={0.01} value={editForm.extendedPrice / 100} onChange={(e) => setEditForm((f) => ({ ...f, extendedPrice: Math.round(parseFloat(e.target.value || "0") * 100) }))} className="w-full border border-hairline rounded-xl px-4 py-2.5 text-sm mt-1 outline-none focus:border-primary text-ink" />
-                </div>
-              )}
+            )}
 
-              <div className="flex gap-x-2 pt-2">
-                <Link href={`/stays/${editModal.id.toLowerCase()}`} target="_blank" className="flex-1 py-2.5 rounded-xl text-sm font-medium border border-hairline text-ink-secondary text-center no-underline hover:bg-primary-bg transition-colors">
-                  View on storefront →
-                </Link>
-                <button
-                  disabled={pendingAction === `edit-prop-${editModal.id}`}
-                  onClick={() => action(`edit-prop-${editModal.id}`, async () => {
-                    const r = await updateProperty({
-                      propertyId: editModal.id,
-                      name: editForm.name || undefined,
-                      description: editForm.description || undefined,
-                      nightly_rate_minor: editForm.rate || undefined,
-                      extended_checkout_offered: editForm.extended,
-                      extended_checkout_price_minor: editForm.extended ? (editForm.extendedPrice || undefined) : undefined,
-                    });
-                    notify(r.ok ? "Property updated. Changes will appear on the storefront." : r.message, r.ok ? "success" : "error");
-                    if (r.ok) setEditModal(null);
-                  })}
-                  className="flex-1 py-2.5 rounded-xl text-sm font-semibold bg-primary text-white hover:bg-primary-dark transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-wait border-none"
-                >{pendingAction === `edit-prop-${editModal.id}` ? "Saving..." : "Save Changes"}</button>
-              </div>
+            <div className="flex gap-2 pt-2">
+              <Link href={`/stays/${editModal.id.toLowerCase()}`} target="_blank" className="flex-1 py-2.5 rounded-lg text-sm font-sans font-semibold border border-hairline text-ink-secondary text-center no-underline hover:bg-bone-secondary transition-colors bg-transparent">
+                View on storefront →
+              </Link>
+              <button
+                disabled={pendingAction === `edit-prop-${editModal.id}`}
+                onClick={() => action(`edit-prop-${editModal.id}`, async () => {
+                  const r = await updateProperty({
+                    propertyId: editModal.id,
+                    name: editForm.name || undefined,
+                    description: editForm.description || undefined,
+                    nightly_rate_minor: editForm.rate || undefined,
+                    extended_checkout_offered: editForm.extended,
+                    extended_checkout_price_minor: editForm.extended ? (editForm.extendedPrice || undefined) : undefined,
+                  });
+                  notify(r.ok ? "Property updated. Changes will appear on the storefront." : r.message, r.ok ? "success" : "error");
+                  if (r.ok) setEditModal(null);
+                })}
+                className="flex-1 py-2.5 rounded-lg text-sm font-sans font-semibold bg-primary text-white hover:bg-primary-dark transition-colors cursor-pointer border-none disabled:opacity-50 disabled:cursor-wait"
+              >{pendingAction === `edit-prop-${editModal.id}` ? "Saving..." : "Save Changes"}</button>
             </div>
           </div>
-        </div>
-      )}
+        )}
+      </Modal>
 
       {/* Onboard New Property Modal — operator sources a property */}
-      {onboardModalOpen && (
-        <div className="fixed inset-0 z-50 bg-black/30 backdrop-blur-sm flex items-center justify-center p-4" onClick={() => setOnboardModalOpen(false)}>
-          <div className="bg-white rounded-2xl w-full max-w-lg p-6 shadow-xl animate-modalIn max-h-[90vh] overflow-y-auto" onClick={(e) => e.stopPropagation()}>
-            <div className="flex items-center justify-between mb-5">
-              <div>
-                <h3 className="text-lg font-bold text-ink">Onboard a new property</h3>
-                <p className="text-xs text-ink-secondary mt-0.5">Source a property for your city. The owner will be invited to the platform.</p>
-              </div>
-              <button onClick={() => setOnboardModalOpen(false)} className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-primary-bg text-ink-secondary cursor-pointer">{I.x}</button>
-            </div>
+      <Modal
+        open={onboardModalOpen}
+        onClose={() => setOnboardModalOpen(false)}
+        title="Onboard a new property"
+        description="Source a property for your city. The owner will be invited to the platform."
+        size="lg"
+        footer={
+          <>
+            <button
+              type="button"
+              onClick={() => setOnboardModalOpen(false)}
+              className="px-4 py-2 rounded-lg text-sm font-sans font-semibold border border-hairline text-ink-secondary hover:bg-bone-secondary transition-colors cursor-pointer bg-canvas"
+            >Cancel</button>
+            <button
+              type="button"
+              disabled={
+                pendingAction === "onboard-property" ||
+                !onboardForm.name ||
+                !onboardForm.address ||
+                !onboardForm.ownerName ||
+                !onboardForm.ownerPhone
+              }
+              onClick={() => action("onboard-property", async () => {
+                // Per structure.md, new properties start in `pending` state and
+                // the operator schedules a physical inspection. We persist the
+                // draft to the local state and surface it in the Curation queue
+                // alongside other submissions. (Real impl writes via createProperty
+                // server action + sends WhatsApp invite to the owner.)
+                const newProp = {
+                  id: `OP-${Date.now()}`,
+                  name: onboardForm.name,
+                  city: onboardForm.city,
+                  submitted_at: new Date().toISOString().slice(0, 10),
+                  type: "new" as const,
+                  bedrooms: onboardForm.bedrooms,
+                  bathrooms: Math.max(1, onboardForm.bedrooms - 1),
+                  max_guests: onboardForm.maxGuests,
+                  price_minor: 0,
+                  status: "pending" as const,
+                };
+                setCuration((prev) => [newProp, ...prev]);
 
-            <div className="space-y-4">
+                // Track in Airtable for cross-functional visibility
+                createOnboardingRecord({
+                  propertyName: onboardForm.name,
+                  city: onboardForm.city as "Lagos" | "Abuja",
+                  address: onboardForm.address,
+                  bedrooms: onboardForm.bedrooms,
+                  ownerName: onboardForm.ownerName,
+                  ownerPhone: onboardForm.ownerPhone,
+                  ownerEmail: onboardForm.ownerEmail,
+                  status: "pending_inspection",
+                  submittedAt: new Date().toISOString().slice(0, 10),
+                  operatorName: user?.name ?? undefined,
+                });
+
+                notify(`Property "${onboardForm.name}" added to your curation queue. Schedule a physical inspection to proceed.`, "success");
+                setOnboardModalOpen(false);
+              })}
+              className="px-4 py-2 rounded-lg text-sm font-sans font-semibold bg-primary text-white hover:bg-primary-dark transition-colors cursor-pointer border-none disabled:opacity-50 disabled:cursor-wait"
+            >{pendingAction === "onboard-property" ? "Adding..." : "Add to Curation"}</button>
+          </>
+        }
+      >
+        <div className="space-y-4">
+          <div>
+            <label className="block text-[10px] font-sans font-semibold uppercase tracking-[0.16em] text-ink-tertiary mb-1.5">Property name</label>
+            <input
+              type="text"
+              value={onboardForm.name}
+              onChange={(e) => setOnboardForm({ ...onboardForm, name: e.target.value })}
+              placeholder="e.g. The Banana Island Villa"
+              className="w-full text-sm border border-hairline rounded-lg px-3 py-2 outline-none focus:border-primary text-ink placeholder:text-ink-tertiary bg-canvas font-sans"
+            />
+          </div>
+
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-[10px] font-sans font-semibold uppercase tracking-[0.16em] text-ink-tertiary mb-1.5">City</label>
+              <select
+                value={onboardForm.city}
+                onChange={(e) => setOnboardForm({ ...onboardForm, city: e.target.value })}
+                disabled={assignedCities.length === 1}
+                className="w-full text-sm border border-hairline rounded-lg px-3 py-2 outline-none focus:border-primary text-ink bg-canvas disabled:opacity-50 disabled:cursor-not-allowed font-sans"
+              >
+                {(assignedCities.length > 0 ? assignedCities : ["Lagos", "Abuja"]).map((c) => (
+                  <option key={c} value={c}>{c}</option>
+                ))}
+              </select>
+              {assignedCities.length === 1 && (
+                <p className="text-[10px] text-ink-tertiary mt-1 font-sans">Scoped to your assigned city.</p>
+              )}
+            </div>
+            <div>
+              <label className="block text-[10px] font-sans font-semibold uppercase tracking-[0.16em] text-ink-tertiary mb-1.5">Bedrooms</label>
+              <input
+                type="number"
+                min={1}
+                value={onboardForm.bedrooms}
+                onChange={(e) => setOnboardForm({ ...onboardForm, bedrooms: parseInt(e.target.value) || 1 })}
+                className="w-full text-sm border border-hairline rounded-lg px-3 py-2 outline-none focus:border-primary text-ink bg-canvas font-sans"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="block text-[10px] font-sans font-semibold uppercase tracking-[0.16em] text-ink-tertiary mb-1.5">Address</label>
+            <input
+              type="text"
+              value={onboardForm.address}
+              onChange={(e) => setOnboardForm({ ...onboardForm, address: e.target.value })}
+              placeholder="Street, neighbourhood"
+              className="w-full text-sm border border-hairline rounded-lg px-3 py-2 outline-none focus:border-primary text-ink placeholder:text-ink-tertiary bg-canvas font-sans"
+            />
+          </div>
+
+          <div>
+            <label className="block text-[10px] font-sans font-semibold uppercase tracking-[0.16em] text-ink-tertiary mb-1.5">Max guests</label>
+            <input
+              type="number"
+              min={1}
+              value={onboardForm.maxGuests}
+              onChange={(e) => setOnboardForm({ ...onboardForm, maxGuests: parseInt(e.target.value) || 1 })}
+              className="w-full text-sm border border-hairline rounded-lg px-3 py-2 outline-none focus:border-primary text-ink bg-canvas font-sans"
+            />
+          </div>
+
+          <div className="pt-4 border-t border-hairline">
+            <p className="text-[10px] font-sans font-semibold uppercase tracking-[0.16em] text-primary mb-3">Owner details</p>
+            <div className="space-y-3">
               <div>
-                <label className="block text-xs font-medium text-ink-secondary mb-1.5">Property name</label>
+                <label className="block text-[10px] font-sans font-semibold uppercase tracking-[0.16em] text-ink-tertiary mb-1.5">Owner full name</label>
                 <input
                   type="text"
-                  value={onboardForm.name}
-                  onChange={(e) => setOnboardForm({ ...onboardForm, name: e.target.value })}
-                  placeholder="e.g. The Banana Island Villa"
-                  className="w-full text-sm border border-hairline rounded-lg px-3 py-2 outline-none focus:border-primary text-ink placeholder:text-mute"
+                  value={onboardForm.ownerName}
+                  onChange={(e) => setOnboardForm({ ...onboardForm, ownerName: e.target.value })}
+                  placeholder="e.g. Tunde Adebayo"
+                  className="w-full text-sm border border-hairline rounded-lg px-3 py-2 outline-none focus:border-primary text-ink placeholder:text-ink-tertiary bg-canvas font-sans"
                 />
               </div>
-
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-medium text-ink-secondary mb-1.5">City</label>
-                  <select
-                    value={onboardForm.city}
-                    onChange={(e) => setOnboardForm({ ...onboardForm, city: e.target.value })}
-                    disabled={assignedCities.length === 1}
-                    className="w-full text-sm border border-hairline rounded-lg px-3 py-2 outline-none focus:border-primary text-ink bg-white disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    {(assignedCities.length > 0 ? assignedCities : ["Lagos", "Abuja"]).map((c) => (
-                      <option key={c} value={c}>{c}</option>
-                    ))}
-                  </select>
-                  {assignedCities.length === 1 && (
-                    <p className="text-[10px] text-mute mt-1">Scoped to your assigned city.</p>
-                  )}
+                  <label className="block text-[10px] font-sans font-semibold uppercase tracking-[0.16em] text-ink-tertiary mb-1.5">WhatsApp</label>
+                  <input
+                    type="tel"
+                    value={onboardForm.ownerPhone}
+                    onChange={(e) => setOnboardForm({ ...onboardForm, ownerPhone: e.target.value })}
+                    placeholder="+234 800 000 0000"
+                    className="w-full text-sm border border-hairline rounded-lg px-3 py-2 outline-none focus:border-primary text-ink placeholder:text-ink-tertiary bg-canvas font-sans"
+                  />
                 </div>
                 <div>
-                  <label className="block text-xs font-medium text-ink-secondary mb-1.5">Bedrooms</label>
+                  <label className="block text-[10px] font-sans font-semibold uppercase tracking-[0.16em] text-ink-tertiary mb-1.5">Email</label>
                   <input
-                    type="number"
-                    min={1}
-                    value={onboardForm.bedrooms}
-                    onChange={(e) => setOnboardForm({ ...onboardForm, bedrooms: parseInt(e.target.value) || 1 })}
-                    className="w-full text-sm border border-hairline rounded-lg px-3 py-2 outline-none focus:border-primary text-ink"
+                    type="email"
+                    value={onboardForm.ownerEmail}
+                    onChange={(e) => setOnboardForm({ ...onboardForm, ownerEmail: e.target.value })}
+                    placeholder="owner@email.com"
+                    className="w-full text-sm border border-hairline rounded-lg px-3 py-2 outline-none focus:border-primary text-ink placeholder:text-ink-tertiary bg-canvas font-sans"
                   />
                 </div>
               </div>
-
-              <div>
-                <label className="block text-xs font-medium text-ink-secondary mb-1.5">Address</label>
-                <input
-                  type="text"
-                  value={onboardForm.address}
-                  onChange={(e) => setOnboardForm({ ...onboardForm, address: e.target.value })}
-                  placeholder="Street, neighbourhood"
-                  className="w-full text-sm border border-hairline rounded-lg px-3 py-2 outline-none focus:border-primary text-ink placeholder:text-mute"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-medium text-ink-secondary mb-1.5">Max guests</label>
-                <input
-                  type="number"
-                  min={1}
-                  value={onboardForm.maxGuests}
-                  onChange={(e) => setOnboardForm({ ...onboardForm, maxGuests: parseInt(e.target.value) || 1 })}
-                  className="w-full text-sm border border-hairline rounded-lg px-3 py-2 outline-none focus:border-primary text-ink"
-                />
-              </div>
-
-              <div className="pt-3 border-t border-hairline">
-                <p className="text-xs font-semibold text-ink-secondary uppercase tracking-wider mb-3">Owner details</p>
-                <div className="space-y-3">
-                  <div>
-                    <label className="block text-xs font-medium text-ink-secondary mb-1.5">Owner full name</label>
-                    <input
-                      type="text"
-                      value={onboardForm.ownerName}
-                      onChange={(e) => setOnboardForm({ ...onboardForm, ownerName: e.target.value })}
-                      placeholder="e.g. Tunde Adebayo"
-                      className="w-full text-sm border border-hairline rounded-lg px-3 py-2 outline-none focus:border-primary text-ink placeholder:text-mute"
-                    />
-                  </div>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <label className="block text-xs font-medium text-ink-secondary mb-1.5">WhatsApp</label>
-                      <input
-                        type="tel"
-                        value={onboardForm.ownerPhone}
-                        onChange={(e) => setOnboardForm({ ...onboardForm, ownerPhone: e.target.value })}
-                        placeholder="+234 800 000 0000"
-                        className="w-full text-sm border border-hairline rounded-lg px-3 py-2 outline-none focus:border-primary text-ink placeholder:text-mute"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-xs font-medium text-ink-secondary mb-1.5">Email</label>
-                      <input
-                        type="email"
-                        value={onboardForm.ownerEmail}
-                        onChange={(e) => setOnboardForm({ ...onboardForm, ownerEmail: e.target.value })}
-                        placeholder="owner@email.com"
-                        className="w-full text-sm border border-hairline rounded-lg px-3 py-2 outline-none focus:border-primary text-ink placeholder:text-mute"
-                      />
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <div className="flex gap-x-2 mt-6">
-              <button
-                onClick={() => setOnboardModalOpen(false)}
-                className="flex-1 py-2.5 rounded-xl text-sm font-medium border border-hairline text-ink-secondary hover:bg-primary-bg transition-colors cursor-pointer"
-              >Cancel</button>
-              <button
-                disabled={
-                  pendingAction === "onboard-property" ||
-                  !onboardForm.name ||
-                  !onboardForm.address ||
-                  !onboardForm.ownerName ||
-                  !onboardForm.ownerPhone
-                }
-                onClick={() => action("onboard-property", async () => {
-                  // Per structure.md, new properties start in `pending` state and
-                  // the operator schedules a physical inspection. We persist the
-                  // draft to the local state and surface it in the Curation queue
-                  // alongside other submissions. (Real impl writes via createProperty
-                  // server action + sends WhatsApp invite to the owner.)
-                  const newProp = {
-                    id: `OP-${Date.now()}`,
-                    name: onboardForm.name,
-                    city: onboardForm.city,
-                    submitted_at: new Date().toISOString().slice(0, 10),
-                    type: "new" as const,
-                    bedrooms: onboardForm.bedrooms,
-                    bathrooms: Math.max(1, onboardForm.bedrooms - 1),
-                    max_guests: onboardForm.maxGuests,
-                    price_minor: 0,
-                    status: "pending" as const,
-                  };
-                  setCuration((prev) => [newProp, ...prev]);
-
-                  // Track in Airtable for cross-functional visibility
-                  createOnboardingRecord({
-                    propertyName: onboardForm.name,
-                    city: onboardForm.city as "Lagos" | "Abuja",
-                    address: onboardForm.address,
-                    bedrooms: onboardForm.bedrooms,
-                    ownerName: onboardForm.ownerName,
-                    ownerPhone: onboardForm.ownerPhone,
-                    ownerEmail: onboardForm.ownerEmail,
-                    status: "pending_inspection",
-                    submittedAt: new Date().toISOString().slice(0, 10),
-                    operatorName: user?.name ?? undefined,
-                  });
-
-                  notify(`Property "${onboardForm.name}" added to your curation queue. Schedule a physical inspection to proceed.`, "success");
-                  setOnboardModalOpen(false);
-                })}
-                className="flex-1 py-2.5 rounded-xl text-sm font-semibold bg-primary text-white hover:bg-primary-dark transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-wait border-none"
-              >{pendingAction === "onboard-property" ? "Adding..." : "Add to Curation"}</button>
             </div>
           </div>
         </div>
-      )}
+      </Modal>
 
       {/* Verification Modal */}
-      {verifModalOpen && (
-        <div className="fixed inset-0 z-50 bg-black/30 backdrop-blur-sm flex items-center justify-center p-4" onClick={() => { setVerifModalOpen(false); setVerifForm({ propertyId: "", notes: "", photos: 0 }); }}>
-          <div className="bg-white rounded-2xl w-full max-w-md p-6 shadow-xl animate-modalIn" onClick={(e) => e.stopPropagation()}>
-            <div className="flex items-center justify-between mb-5">
-              <h3 className="text-lg font-bold text-ink">New Verification Entry</h3>
-              <button onClick={() => { setVerifModalOpen(false); setVerifForm({ propertyId: "", notes: "", photos: 0 }); }} className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-primary-bg text-ink-secondary cursor-pointer">{I.x}</button>
-            </div>
-
-            <div className="space-y-4">
-              <div>
-                <label className="text-xs font-medium text-ink-secondary">Property</label>
-                <select
-                  value={verifForm.propertyId}
-                  onChange={(e) => setVerifForm((f) => ({ ...f, propertyId: e.target.value }))}
-                  className="w-full border border-hairline rounded-xl px-4 py-2.5 text-sm mt-1 outline-none focus:border-primary text-ink"
-                >
-                  <option value="">Select a property...</option>
-                  {seedProperties
-                    .filter((p) => assignedCities.length === 0 || assignedCities.includes(p.city))
-                    .map((p) => (
-                      <option key={p.id} value={p.id}>{p.name} — {p.city}</option>
-                    ))}
-                </select>
-              </div>
-              <div>
-                <label className="text-xs font-medium text-ink-secondary">Photos taken</label>
-                <input type="number" min={0} value={verifForm.photos} onChange={(e) => setVerifForm((f) => ({ ...f, photos: parseInt(e.target.value) || 0 }))} className="w-full border border-hairline rounded-xl px-4 py-2.5 text-sm mt-1 outline-none focus:border-primary text-ink" />
-              </div>
-              <div>
-                <label className="text-xs font-medium text-ink-secondary">Notes</label>
-                <textarea rows={3} value={verifForm.notes} onChange={(e) => setVerifForm((f) => ({ ...f, notes: e.target.value }))} placeholder="Describe the inspection findings..." className="w-full border border-hairline rounded-xl px-4 py-2.5 text-sm mt-1 outline-none focus:border-primary text-ink resize-none font-sans" />
-              </div>
-
-              <div className="flex gap-x-2 pt-2">
-                <button
-                  onClick={() => { setVerifModalOpen(false); setVerifForm({ propertyId: "", notes: "", photos: 0 }); }}
-                  className="flex-1 py-2.5 rounded-xl text-sm font-medium border border-hairline text-ink-secondary hover:bg-primary-bg transition-colors cursor-pointer"
-                >Cancel</button>
-                <button
-                  disabled={!verifForm.propertyId.trim() || pendingAction === "new-verification"}
-                  onClick={() => action("new-verification", async () => {
-                    const r = await logVerification({ propertyId: verifForm.propertyId, photos: verifForm.photos, notes: verifForm.notes || undefined });
-                    if (r.ok) {
-                      const prop = seedProperties.find((p) => p.id === verifForm.propertyId);
-                      setVerifications((prev) => [{ id: `V${Date.now()}`, property_name: prop?.name ?? verifForm.propertyId, date: new Date().toISOString().slice(0, 10), status: "complete", photos: verifForm.photos, notes: verifForm.notes }, ...prev]);
-                      setVerifModalOpen(false);
-                      setVerifForm({ propertyId: "", notes: "", photos: 0 });
-                    }
-                    notify(r.ok ? "Verification logged." : r.message, r.ok ? "success" : "error");
-                  })}
-                  className="flex-1 py-2.5 rounded-xl text-sm font-semibold bg-primary text-white hover:bg-primary-dark transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-wait border-none"
-                >{pendingAction === "new-verification" ? "Logging..." : "Log Verification"}</button>
-              </div>
-            </div>
+      <Modal
+        open={verifModalOpen}
+        onClose={() => { setVerifModalOpen(false); setVerifForm({ propertyId: "", notes: "", photos: 0 }); }}
+        title="New verification entry"
+        size="md"
+        footer={
+          <>
+            <button
+              type="button"
+              onClick={() => { setVerifModalOpen(false); setVerifForm({ propertyId: "", notes: "", photos: 0 }); }}
+              className="px-4 py-2 rounded-lg text-sm font-sans font-semibold border border-hairline text-ink-secondary hover:bg-bone-secondary transition-colors cursor-pointer bg-canvas"
+            >Cancel</button>
+            <button
+              type="button"
+              disabled={!verifForm.propertyId.trim() || pendingAction === "new-verification"}
+              onClick={() => action("new-verification", async () => {
+                const r = await logVerification({ propertyId: verifForm.propertyId, photos: verifForm.photos, notes: verifForm.notes || undefined });
+                if (r.ok) {
+                  const prop = seedProperties.find((p) => p.id === verifForm.propertyId);
+                  setVerifications((prev) => [{ id: `V${Date.now()}`, property_name: prop?.name ?? verifForm.propertyId, date: new Date().toISOString().slice(0, 10), status: "complete", photos: verifForm.photos, notes: verifForm.notes }, ...prev]);
+                  setVerifModalOpen(false);
+                  setVerifForm({ propertyId: "", notes: "", photos: 0 });
+                }
+                notify(r.ok ? "Verification logged." : r.message, r.ok ? "success" : "error");
+              })}
+              className="px-4 py-2 rounded-lg text-sm font-sans font-semibold bg-primary text-white hover:bg-primary-dark transition-colors cursor-pointer border-none disabled:opacity-50 disabled:cursor-wait"
+            >{pendingAction === "new-verification" ? "Logging..." : "Log verification"}</button>
+          </>
+        }
+      >
+        <div className="space-y-4">
+          <div>
+            <label className="block text-[10px] font-sans font-semibold uppercase tracking-[0.16em] text-ink-tertiary mb-1.5">Property</label>
+            <select
+              value={verifForm.propertyId}
+              onChange={(e) => setVerifForm((f) => ({ ...f, propertyId: e.target.value }))}
+              className="w-full border border-hairline rounded-lg px-4 py-2.5 text-sm outline-none focus:border-primary text-ink bg-canvas font-sans"
+            >
+              <option value="">Select a property...</option>
+              {seedProperties
+                .filter((p) => assignedCities.length === 0 || assignedCities.includes(p.city))
+                .map((p) => (
+                  <option key={p.id} value={p.id}>{p.name} — {p.city}</option>
+                ))}
+            </select>
+          </div>
+          <div>
+            <label className="block text-[10px] font-sans font-semibold uppercase tracking-[0.16em] text-ink-tertiary mb-1.5">Photos taken</label>
+            <input type="number" min={0} value={verifForm.photos} onChange={(e) => setVerifForm((f) => ({ ...f, photos: parseInt(e.target.value) || 0 }))} className="w-full border border-hairline rounded-lg px-4 py-2.5 text-sm outline-none focus:border-primary text-ink bg-canvas font-sans" />
+          </div>
+          <div>
+            <label className="block text-[10px] font-sans font-semibold uppercase tracking-[0.16em] text-ink-tertiary mb-1.5">Notes</label>
+            <textarea rows={3} value={verifForm.notes} onChange={(e) => setVerifForm((f) => ({ ...f, notes: e.target.value }))} placeholder="Describe the inspection findings..." className="w-full border border-hairline rounded-lg px-4 py-2.5 text-sm outline-none focus:border-primary text-ink resize-none font-sans bg-canvas" />
           </div>
         </div>
-      )}
+      </Modal>
 
       {/* Submit Claim Modal — structure.md: operator submits, admin reviews */}
-      {claimModalOpen && (
-        <div className="fixed inset-0 z-50 bg-black/30 backdrop-blur-sm flex items-center justify-center p-4" onClick={() => setClaimModalOpen(false)}>
-          <div className="bg-white rounded-2xl w-full max-w-lg p-6 shadow-xl max-h-[90vh] overflow-y-auto animate-modalIn" onClick={(e) => e.stopPropagation()}>
-            <div className="flex items-center justify-between mb-5">
-              <div>
-                <h3 className="text-lg font-bold text-ink">Submit damage claim</h3>
-                <p className="text-xs text-ink-secondary mt-0.5">Admin will review and adjudicate.</p>
-              </div>
-              <button onClick={() => setClaimModalOpen(false)} className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-primary-bg text-ink-secondary cursor-pointer">{I.x}</button>
+      <Modal
+        open={claimModalOpen}
+        onClose={() => setClaimModalOpen(false)}
+        title="Submit damage claim"
+        description="Admin will review and adjudicate."
+        size="lg"
+        footer={
+          <>
+            <button
+              type="button"
+              onClick={() => setClaimModalOpen(false)}
+              className="px-4 py-2 rounded-lg text-sm font-sans font-semibold border border-hairline text-ink-secondary hover:bg-bone-secondary transition-colors cursor-pointer bg-canvas"
+            >Cancel</button>
+            <button
+              type="button"
+              disabled={!claimForm.propertyId || !claimForm.guestName || !claimForm.description || pendingAction === "submit-claim"}
+              onClick={() => action("submit-claim", async () => {
+                const r = await submitDamageClaim({
+                  propertyId: claimForm.propertyId,
+                  guestName: claimForm.guestName,
+                  bookingRef: claimForm.bookingRef || undefined,
+                  stayDates: claimForm.stayDates || undefined,
+                  description: claimForm.description,
+                  estimatedCostMinor: claimForm.estimatedCostMinor,
+                  photoCount: claimForm.photoCount,
+                  operatorNotes: claimForm.operatorNotes || undefined,
+                });
+                if (r.ok && r.data) {
+                  setClaims((prev) => [r.data!, ...prev]);
+                  setClaimModalOpen(false);
+                }
+                notify(r.ok ? "Claim submitted for admin review." : r.message, r.ok ? "success" : "error");
+              })}
+              className="px-4 py-2 rounded-lg text-sm font-sans font-semibold bg-primary text-white hover:bg-primary-dark transition-colors cursor-pointer border-none disabled:opacity-50 disabled:cursor-wait"
+            >{pendingAction === "submit-claim" ? "Submitting..." : "Submit Claim"}</button>
+          </>
+        }
+      >
+        <div className="space-y-4">
+          <div>
+            <label className="block text-[10px] font-sans font-semibold uppercase tracking-[0.16em] text-ink-tertiary mb-1.5">Property</label>
+            <select
+              value={claimForm.propertyId}
+              onChange={(e) => setClaimForm((f) => ({ ...f, propertyId: e.target.value }))}
+              className="w-full border border-hairline rounded-lg px-4 py-2.5 text-sm outline-none focus:border-primary text-ink bg-canvas font-sans"
+            >
+              <option value="">Select a property...</option>
+              {seedProperties
+                .filter((p) => assignedCities.length === 0 || assignedCities.includes(p.city))
+                .map((p) => (
+                  <option key={p.id} value={p.id}>{p.name} — {p.city}</option>
+                ))}
+            </select>
+            {assignedCities.length > 0 && (
+              <p className="text-[10px] text-ink-tertiary mt-1 font-sans">Only properties in {assignedCities.join(" + ")} are shown.</p>
+            )}
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-[10px] font-sans font-semibold uppercase tracking-[0.16em] text-ink-tertiary mb-1.5">Guest name</label>
+              <input type="text" value={claimForm.guestName} onChange={(e) => setClaimForm((f) => ({ ...f, guestName: e.target.value }))} placeholder="e.g. Chidi Okafor" className="w-full border border-hairline rounded-lg px-4 py-2.5 text-sm outline-none focus:border-primary text-ink bg-canvas font-sans" />
             </div>
-
-            <div className="space-y-4">
-              <div>
-                <label className="text-xs font-medium text-ink-secondary">Property</label>
-                <select
-                  value={claimForm.propertyId}
-                  onChange={(e) => setClaimForm((f) => ({ ...f, propertyId: e.target.value }))}
-                  className="w-full border border-hairline rounded-xl px-4 py-2.5 text-sm mt-1 outline-none focus:border-primary text-ink"
-                >
-                  <option value="">Select a property...</option>
-                  {seedProperties
-                    .filter((p) => assignedCities.length === 0 || assignedCities.includes(p.city))
-                    .map((p) => (
-                      <option key={p.id} value={p.id}>{p.name} — {p.city}</option>
-                    ))}
-                </select>
-                {assignedCities.length > 0 && (
-                  <p className="text-[10px] text-ink-secondary mt-1">Only properties in {assignedCities.join(" + ")} are shown.</p>
-                )}
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="text-xs font-medium text-ink-secondary">Guest name</label>
-                  <input type="text" value={claimForm.guestName} onChange={(e) => setClaimForm((f) => ({ ...f, guestName: e.target.value }))} placeholder="e.g. Chidi Okafor" className="w-full border border-hairline rounded-xl px-4 py-2.5 text-sm mt-1 outline-none focus:border-primary text-ink" />
-                </div>
-                <div>
-                  <label className="text-xs font-medium text-ink-secondary">Booking ref</label>
-                  <input type="text" value={claimForm.bookingRef} onChange={(e) => setClaimForm((f) => ({ ...f, bookingRef: e.target.value }))} placeholder="PAY-2026-XXXX" className="w-full border border-hairline rounded-xl px-4 py-2.5 text-sm mt-1 outline-none focus:border-primary text-ink" />
-                </div>
-              </div>
-              <div>
-                <label className="text-xs font-medium text-ink-secondary">Stay dates</label>
-                <input type="text" value={claimForm.stayDates} onChange={(e) => setClaimForm((f) => ({ ...f, stayDates: e.target.value }))} placeholder="e.g. Jun 18–22" className="w-full border border-hairline rounded-xl px-4 py-2.5 text-sm mt-1 outline-none focus:border-primary text-ink" />
-              </div>
-              <div>
-                <label className="text-xs font-medium text-ink-secondary">Damage description</label>
-                <textarea rows={3} value={claimForm.description} onChange={(e) => setClaimForm((f) => ({ ...f, description: e.target.value }))} placeholder="What was damaged and how..." className="w-full border border-hairline rounded-xl px-4 py-2.5 text-sm mt-1 outline-none focus:border-primary text-ink resize-none font-sans" />
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="text-xs font-medium text-ink-secondary">Estimated cost (£)</label>
-                  <input type="number" min={0} step={0.01} value={claimForm.estimatedCostMinor / 100} onChange={(e) => setClaimForm((f) => ({ ...f, estimatedCostMinor: Math.round(parseFloat(e.target.value || "0") * 100) }))} className="w-full border border-hairline rounded-xl px-4 py-2.5 text-sm mt-1 outline-none focus:border-primary text-ink" />
-                </div>
-                <div>
-                  <label className="text-xs font-medium text-ink-secondary">Photo count</label>
-                  <input type="number" min={0} value={claimForm.photoCount} onChange={(e) => setClaimForm((f) => ({ ...f, photoCount: parseInt(e.target.value) || 0 }))} className="w-full border border-hairline rounded-xl px-4 py-2.5 text-sm mt-1 outline-none focus:border-primary text-ink" />
-                </div>
-              </div>
-              <div>
-                <label className="text-xs font-medium text-ink-secondary">Operator notes (optional)</label>
-                <textarea rows={2} value={claimForm.operatorNotes} onChange={(e) => setClaimForm((f) => ({ ...f, operatorNotes: e.target.value }))} placeholder="Inspection observations for the reviewer..." className="w-full border border-hairline rounded-xl px-4 py-2.5 text-sm mt-1 outline-none focus:border-primary text-ink resize-none font-sans" />
-              </div>
-
-              <div className="p-3 rounded-xl bg-soft text-xs text-ink-secondary">
-                <strong className="text-ink">Workflow:</strong> Operator submits → Admin reviews &amp; adjudicates → Operator informed.
-              </div>
-
-              <div className="flex gap-x-2 pt-2">
-                <button
-                  onClick={() => setClaimModalOpen(false)}
-                  className="flex-1 py-2.5 rounded-xl text-sm font-medium border border-hairline text-ink-secondary hover:bg-primary-bg transition-colors cursor-pointer"
-                >Cancel</button>
-                <button
-                  disabled={!claimForm.propertyId || !claimForm.guestName || !claimForm.description || pendingAction === "submit-claim"}
-                  onClick={() => action("submit-claim", async () => {
-                    const r = await submitDamageClaim({
-                      propertyId: claimForm.propertyId,
-                      guestName: claimForm.guestName,
-                      bookingRef: claimForm.bookingRef || undefined,
-                      stayDates: claimForm.stayDates || undefined,
-                      description: claimForm.description,
-                      estimatedCostMinor: claimForm.estimatedCostMinor,
-                      photoCount: claimForm.photoCount,
-                      operatorNotes: claimForm.operatorNotes || undefined,
-                    });
-                    if (r.ok && r.data) {
-                      setClaims((prev) => [r.data!, ...prev]);
-                      setClaimModalOpen(false);
-                    }
-                    notify(r.ok ? "Claim submitted for admin review." : r.message, r.ok ? "success" : "error");
-                  })}
-                  className="flex-1 py-2.5 rounded-xl text-sm font-semibold bg-primary text-white hover:bg-primary-dark transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-wait border-none"
-                >{pendingAction === "submit-claim" ? "Submitting..." : "Submit Claim"}</button>
-              </div>
+            <div>
+              <label className="block text-[10px] font-sans font-semibold uppercase tracking-[0.16em] text-ink-tertiary mb-1.5">Booking ref</label>
+              <input type="text" value={claimForm.bookingRef} onChange={(e) => setClaimForm((f) => ({ ...f, bookingRef: e.target.value }))} placeholder="PAY-2026-XXXX" className="w-full border border-hairline rounded-lg px-4 py-2.5 text-sm outline-none focus:border-primary text-ink bg-canvas font-sans" />
             </div>
           </div>
+          <div>
+            <label className="block text-[10px] font-sans font-semibold uppercase tracking-[0.16em] text-ink-tertiary mb-1.5">Stay dates</label>
+            <input type="text" value={claimForm.stayDates} onChange={(e) => setClaimForm((f) => ({ ...f, stayDates: e.target.value }))} placeholder="e.g. Jun 18–22" className="w-full border border-hairline rounded-lg px-4 py-2.5 text-sm outline-none focus:border-primary text-ink bg-canvas font-sans" />
+          </div>
+          <div>
+            <label className="block text-[10px] font-sans font-semibold uppercase tracking-[0.16em] text-ink-tertiary mb-1.5">Damage description</label>
+            <textarea rows={3} value={claimForm.description} onChange={(e) => setClaimForm((f) => ({ ...f, description: e.target.value }))} placeholder="What was damaged and how..." className="w-full border border-hairline rounded-lg px-4 py-2.5 text-sm outline-none focus:border-primary text-ink resize-none font-sans bg-canvas" />
+          </div>
+          <div className="grid grid-cols-2 gap-3">
+            <div>
+              <label className="block text-[10px] font-sans font-semibold uppercase tracking-[0.16em] text-ink-tertiary mb-1.5">Estimated cost (£)</label>
+              <input type="number" min={0} step={0.01} value={claimForm.estimatedCostMinor / 100} onChange={(e) => setClaimForm((f) => ({ ...f, estimatedCostMinor: Math.round(parseFloat(e.target.value || "0") * 100) }))} className="w-full border border-hairline rounded-lg px-4 py-2.5 text-sm outline-none focus:border-primary text-ink bg-canvas font-sans" />
+            </div>
+            <div>
+              <label className="block text-[10px] font-sans font-semibold uppercase tracking-[0.16em] text-ink-tertiary mb-1.5">Photo count</label>
+              <input type="number" min={0} value={claimForm.photoCount} onChange={(e) => setClaimForm((f) => ({ ...f, photoCount: parseInt(e.target.value) || 0 }))} className="w-full border border-hairline rounded-lg px-4 py-2.5 text-sm outline-none focus:border-primary text-ink bg-canvas font-sans" />
+            </div>
+          </div>
+          <div>
+            <label className="block text-[10px] font-sans font-semibold uppercase tracking-[0.16em] text-ink-tertiary mb-1.5">Operator notes (optional)</label>
+            <textarea rows={2} value={claimForm.operatorNotes} onChange={(e) => setClaimForm((f) => ({ ...f, operatorNotes: e.target.value }))} placeholder="Inspection observations for the reviewer..." className="w-full border border-hairline rounded-lg px-4 py-2.5 text-sm outline-none focus:border-primary text-ink resize-none font-sans bg-canvas" />
+          </div>
+          <div className="p-3 rounded-lg bg-bone-secondary text-xs text-ink-secondary font-sans">
+            <strong className="text-ink font-semibold">Workflow:</strong> Operator submits → Admin reviews &amp; adjudicates → Operator informed.
+          </div>
         </div>
-      )}
+      </Modal>
     </>
   );
 }

@@ -9,6 +9,7 @@ import { blockDates, unblockDates } from "@/actions/properties";
 import { saveOwnerPayoutDetails } from "@/actions/owner-payout-details";
 import type { AuthUser } from "@/lib/auth";
 import { NotificationsView } from "@/components/notifications-view";
+import { Modal } from "@/components/dashboard/modal";
 import { getSeedDamageClaims } from "@/lib/seed-data";
 
 /* ---------- icons ---------- */
@@ -671,43 +672,43 @@ export function OwnerDashboard({
           {tab === "notifications" && <NotificationsView role="owner" userId={user?.id} />}
 
       {/* Booking detail modal */}
-      {bookingModal && (
-        <div className="fixed inset-0 z-50 bg-black/30 backdrop-blur-sm flex items-center justify-center p-4" onClick={() => setBookingModal(null)}>
-          <div className="bg-white rounded-2xl w-full max-w-lg p-6 shadow-xl animate-modalIn" onClick={(e) => e.stopPropagation()}>
-            <div className="flex items-center justify-between mb-5">
-              <h3 className="text-lg font-bold text-ink">Booking #{bookingModal.id}</h3>
-              <button onClick={() => setBookingModal(null)} className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-primary-bg text-ink-secondary cursor-pointer">{I.x}</button>
-            </div>
-            <div className="grid grid-cols-2 gap-3 text-sm">
-              {[
-                { label: "Guest", value: bookingModal.guest },
-                { label: "Property", value: bookingModal.unit },
-                { label: "Check in", value: bookingModal.check_in },
-                { label: "Check out", value: bookingModal.check_out },
-                { label: "Amount", value: fmt(bookingModal.amount_minor) },
-                { label: "Status", value: bookingModal.status },
-                { label: "Nights", value: String(bookingModal.nights) },
-                { label: "Guests", value: String(bookingModal.guest_count) },
-              ].map((f) => (
-                <div key={f.label} className="p-3 rounded-xl bg-primary-bg">
-                  <span className="text-xs font-medium text-ink-secondary">{f.label}</span>
-                  <p className="text-sm font-semibold mt-0.5 text-ink capitalize">{f.value}</p>
-                </div>
-              ))}
-            </div>
+      <Modal
+        open={!!bookingModal}
+        onClose={() => setBookingModal(null)}
+        title={bookingModal ? `Booking #${bookingModal.id}` : undefined}
+        size="lg"
+      >
+        {bookingModal && (
+          <div className="grid grid-cols-2 gap-3">
+            {[
+              { label: "Guest", value: bookingModal.guest },
+              { label: "Property", value: bookingModal.unit },
+              { label: "Check in", value: bookingModal.check_in },
+              { label: "Check out", value: bookingModal.check_out },
+              { label: "Amount", value: fmt(bookingModal.amount_minor) },
+              { label: "Status", value: bookingModal.status },
+              { label: "Nights", value: String(bookingModal.nights) },
+              { label: "Guests", value: String(bookingModal.guest_count) },
+            ].map((f) => (
+              <div key={f.label} className="p-3 rounded-xl bg-bone-secondary">
+                <span className="text-[10px] font-sans font-semibold uppercase tracking-[0.14em] text-ink-tertiary">{f.label}</span>
+                <p className="text-sm font-sans font-semibold mt-1 text-ink capitalize">{f.value}</p>
+              </div>
+            ))}
           </div>
-        </div>
-      )}
+        )}
+      </Modal>
 
       {/* Damage claim detail modal */}
-      {claimModal && (
-        <div className="fixed inset-0 z-50 bg-black/30 backdrop-blur-sm flex items-center justify-center p-4" onClick={() => setClaimModal(null)}>
-          <div className="bg-white rounded-2xl w-full max-w-lg p-6 shadow-xl animate-modalIn" onClick={(e) => e.stopPropagation()}>
-            <div className="flex items-center justify-between mb-5">
-              <h3 className="text-lg font-bold text-ink">Claim {claimModal.id}</h3>
-              <button onClick={() => setClaimModal(null)} className="w-7 h-7 flex items-center justify-center rounded-lg hover:bg-primary-bg text-ink-secondary cursor-pointer">{I.x}</button>
-            </div>
-            <div className="grid grid-cols-2 gap-3 text-sm mb-4">
+      <Modal
+        open={!!claimModal}
+        onClose={() => setClaimModal(null)}
+        title={claimModal ? `Claim ${claimModal.id}` : undefined}
+        size="lg"
+      >
+        {claimModal && (
+          <div className="space-y-5">
+            <div className="grid grid-cols-2 gap-3">
               {[
                 { label: "Property", value: claimModal.property_name },
                 { label: "Guest", value: claimModal.guest_name },
@@ -716,19 +717,19 @@ export function OwnerDashboard({
                 { label: "Decision", value: claimModal.admin_decision },
                 { label: "Status", value: claimModal.dispute_status },
               ].map((f) => (
-                <div key={f.label} className="p-3 rounded-xl bg-primary-bg">
-                  <span className="text-xs font-medium text-ink-secondary">{f.label}</span>
-                  <p className="text-sm font-semibold mt-0.5 text-ink capitalize">{f.value}</p>
+                <div key={f.label} className="p-3 rounded-xl bg-bone-secondary">
+                  <span className="text-[10px] font-sans font-semibold uppercase tracking-[0.14em] text-ink-tertiary">{f.label}</span>
+                  <p className="text-sm font-sans font-semibold mt-1 text-ink capitalize">{f.value}</p>
                 </div>
               ))}
             </div>
-            <div className="p-4 rounded-xl bg-soft">
-              <p className="text-xs font-semibold text-ink-secondary mb-1">Description</p>
-              <p className="text-sm text-ink leading-relaxed">{claimModal.description}</p>
+            <div className="p-4 rounded-xl bg-bone-secondary">
+              <p className="text-[10px] font-sans font-semibold uppercase tracking-[0.14em] text-ink-tertiary mb-1.5">Description</p>
+              <p className="text-sm text-ink leading-relaxed font-sans">{claimModal.description}</p>
             </div>
           </div>
-        </div>
-      )}
+        )}
+      </Modal>
     </>
   );
 }
