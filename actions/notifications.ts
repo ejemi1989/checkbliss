@@ -26,9 +26,13 @@ import { supabaseAdminConfigured } from "@/lib/supabase/admin";
  * admin client when Supabase is configured and fall back to the in-memory
  * store (mock mode) otherwise. Every mutation revalidates the whole layout so
  * the header bell count refreshes.
+ *
+ * Note: types (NotifRole, Notification) are NOT re-exported from this file.
+ * In a "use server" module the bundler evaluates every runtime export; a
+ * type-only alias re-exported at runtime causes ReferenceError on every page
+ * that touches the action manifest. Consumers should import the types
+ * directly from "@/lib/notifications".
  */
-
-export type { NotifRole, Notification };
 
 export async function fetchNotifications(
   role: NotifRole,
