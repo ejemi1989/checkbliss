@@ -130,6 +130,17 @@ export function DashboardShell({
                 {initials}
               </div>
             </div>
+            {/* Sign out is in the topbar so it's always reachable, regardless
+                of whether the role has a secondaryNav (Settings) entry. */}
+            <form action={logoutAction} className="m-0">
+              <button
+                type="submit"
+                aria-label="Sign out"
+                className="w-9 h-9 flex items-center justify-center rounded-lg text-ink-secondary hover:bg-bone-secondary hover:text-ink transition-colors cursor-pointer border-none bg-transparent"
+              >
+                <Icon.LogOut />
+              </button>
+            </form>
           </div>
         </div>
       </header>
@@ -149,19 +160,6 @@ export function DashboardShell({
                 pathname={pathname}
                 isActive={isActive}
                 onNavigate={() => setSidebarOpen(false)}
-                trailing={
-                  <form action={logoutAction} className="m-0">
-                    <button
-                      type="submit"
-                      className="flex items-center gap-3 w-full px-3 py-2.5 rounded-lg text-sm font-sans font-medium text-ink-secondary hover:bg-bone-secondary hover:text-ink bg-transparent border-none cursor-pointer text-left transition-colors"
-                    >
-                      <span className="w-4 h-4 shrink-0 flex items-center justify-center text-ink-tertiary">
-                        <Icon.LogOut />
-                      </span>
-                      <span>Sign out</span>
-                    </button>
-                  </form>
-                }
               />
             )}
           </nav>
