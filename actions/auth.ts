@@ -99,6 +99,24 @@ export async function loginAction(_prev: unknown, formData: FormData) {
   });
 
   if (error || !data.user) {
+    // Demo credentials fallback — when Supabase auth rejects the demo allowlist,
+    // fall back to a mock session so the demo accounts work in production
+    // (where Supabase env vars are set but the demo users haven't been seeded).
+    // Only the 6 hard-coded demo emails trigger this; real users go through normal auth.
+    if (password === "checkbliss-demo-2026" && demoRoleForEmail(email)) {
+      const cookieStore = await cookies();
+      cookieStore.set(MOCK_SESSION_COOKIE, email, {
+        path: "/",
+        httpOnly: true,
+        sameSite: "lax",
+        maxAge: 60 * 60 * 24 * 7,
+      });
+      if (email === "admin@checkbliss.com") redirect("/admin");
+      if (email.startsWith("operator")) redirect("/dashboard/operator");
+      if (email === "owner@checkbliss.com") redirect("/dashboard/owner");
+      if (email === "guest@checkbliss.com") redirect("/account");
+      redirect("/login");
+    }
     return { error: error?.message ?? "Invalid email or password." };
   }
 
