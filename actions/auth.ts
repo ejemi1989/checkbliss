@@ -255,16 +255,18 @@ export async function signupAction(_prev: unknown, formData: FormData) {
 }
 
 export async function logoutAction() {
-  if (!supabaseServerConfigured) {
-    const cookieStore = await cookies();
-    cookieStore.delete(MOCK_SESSION_COOKIE);
-    redirect("/login");
-  }
-  try {
-    const supabase = await createClient();
-    await supabase.auth.signOut();
-  } catch {
-    // Session may already be expired — proceed to redirect
+  const cookieStore = await cookies();
+  // Always clear the mock cookie — demo users in real mode fall back to it,
+  // so a sign-out that only calls supabase.auth.signOut() leaves them "logged in".
+  cookieStore.delete(MOCK_SESSION_COOKIE);
+
+  if (supabaseServerConfigured) {
+    try {
+      const supabase = await createClient();
+      await supabase.auth.signOut();
+    } catch {
+      // Session may already be expired — proceed to redirect
+    }
   }
   redirect("/login");
 }

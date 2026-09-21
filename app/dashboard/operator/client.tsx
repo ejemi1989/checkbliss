@@ -2,7 +2,6 @@
 
 import { useState, useCallback, useEffect } from "react";
 import Link from "next/link";
-import { logoutAction } from "@/actions/auth";
 import { formatMinor } from "@/lib/currency";
 import { getCurationQueue, getPipeline, getInspections, getVerifications, getOperatorStats, getOperatorClaims, getOwnersForCity, getOperatorBookings } from "@/lib/data";
 import { startInspection, completeInspection } from "@/actions/inspections";

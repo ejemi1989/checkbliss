@@ -2,7 +2,9 @@ import { NextResponse, type NextRequest } from "next/server";
 import { updateSession } from "@/lib/supabase/middleware";
 import { createClient, supabaseServerConfigured } from "@/lib/supabase/server";
 import { createAdmin, supabaseAdminConfigured } from "@/lib/supabase/admin";
-import type { Role } from "@/lib/auth";
+import { demoRoleForEmail, type Role } from "@/lib/auth";
+
+const MOCK_SESSION_COOKIE = "cb_mock_session";
 
 const roleRouteMap: Record<string, Role> = {
   "/admin": "admin",
@@ -19,6 +21,16 @@ export async function middleware(request: NextRequest) {
 
   const requiredRole = roleRouteMap[matchedPrefix];
 
+  // 1. Demo users in real mode authenticate via the mock cookie fallback.
+  //    Accept that cookie as a valid session before checking Supabase auth.
+  const mockEmail = request.cookies.get(MOCK_SESSION_COOKIE)?.value?.toLowerCase().trim();
+  const mockRole = demoRoleForEmail(mockEmail);
+  if (mockRole && mockRole === requiredRole) {
+    return response;
+  }
+
+  // 2. If Supabase is not configured, the middleware in updateSession has
+  //    already passed the request through (no auth check possible).
   if (!supabaseServerConfigured || !supabaseAdminConfigured) return response;
 
   const supabase = await createClient();
